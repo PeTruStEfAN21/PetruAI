@@ -15,6 +15,13 @@ infra/llama.cpp/bin/
 __pycache__/
 *.pyc
 node_modules/
+infra/offline/wheels/
+infra/offline/docs/
+infra/offline/flutter-template/.dart_tool/
+infra/offline/flutter-template/build/
+training/corpus/raw/
+training/.venv/
+*.whl
 
 # OS artifacts
 Thumbs.db
@@ -31,3 +38,4 @@ Desktop.ini
 .pytest_cache/
 .ruff_cache/
 .petru/journal.sqlite
+infra/offline/*.log

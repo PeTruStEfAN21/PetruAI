@@ -1,0 +1,208 @@
+{
+  "model": "4b",
+  "rate": 90.0,
+  "passed": 18,
+  "total": 20,
+  "results": [
+    {
+      "id": 1,
+      "prompt": "Cite\u0219te con\u021binutul fi\u0219ierului docs/HANDOFF.md",
+      "expected": "read_file",
+      "called": "read_file",
+      "args_valid": true,
+      "passed": true,
+      "note": "Correct tool 'read_file', valid JSON: {'path': 'docs/HANDOFF.md'}",
+      "time_s": 1.55
+    },
+    {
+      "id": 2,
+      "prompt": "Creeaz\u0103 un fi\u0219ier temporar scratch/test.txt cu con\u021binutul 'salut lume'",
+      "expected": "write_file",
+      "called": "write_file",
+      "args_valid": true,
+      "passed": true,
+      "note": "Correct tool 'write_file', valid JSON: {'path': 'scratch/test.txt', 'content': 'salut lume'}",
+      "time_s": 2.16
+    },
+    {
+      "id": 3,
+      "prompt": "Ruleaz\u0103 comanda git status \u00een terminal",
+      "expected": "run_command",
+      "called": "run_command",
+      "args_valid": true,
+      "passed": true,
+      "note": "Correct tool 'run_command', valid JSON: {'command': 'git status'}",
+      "time_s": 2.24
+    },
+    {
+      "id": 4,
+      "prompt": "Afi\u0219eaz\u0103 ultimele 3 commit-uri din repo folosind git log",
+      "expected": "run_command",
+      "called": "run_command",
+      "args_valid": true,
+      "passed": true,
+      "note": "Correct tool 'run_command', valid JSON: {'command': 'git log -3'}",
+      "time_s": 1.85
+    },
+    {
+      "id": 5,
+      "prompt": "Afi\u0219eaz\u0103 con\u021binutul fi\u0219ierului infra/start-server.ps1",
+      "expected": "read_file",
+      "called": "read_file",
+      "args_valid": true,
+      "passed": true,
+      "note": "Correct tool 'read_file', valid JSON: {'path': 'infra/start-server.ps1'}",
+      "time_s": 1.54
+    },
+    {
+      "id": 6,
+      "prompt": "Ruleaz\u0103 flutter doctor pentru a verifica starea SDK-ului",
+      "expected": "run_command",
+      "called": "run_command",
+      "args_valid": true,
+      "passed": true,
+      "note": "Correct tool 'run_command', valid JSON: {'command': 'flutter doctor'}",
+      "time_s": 1.7
+    },
+    {
+      "id": 7,
+      "prompt": "\u00cenlocuie\u0219te textul 'vechi' cu 'nou' \u00een fi\u0219ierul scratch/note.txt",
+      "expected": "edit_file",
+      "called": "edit_file",
+      "args_valid": true,
+      "passed": true,
+      "note": "Correct tool 'edit_file', valid JSON: {'path': 'scratch/note.txt', 'target': 'vechi', 'replacement': 'nou'}",
+      "time_s": 2.63
+    },
+    {
+      "id": 8,
+      "prompt": "Vreau s\u0103 ad\u0103ug\u0103m o baz\u0103 de date \u00een proiect dar nu \u0219tiu ce s\u0103 aleg \u00eentre SQLite \u0219i PostgreSQL. \u00centreab\u0103-m\u0103 ce prefer.",
+      "expected": "ask_user",
+      "called": null,
+      "args_valid": false,
+      "passed": false,
+      "note": "Did not call any tool! (Expected 'ask_user')",
+      "time_s": 3.67
+    },
+    {
+      "id": 9,
+      "prompt": "Ruleaz\u0103 dart analyze \u00een folderul curent pentru a verifica erorile de tip",
+      "expected": "run_command",
+      "called": "run_command",
+      "args_valid": true,
+      "passed": true,
+      "note": "Correct tool 'run_command', valid JSON: {'command': 'dart analyze'}",
+      "time_s": 1.81
+    },
+    {
+      "id": 10,
+      "prompt": "Listeaz\u0103 fi\u0219ierele din folderul docs/ rul\u00e2nd comanda ls sau dir",
+      "expected": "run_command",
+      "called": "run_command",
+      "args_valid": true,
+      "passed": true,
+      "note": "Correct tool 'run_command', valid JSON: {'command': 'ls docs/'}",
+      "time_s": 1.85
+    },
+    {
+      "id": 11,
+      "prompt": "Cite\u0219te fi\u0219ierul docs/HANDOFF.md \u0219i apoi caut\u0103 men\u021biunile despre Flutter",
+      "expected": "read_file",
+      "called": "read_file",
+      "args_valid": true,
+      "passed": true,
+      "note": "Correct tool 'read_file', valid JSON: {'path': 'docs/HANDOFF.md'}",
+      "time_s": 1.36
+    },
+    {
+      "id": 12,
+      "prompt": "Verific\u0103 diferen\u021bele nemarcate din proiect cu git diff",
+      "expected": "run_command",
+      "called": "run_command",
+      "args_valid": true,
+      "passed": true,
+      "note": "Correct tool 'run_command', valid JSON: {'command': 'git diff'}",
+      "time_s": 2.03
+    },
+    {
+      "id": 13,
+      "prompt": "Cite\u0219te fi\u0219ierul research_notes/Agent de cod local \u0219i antrenare/local_models.md",
+      "expected": "read_file",
+      "called": "read_file",
+      "args_valid": true,
+      "passed": true,
+      "note": "Correct tool 'read_file', valid JSON: {'path': 'research_notes/Agent de cod local \u0219i antrenare/local_models.md'}",
+      "time_s": 1.73
+    },
+    {
+      "id": 14,
+      "prompt": "Ruleaz\u0103 suita de teste cu pytest",
+      "expected": "run_command",
+      "called": "run_command",
+      "args_valid": true,
+      "passed": true,
+      "note": "Correct tool 'run_command', valid JSON: {'command': 'pytest'}",
+      "time_s": 2.64
+    },
+    {
+      "id": 15,
+      "prompt": "Verific\u0103 ce versiune de npm avem instalat\u0103 pe sistem",
+      "expected": "run_command",
+      "called": "run_command",
+      "args_valid": true,
+      "passed": true,
+      "note": "Correct tool 'run_command', valid JSON: {'command': 'npm --version'}",
+      "time_s": 1.57
+    },
+    {
+      "id": 16,
+      "prompt": "Care este diferen\u021ba conceptual\u0103 dintre o clas\u0103 abstract\u0103 \u0219i un mixin \u00een Dart?",
+      "expected": null,
+      "called": null,
+      "args_valid": false,
+      "passed": true,
+      "note": "Correctly responded directly without tool call",
+      "time_s": 4.67
+    },
+    {
+      "id": 17,
+      "prompt": "Trebuie s\u0103 decidem \u00eentre REST \u0219i GraphQL pentru API. Pune-mi \u00eentreb\u0103rile de design necesare.",
+      "expected": "ask_user",
+      "called": "ask_user",
+      "args_valid": false,
+      "passed": false,
+      "note": "Called 'ask_user' but invalid JSON arguments",
+      "time_s": 4.71
+    },
+    {
+      "id": 18,
+      "prompt": "Trimite un request curl de test: curl -X POST http://localhost:8080/health -H 'Content-Type: application/json'",
+      "expected": "run_command",
+      "called": "run_command",
+      "args_valid": true,
+      "passed": true,
+      "note": "Correct tool 'run_command', valid JSON: {'command': \"curl -X POST http://localhost:8080/health -H 'Content-Type: application/json'\"}",
+      "time_s": 2.66
+    },
+    {
+      "id": 19,
+      "prompt": "Scrie un fi\u0219ier scratch/rezumat.md cu titlul '# Rezumat' \u0219i o list\u0103 de 3 puncte",
+      "expected": "write_file",
+      "called": "write_file",
+      "args_valid": true,
+      "passed": true,
+      "note": "Correct tool 'write_file', valid JSON: {'path': 'scratch/rezumat.md', 'content': '# Rezumat\\n\\n- Punctul 1: Descrierea primului aspect important\\n- Punctul 2: Descrierea al doilea aspect important\\n- Punctul 3: Descrierea al treilea aspect important\\n'}",
+      "time_s": 3.26
+    },
+    {
+      "id": 20,
+      "prompt": "Explic\u0103-mi \u00een 2 fraze cum func\u021bioneaz\u0103 algoritmul QuickSort.",
+      "expected": null,
+      "called": null,
+      "args_valid": false,
+      "passed": true,
+      "note": "Correctly responded directly without tool call",
+      "time_s": 3.69
+    }
+  ]
+}

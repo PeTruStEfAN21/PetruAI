@@ -1,0 +1,69 @@
+name: flutter_template
+description: "PetruAI universal offline pub cache template"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.13.5
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+
+  # stare / arhitectură
+  provider: any
+  flutter_riverpod: any
+  riverpod_annotation: any
+  flutter_bloc: any
+  bloc: any
+  equatable: any
+  get_it: any
+
+  # navigare / UI
+  go_router: any
+  google_fonts: any
+  flutter_svg: any
+  cached_network_image: any
+  shimmer: any
+  flutter_animate: any
+  intl: any
+
+  # rețea / date
+  http: any
+  dio: any
+  shared_preferences: any
+  sqflite: any
+  path_provider: any
+  path: any
+  hive: any
+  hive_flutter: any
+  supabase_flutter: any
+  web_socket_channel: any
+
+  # device
+  url_launcher: any
+  image_picker: any
+  permission_handler: any
+  connectivity_plus: any
+  package_info_plus: any
+
+  # codegen / modele
+  freezed_annotation: any
+  json_annotation: any
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^6.0.0
+  very_good_analysis: any
+  build_runner: any
+  freezed: any
+  json_serializable: any
+  mocktail: any
+  mockito: any
+
+flutter:
+  uses-material-design: true

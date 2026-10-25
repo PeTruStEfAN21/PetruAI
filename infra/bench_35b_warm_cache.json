@@ -1,0 +1,11 @@
+{
+  "step1_prompt_tokens": 14988,
+  "step1_time_s": 103.532706900005,
+  "step2_cached_tokens": 14472,
+  "step2_delta_tokens": 667,
+  "step2_prefill_ms": 4869.63,
+  "step2_generated_tokens": 300,
+  "step2_decode_ms": 23743.455,
+  "step2_decode_tok_s": 12.592944034471815,
+  "step2_total_wall_s": 28.640211599995382
+}

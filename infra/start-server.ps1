@@ -26,14 +26,14 @@ if (-not (Test-Path $server)) {
 switch ($Model) {
     "4b" {
         $modelFile = Join-Path $modelsDir "Qwen3.5-4B.IQ4_XS.gguf"
-        $args = @("-m", $modelFile, "-ngl", "99", "-c", $ContextSize,
+        $args = @("-m", $modelFile, "-ngl", "99", "-c", $ContextSize, "-np", "1",
                   "--port", $Port, "--flash-attn", "on", "--jinja",
                   "--cache-type-k", "q8_0", "--cache-type-v", "q8_0")
         Write-Host "=== Starting Qwen3.5-4B (fully in VRAM, ~51 tok/s) ===" -ForegroundColor Cyan
     }
     "9b" {
         $modelFile = Join-Path $modelsDir "Qwen3.5-9B.IQ4_XS.gguf"
-        $args = @("-m", $modelFile, "-ngl", "99", "-c", $ContextSize,
+        $args = @("-m", $modelFile, "-ngl", "99", "-c", $ContextSize, "-np", "1",
                   "--port", $Port, "--flash-attn", "on", "--jinja",
                   "--cache-type-k", "q8_0", "--cache-type-v", "q8_0")
         Write-Host "=== Starting Qwen3.5-9B (fully in VRAM, ~32 tok/s) ===" -ForegroundColor Cyan
@@ -41,7 +41,7 @@ switch ($Model) {
     "35b" {
         $modelFile = Join-Path $modelsDir "Qwen3.6-35B-A3B-UD-IQ4_XS.gguf"
         # MoE expert offload: all expert weights on CPU, attention & embeddings on GPU
-        $args = @("-m", $modelFile, "-ngl", "99", "--cpu-moe",
+        $args = @("-m", $modelFile, "-ngl", "99", "--cpu-moe", "-np", "1",
                   "-c", $ContextSize, "--port", $Port,
                   "--flash-attn", "on", "--jinja",
                   "--cache-type-k", "q8_0", "--cache-type-v", "q8_0",
