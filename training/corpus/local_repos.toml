@@ -1,0 +1,106 @@
+# PetruAI — Catalog repo-uri locale pentru dataset de antrenare
+# Generat la 2026-10-25 pe baza scanării Desktop/ și Documents/Proiecte/
+# Criterii: deduplicare (păstrată clona cea mai recentă), excluse fișiere CAD și CV/cover letter.
+
+[[repo]]
+name = "PJR-Accesibility"
+path = "C:/Users/stefa/Desktop/PJR-Accesibility"
+remote = "https://github.com/PeTruStEfAN21/PJR-Accesibility.git"
+commits = 131
+last_commit = "df9c3118d6334eac13ebafc11988a811d3d1d52c"
+last_commit_date = "2026-10-23T11:47:54+03:00"
+languages = ["TypeScript", "JavaScript", "React", "Next.js", "CSS"]
+description = "Platformă web de accesibilitate și asistență (Next.js, Playwright MCP, Docker, audio/voice processing)"
+notes = "Deduplicat: preferat în locul Desktop/PRJ-ACC (1 commit)"
+
+[[repo]]
+name = "SITE-UBC"
+path = "C:/Users/stefa/Desktop/SITE-UBC"
+remote = "https://github.com/PeTruStEfAN21/SITE-UBC.git"
+commits = 47
+last_commit = "984d805ea59693b568b05c43eda899230513039c"
+last_commit_date = "2026-10-25T11:08:42+02:00"
+languages = ["JavaScript", "Node.js", "Express", "SCSS", "HTML"]
+description = "Platformă web de producție pentru stația de betoane Union Business Company (Express, SCSS, Render, EJS)"
+notes = "Deduplicat: preferat în locul Documents/Proiecte/SITE-UBC (40 commits)"
+
+[[repo]]
+name = "SITE-BATERII"
+path = "C:/Users/stefa/Desktop/SITE-BATERII"
+remote = "https://github.com/PeTruStEfAN21/site-baterii.git"
+commits = 19
+last_commit = "566f6b345982823dc788a2ffd9604178ce2c5026"
+last_commit_date = "2026-10-25T12:39:08+02:00"
+languages = ["TypeScript", "Next.js", "React", "CSS"]
+description = "Aplicație e-commerce și catalog produse pentru soluții de baterii industriale și auto"
+
+[[repo]]
+name = "Volleyball-Manager"
+path = "C:/Users/stefa/Documents/Proiecte/Volleyball-Manager"
+remote = "https://github.com/PeTruStEfAN21/Volleyball-Manager.git"
+commits = 231
+last_commit = "b3ec34b7b2528bf552c25857716cc04123121f0b"
+last_commit_date = "2026-02-02T20:36:11+02:00"
+languages = ["C++", "CMake"]
+description = "Simulator complex de management echipă de volei (simulare meciuri punct cu punct, OOP avansat, gestiune lot și ligă)"
+
+[[repo]]
+name = "ALaCarteOS"
+path = "C:/Users/stefa/Documents/Proiecte/ALaCarteOS"
+remote = "https://github.com/ALaCarteOS-ORG/ALaCarteOS.git"
+commits = 40
+last_commit = "93c9facf6493ec28505ed0865535aa99d275f430"
+last_commit_date = "2026-06-17T12:53:49+03:00"
+languages = ["Python", "Django", "JavaScript", "HTML", "CSS"]
+description = "Platformă management restaurant cu acces QR code, comenzi fără cont, asistent AI și dashboard bucătari/ospătari prin WebSockets"
+
+[[repo]]
+name = "Website-Technologies-Scraper"
+path = "C:/Users/stefa/Documents/Proiecte/Website-Technologies-Scraper"
+remote = "https://github.com/PeTruStEfAN21/Website-Technologies-Scraper.git"
+commits = 1
+last_commit = "da326ed26ef29840e8d0886b12fc50947bc3a020"
+last_commit_date = "2026-10-06T15:55:06+03:00"
+languages = ["Python"]
+description = "Detector modular de tehnologii web (amprente HTTP headers, cookies, scripturi, meta tags) cu interfață dashboard"
+
+[[repo]]
+name = "Proiect-Personal-SQL-Developer-Site-de-Streaming"
+path = "C:/Users/stefa/Documents/Proiecte/Proiect-Personal-SQL-Developer-Site-de-Streaming"
+remote = "https://github.com/PeTruStEfAN21/Proiect-Personal-SQL-Developer-Site-de-Streaming.git"
+commits = 3
+last_commit = "3adf6849e9cae3c5595c49e47bd48d0de858e16e"
+last_commit_date = "2026-03-19T17:18:54+02:00"
+languages = ["SQL", "PL/SQL", "C#"]
+description = "Platformă de gestiune cinema și recenzii: bază de date relațională avansată Oracle SQL (3NF, triggere, proceduri) integrată cu interfață grafică C#"
+
+[[repo]]
+name = "Proiect-Tehnici-Web"
+path = "C:/Users/stefa/Documents/Proiecte/Proiect-Tehnici-Web"
+remote = "https://github.com/PeTruStEfAN21/Proiect-Tehnici-Web.git"
+commits = 6
+last_commit = "ee76bd19c00a6ebe17c500dff43259eec89694d4"
+last_commit_date = "2026-05-03T22:33:14+03:00"
+languages = ["JavaScript", "HTML", "CSS"]
+description = "Magazin online SportX creat pentru tehnici web avansate (frontend Vanilla JS, CSS responsiv, interactivitate)"
+
+[[repo]]
+name = "Universal-Workflow"
+path = "C:/Users/stefa/Desktop/Universal-Workflow"
+remote = "https://github.com/PJR-AC/Universal-Workflow.git"
+commits = 3
+last_commit = "b744f4175ba0c09b3b20eec05323aee14e0e783b"
+last_commit_date = "2026-10-21T22:36:53+03:00"
+languages = ["Python"]
+description = "Orchestrare fluxuri multi-agent în Python cu roluri de QA și execuție automată"
+
+# ─── Proiecte locale non-git (identificate pe disc) ───
+# - Desktop/NarutoBot: Bot de automatizare în Python cu Android Debug Bridge (ADB), captură de ecran și OCR (adb.py, bot.py, capture.py, ocr.py)
+# - Desktop/laburi AI: Lucrări de laborator Python pentru inteligență artificială (lab1)
+# - Desktop/Robotica: Workspace robotică (lab2)
+
+# ─── Excluse din dataset ───
+# - Documents/Proiecte/Trotineta-Autocad: doar fișiere CAD DWG/BAK
+# - Desktop/PRJ-ACC: clonă dublă mai veche a PJR-Accesibility (1 commit)
+# - Documents/Proiecte/SITE-UBC: clonă dublă mai veche a SITE-UBC (40 commits vs 47 pe Desktop)
+# - Fișiere CV / cover letter: cv_stefan_petru_stoiciu.*, cover_letter_google.*
