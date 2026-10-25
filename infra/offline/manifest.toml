@@ -1,0 +1,72 @@
+# PetruAI — manifest „universal fullstack” pentru lucru offline
+# Scop: tot ce e listat aici trebuie să fie în cache local înainte de plecare (~2026-11-01),
+# ca `pip install`, `npm install` și `flutter pub get` să meargă fără internet.
+# Lista e o propunere (2026-10-25);se poate extinde. Versiunile se fixează la momentul descărcării.
+
+[python]
+# `pip download -d infra/offline/wheels/py314 ...` pentru Python 3.14 (interpretorul agentului și al proiectelor)
+packages = [
+  # web / API
+  "fastapi", "uvicorn[standard]", "starlette", "flask", "django", "djangorestframework",
+  "pydantic", "pydantic-settings", "python-multipart", "jinja2", "httpx", "requests", "websockets", "aiofiles",
+  # date / stocare
+  "sqlalchemy", "alembic", "psycopg[binary]", "asyncpg", "aiosqlite", "redis", "supabase",
+  # auth / securitate
+  "passlib[bcrypt]", "bcrypt", "pyjwt", "python-dotenv", "cryptography",
+  # CLI / util
+  "typer", "click", "rich", "pyyaml", "tomli-w", "orjson", "python-dateutil", "pillow",
+  # test / calitate
+  "pytest", "pytest-asyncio", "pytest-cov", "hypothesis", "ruff", "black", "mypy",
+  # date / ML ușor
+  "numpy", "pandas", "matplotlib",
+  # agentul însuși (dependențele pachetului petru)
+  "prompt_toolkit", "openai", "watchdog", "tree-sitter", "tree-sitter-language-pack", "sqlite-vec", "huggingface_hub", "tiktoken", "tomlkit", "platformdirs",
+]
+
+[node]
+# Se umple cache-ul npm printr-un proiect șablon în infra/offline/npm-template/ cu toate pachetele instalate
+# (`npm install`, apoi `npm cache verify`). Offline: `npm install --offline` cu același package-lock.
+packages = [
+  # TypeScript / tooling
+  "typescript", "tsx", "ts-node", "@types/node", "vitest", "jest", "ts-jest", "@types/jest", "eslint", "prettier", "nodemon", "concurrently", "dotenv", "zod",
+  # backend
+  "express", "@types/express", "cors", "@types/cors", "helmet", "morgan", "fastify", "hono", "socket.io", "ws", "@types/ws",
+  "bcrypt", "@types/bcrypt", "jsonwebtoken", "@types/jsonwebtoken", "cookie-parser", "multer",
+  # date
+  "pg", "@types/pg", "better-sqlite3", "@types/better-sqlite3", "prisma", "@prisma/client", "drizzle-orm", "drizzle-kit", "mongoose", "@supabase/supabase-js", "ioredis",
+  # frontend
+  "react", "react-dom", "@types/react", "@types/react-dom", "vite", "@vitejs/plugin-react", "react-router-dom", "@tanstack/react-query", "zustand",
+  "next", "tailwindcss", "postcss", "autoprefixer", "axios", "clsx", "date-fns",
+  "vue", "@vitejs/plugin-vue", "svelte",
+  # test e2e / componente
+  "@testing-library/react", "@testing-library/jest-dom", "jsdom", "supertest", "@types/supertest",
+]
+global_tools = ["pnpm", "yarn", "create-vite", "create-next-app"]
+
+[flutter]
+# Se umple pub cache printr-un proiect șablon `flutter create infra/offline/flutter-template` cu dependențele de mai jos
+# (`flutter pub get`). Offline: `flutter pub get --offline`. flutter_test vine cu SDK-ul.
+packages = [
+  # stare / arhitectură
+  "provider", "flutter_riverpod", "riverpod_annotation", "flutter_bloc", "bloc", "equatable", "get_it",
+  # navigare / UI
+  "go_router", "google_fonts", "flutter_svg", "cached_network_image", "shimmer", "flutter_animate", "intl",
+  # rețea / date
+  "http", "dio", "shared_preferences", "sqflite", "path_provider", "path", "hive", "hive_flutter", "supabase_flutter", "web_socket_channel",
+  # device
+  "url_launcher", "image_picker", "permission_handler", "connectivity_plus", "package_info_plus",
+  # codegen / modele
+  "freezed", "freezed_annotation", "json_annotation", "json_serializable", "build_runner",
+  # test / calitate
+  "mocktail", "mockito", "flutter_lints", "very_good_analysis",
+]
+# Documentație offline (clone superficiale, în infra/offline/docs/)
+docs_repos = ["https://github.com/flutter/website", "https://github.com/flutter/samples", "https://github.com/dart-lang/site-www"]
+
+[training]
+# Mediu separat Python 3.12 (uv). `pip download -d infra/offline/wheels/py312 ...` cu wheels CUDA.
+python_version = "3.12"
+packages = ["torch --index-url https://download.pytorch.org/whl/cu126", "unsloth", "unsloth_zoo", "trl", "peft", "transformers", "datasets", "accelerate", "bitsandbytes", "sentencepiece", "protobuf", "evaluate", "datasketch", "gguf", "huggingface_hub", "scancode-toolkit"]
+base_models = ["Qwen/Qwen3.5-4B"]            # safetensors, pentru QLoRA pe laptop
+optional_models = ["Qwen/Qwen3.5-9B"]        # doar dacă utilizatorul vrea antrenare în cloud mai târziu
+tools = ["uv", "git-lfs"]
