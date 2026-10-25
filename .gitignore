@@ -24,3 +24,10 @@ Desktop.ini
 # Environment / Secrets
 .env
 .env.local
+
+# Python / dev
+.venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.petru/journal.sqlite

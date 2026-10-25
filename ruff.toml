@@ -1,0 +1,5 @@
+line-length = 110
+extend-exclude = ["infra", "training", "research_notes", "reports"]
+
+[lint]
+select = ["E", "F", "I", "B", "UP"]
