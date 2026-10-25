@@ -1,0 +1,26 @@
+# Models and weights (too large for git)
+infra/llama.cpp/models/
+*.gguf
+*.bin
+
+# Binaries and archives
+infra/llama.cpp/bin/
+*.zip
+*.tar.gz
+*.exe
+*.dll
+
+# Cache and temporary files
+.cache/
+__pycache__/
+*.pyc
+node_modules/
+
+# OS artifacts
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Environment / Secrets
+.env
+.env.local
