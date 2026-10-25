@@ -1,0 +1,50 @@
+{
+  "choices": [
+    {
+      "finish_reason": "tool_calls",
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "",
+        "reasoning_content": "The user wants me to check the git status of the repository to see what changes exist in the project.\n",
+        "tool_calls": [
+          {
+            "type": "function",
+            "function": {
+              "name": "git_status",
+              "arguments": "{\"verbose\":true}"
+            },
+            "id": "Y1R88R8PG8nWzuj01WYbZU54aUun1nUD"
+          }
+        ]
+      }
+    }
+  ],
+  "created": 1792945486,
+  "model": "C:\\Users\\stefa\\Desktop\\PetruAI\\infra\\llama.cpp\\models\\Qwen3.6-35B-A3B-UD-IQ4_XS.gguf",
+  "system_fingerprint": "b11877-e321bdad7",
+  "object": "chat.completion",
+  "usage": {
+    "completion_tokens": 51,
+    "prompt_tokens": 4214,
+    "total_tokens": 4265,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    }
+  },
+  "id": "chatcmpl-g63bmJb90KCQ4EqsNVxUGAJyH9yrio0o",
+  "timings": {
+    "cache_n": 0,
+    "prompt_n": 4214,
+    "prompt_ms": 27189.882,
+    "prompt_per_token_ms": 6.452273849074514,
+    "prompt_per_second": 154.98412240259077,
+    "predicted_n": 51,
+    "predicted_ms": 3715.3,
+    "predicted_per_token_ms": 74.306,
+    "predicted_per_second": 13.457863429601916
+  },
+  "_total_wall_time": 30.986140799999703,
+  "_vram_used_mb": 2779,
+  "_vram_total_mb": 6141
+}

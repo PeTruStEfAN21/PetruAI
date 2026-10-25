@@ -1,0 +1,50 @@
+{
+  "choices": [
+    {
+      "finish_reason": "tool_calls",
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "",
+        "reasoning_content": "Utilizatorul vrea s\u0103 verifice starea depozitului git, a\u0219a c\u0103 voi rula comanda git_status pentru a inspecta fi\u0219ierele neurm\u0103rite, modificate \u0219i ad\u0103ugate.\n",
+        "tool_calls": [
+          {
+            "type": "function",
+            "function": {
+              "name": "git_status",
+              "arguments": "{\"verbose\":false}"
+            },
+            "id": "4ZHxmqo6yyhBXsodutYl2KdVu9HL9NM3"
+          }
+        ]
+      }
+    }
+  ],
+  "created": 1792945413,
+  "model": "C:\\Users\\stefa\\Desktop\\PetruAI\\infra\\llama.cpp\\models\\Qwen3.5-9B.IQ4_XS.gguf",
+  "system_fingerprint": "b11877-e321bdad7",
+  "object": "chat.completion",
+  "usage": {
+    "completion_tokens": 76,
+    "prompt_tokens": 4214,
+    "total_tokens": 4290,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    }
+  },
+  "id": "chatcmpl-GdtrGFY7b9JstJIxm5fRACFT9JOmEcAd",
+  "timings": {
+    "cache_n": 0,
+    "prompt_n": 4214,
+    "prompt_ms": 2436.565,
+    "prompt_per_token_ms": 0.5782071665875653,
+    "prompt_per_second": 1729.4839251158905,
+    "predicted_n": 76,
+    "predicted_ms": 2174.448,
+    "predicted_per_token_ms": 28.992639999999998,
+    "predicted_per_second": 34.491512328646174
+  },
+  "_total_wall_time": 4.625024599998142,
+  "_vram_used_mb": 4897,
+  "_vram_total_mb": 6141
+}
