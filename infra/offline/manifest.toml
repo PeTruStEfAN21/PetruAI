@@ -24,6 +24,7 @@ packages = [
 ]
 
 [node]
+# Fara pachete native (better-sqlite3, bcrypt): nu au binare pentru Node 24 si cer Windows SDK. SQLite = modulul inclus node:sqlite; parole = bcryptjs.
 # Se umple cache-ul npm printr-un proiect șablon în infra/offline/npm-template/ cu toate pachetele instalate
 # (`npm install`, apoi `npm cache verify`). Offline: `npm install --offline` cu același package-lock.
 packages = [
@@ -31,9 +32,9 @@ packages = [
   "typescript", "tsx", "ts-node", "@types/node", "vitest", "jest", "ts-jest", "@types/jest", "eslint", "prettier", "nodemon", "concurrently", "dotenv", "zod",
   # backend
   "express", "@types/express", "cors", "@types/cors", "helmet", "morgan", "fastify", "hono", "socket.io", "ws", "@types/ws",
-  "bcrypt", "@types/bcrypt", "jsonwebtoken", "@types/jsonwebtoken", "cookie-parser", "multer",
+  "bcryptjs", "@types/bcryptjs", "jsonwebtoken", "@types/jsonwebtoken", "cookie-parser", "multer",
   # date
-  "pg", "@types/pg", "better-sqlite3", "@types/better-sqlite3", "prisma", "@prisma/client", "drizzle-orm", "drizzle-kit", "mongoose", "@supabase/supabase-js", "ioredis",
+  "pg", "@types/pg", "prisma", "@prisma/client", "drizzle-orm", "drizzle-kit", "mongoose", "@supabase/supabase-js", "ioredis",
   # frontend
   "react", "react-dom", "@types/react", "@types/react-dom", "vite", "@vitejs/plugin-react", "react-router-dom", "@tanstack/react-query", "zustand",
   "next", "tailwindcss", "postcss", "autoprefixer", "axios", "clsx", "date-fns",
