@@ -30,9 +30,9 @@ class ToolRegistry:
 
 def default_registry(ctx_online: bool) -> ToolRegistry:
     """All built-in tools. `ctx_online` reserves room for online-only tools (none yet)."""
-    from petru.tools import fs
+    from petru.tools import checks, fs, git, shell
 
     registry = ToolRegistry()
-    for tool in fs.TOOLS:
+    for tool in [*fs.TOOLS, shell.shell, git.git, checks.run_checks]:
         registry.register(tool)
     return registry
