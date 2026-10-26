@@ -432,3 +432,11 @@ def test_no_length_limit_when_max_tokens_is_zero():
     assert (
         TrajConfig(tasks_dir=Path("."), out=Path("t.jsonl")).max_tokens == 0
     )  # every verified example is kept
+
+
+def test_tool_results_lose_terminal_color_codes():
+    from petru_train.trajectories import normalize_messages
+
+    esc = chr(27)
+    messages = [{"role": "tool", "tool_call_id": "c1", "content": f"{esc}[33mwarn{esc}[39m ok"}]
+    assert normalize_messages(messages)[0]["content"] == "warn ok"

@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import subprocess
 import sys
 import tempfile
@@ -69,6 +70,7 @@ CONTINUE_PREFIX = "Continue with the confirmed plan using tools."
 # What the agent answers a looping ask_user with (kept in sync with petru/tools/interaction.py).
 QUESTION_GUARDS = ("You already asked this question.", "That is enough design questions")
 INVALID_CALL = "Invalid tool call:"  # petru/agent/loop.py, Agent._invalid
+ANSI_RE = re.compile(r"\x1b\[[0-9;?]*[ -/]*[@-~]")  # terminal color codes (petru/tools/shell.py, _ANSI_RE)
 
 
 def normalize_messages(messages: list[dict]) -> list[dict]:
@@ -109,6 +111,8 @@ def normalize_messages(messages: list[dict]) -> list[dict]:
         if len(calls) == 1 and following.get("role") == "tool" and reply.startswith(INVALID_CALL):
             i += 2  # a malformed call; the corrected one that follows is what the model should learn
             continue
+        if message.get("role") == "tool" and ANSI_RE.search(str(message.get("content") or "")):
+            message = {**message, "content": ANSI_RE.sub("", message["content"])}  # the agent strips them now
         out.append(message)
         i += 1
     return out
