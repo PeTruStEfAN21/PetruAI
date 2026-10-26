@@ -3,6 +3,7 @@ rewritten, so a small model cannot erase what it learned earlier."""
 
 from __future__ import annotations
 
+import hashlib
 import os
 import re
 import unicodedata
@@ -15,6 +16,7 @@ MEMORY_TYPES = ("user", "feedback", "project", "reference")
 INDEX_FILE = "MEMORY.md"
 INDEX_MAX_LINES = 200
 RESERVED = {
+    "memory",  # memory.md is MEMORY.md on a case-insensitive file system
     "con",
     "prn",
     "aux",
@@ -40,9 +42,9 @@ def slugify(name: str) -> str:
     """A file-safe slug: ascii [a-z0-9-], at most 60 chars, never empty, never a Windows device name."""
     ascii_name = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode("ascii").lower()
     slug = re.sub(r"[^a-z0-9]+", "-", ascii_name).strip("-")[:60].strip("-")
-    if not slug:
-        slug = "memory"
-    if slug in RESERVED:
+    if not slug:  # Cyrillic, CJK, symbols only: distinct names must still get distinct files
+        slug = "note-" + hashlib.sha1(name.encode("utf-8")).hexdigest()[:8]
+    if slug in RESERVED:  # Windows device names, and memory.md which IS MEMORY.md on NTFS
         slug = f"{slug}-note"
     return slug
 

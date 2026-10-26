@@ -50,6 +50,22 @@ def test_memory_slug_is_safe(tmp_path, name):
     assert memory.path.parent == tmp_path / "mem"
 
 
+@pytest.mark.parametrize("name", ["Memory", "memory", "MEMORY", "", "!!!"])
+def test_a_note_never_collides_with_the_index_file(tmp_path, name):
+    store = MemoryStore(tmp_path / "mem")
+    memory = store.remember(name, "d", "user", "the body")
+    assert memory.path.name.lower() != "memory.md"
+    assert store.get(name).body == "the body"
+    assert store.index_text().count("\n") == 0  # exactly one index line
+
+
+def test_distinct_non_latin_names_get_distinct_notes(tmp_path):
+    store = MemoryStore(tmp_path / "mem")
+    store.remember("Привет", "d", "user", "one")
+    store.remember("你好", "d", "user", "two")
+    assert store.get("Привет").body == "one" and store.get("你好").body == "two"
+
+
 def test_index_is_capped_but_files_are_kept(tmp_path):
     store = MemoryStore(tmp_path / "mem")
     for i in range(205):
