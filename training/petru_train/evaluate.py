@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
 import subprocess
@@ -20,6 +21,7 @@ TRAINING_DIR = Path(__file__).resolve().parents[1]
 REPO_ROOT = TRAINING_DIR.parent
 REQUESTS_FILE = TRAINING_DIR / "eval" / "tool_requests.json"
 TASKS_DIR = TRAINING_DIR / "tasks"
+TASK_LIMIT = 6  # the first tasks by name are the evaluated ones
 BASE_GGUF = REPO_ROOT / "infra" / "llama.cpp" / "models" / "Qwen3.5-4B.IQ4_XS.gguf"
 TOOL_TOLERANCE = 0.05
 EVAL_SYSTEM = (
@@ -35,6 +37,7 @@ class EvalResult:
     tool_validity: float
     task_pass: float
     details: dict
+    signature: str = ""  # which tasks and requests were measured; "" for results saved before it existed
 
     def save(self, path: Path) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -45,8 +48,20 @@ class EvalResult:
         return cls(**json.loads(path.read_text(encoding="utf-8")))
 
 
+def tasks_signature(tasks_dir: Path, requests_file: Path, limit: int) -> str:
+    """Hash of exactly what tool_validity and task_pass measure, so a stale baseline is noticed."""
+    digest = hashlib.sha1(f"limit={limit}".encode())
+    digest.update(requests_file.read_bytes() if requests_file.is_file() else b"")
+    for task in sorted(tasks_dir.glob("*.toml"))[:limit]:
+        digest.update(task.name.encode("utf-8"))
+        digest.update(task.read_bytes())
+    return digest.hexdigest()[:16]
+
+
 def gate(base: EvalResult, cand: EvalResult) -> tuple[bool, str]:
     reasons = []
+    if base.signature and cand.signature and base.signature != cand.signature:
+        reasons.append("baseline and candidate were measured on different task sets: re-run the baseline")
     if math.isnan(base.loss) or math.isnan(cand.loss):  # NaN compares False to everything: it must not pass
         reasons.append(f"loss missing: base={base.loss} candidate={cand.loss}")
     elif cand.loss > base.loss:
@@ -145,7 +160,11 @@ def run_task_cli(task_path: Path, base_url: str, ctx_tokens: int) -> dict:
 
 
 def task_pass(
-    base_url: str, tasks_dir: Path, ctx_tokens: int, limit: int = 6, runner: TaskRunner = run_task_cli
+    base_url: str,
+    tasks_dir: Path,
+    ctx_tokens: int,
+    limit: int = TASK_LIMIT,
+    runner: TaskRunner = run_task_cli,
 ) -> tuple[float, list[dict]]:
     tasks = sorted(tasks_dir.glob("*.toml"))[:limit]
     details = []
@@ -263,7 +282,7 @@ def evaluate(
     requests_file: Path = REQUESTS_FILE,
     port: int = 8081,
     ctx: int = 16384,
-    limit: int = 6,
+    limit: int = TASK_LIMIT,
     log: Path | None = None,
 ) -> EvalResult:
     """Tool validity and task pass rate of a GGUF served by llama-server; the loss comes from training."""
@@ -277,7 +296,8 @@ def evaluate(
         passed, task_details = task_pass(base_url, tasks_dir, ctx, limit)
     finally:
         stop(proc)
-    return EvalResult(loss, validity, passed, {"tool_validity": validity_details, "task_pass": task_details})
+    details = {"tool_validity": validity_details, "task_pass": task_details}
+    return EvalResult(loss, validity, passed, details, tasks_signature(tasks_dir, requests_file, limit))
 
 
 def main(argv: list[str] | None = None) -> int:

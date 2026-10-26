@@ -23,6 +23,41 @@ def test_gate_inputs_take_both_losses_from_the_same_training_run():
     assert gate(b, c)[0]
 
 
+def test_tasks_signature_tracks_the_evaluated_tasks(tmp_path):
+    from petru_train.evaluate import tasks_signature
+
+    tasks = tmp_path / "tasks"
+    tasks.mkdir()
+    for name in ("a", "b", "c"):
+        (tasks / f"{name}.toml").write_text(f'prompt = "{name}"\n', encoding="utf-8")
+    requests = tmp_path / "req.json"
+    requests.write_text("[]", encoding="utf-8")
+    first = tasks_signature(tasks, requests, limit=2)
+    (tasks / "c.toml").write_text('prompt = "changed"\n', encoding="utf-8")
+    assert tasks_signature(tasks, requests, limit=2) == first  # c is not among the first two
+    (tasks / "a.toml").write_text('prompt = "changed"\n', encoding="utf-8")
+    assert tasks_signature(tasks, requests, limit=2) != first
+    assert tasks_signature(tasks, requests, limit=3) != tasks_signature(tasks, requests, limit=2)
+
+
+def test_old_results_without_a_signature_still_load(tmp_path):
+    path = tmp_path / "eval_base.json"
+    path.write_text(
+        json.dumps({"loss": 1.0, "tool_validity": 1.0, "task_pass": 0.5, "details": {}}), encoding="utf-8"
+    )
+    assert EvalResult.load(path).signature == ""
+
+
+def test_gate_rejects_results_measured_on_different_task_sets():
+    base = EvalResult(1.0, 0.9, 0.5, {}, signature="aaa")
+    ok, why = gate(base, EvalResult(0.9, 0.9, 0.5, {}, signature="bbb"))
+    assert not ok and "different" in why
+    assert gate(base, EvalResult(0.9, 0.9, 0.5, {}, signature="aaa"))[0]
+    assert gate(EvalResult(1.0, 0.9, 0.5, {}), EvalResult(0.9, 0.9, 0.5, {}, signature="bbb"))[
+        0
+    ]  # unknown: allowed
+
+
 def test_gate_rejects_a_missing_loss():
     nan = float("nan")
     good = EvalResult(loss=1.0, tool_validity=0.9, task_pass=0.5, details={})

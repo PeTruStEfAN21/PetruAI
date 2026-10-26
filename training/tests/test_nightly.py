@@ -92,3 +92,25 @@ def test_train_receives_the_remaining_time_budget(tmp_path):
 def test_run_context_paths(tmp_path):
     ctx = RunContext(run="r1", runs_dir=tmp_path, hours=1.0)
     assert ctx.run_dir == tmp_path / "r1" and ctx.baseline_dir == tmp_path / "baseline"
+
+
+def test_eval_base_is_reused_only_when_its_signature_matches(tmp_path, monkeypatch):
+    import pytest
+
+    from petru_train import evaluate, nightly
+    from petru_train.evaluate import EvalResult
+
+    monkeypatch.setattr(evaluate, "tasks_signature", lambda *a, **k: "current")
+    calls = []
+    monkeypatch.setattr(
+        evaluate, "evaluate", lambda gguf, **kw: calls.append(gguf) or EvalResult(0, 1.0, 0.5, {}, "current")
+    )
+    ctx = RunContext(run="r1", runs_dir=tmp_path, hours=1.0)
+    target = ctx.baseline_dir / "eval_base.json"
+    target.parent.mkdir(parents=True)
+    EvalResult(0, 1.0, 0.5, {}).save(target)  # saved before signatures existed: stale
+    nightly.step_eval_base(ctx)
+    assert len(calls) == 1 and EvalResult.load(target).signature == "current"
+    with pytest.raises(nightly.SkipStep):
+        nightly.step_eval_base(ctx)  # same tasks: reused
+    assert len(calls) == 1

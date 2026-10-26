@@ -134,11 +134,20 @@ def step_export(ctx: RunContext) -> None:
 
 
 def step_eval_base(ctx: RunContext) -> None:
-    from petru_train.evaluate import BASE_GGUF, evaluate
+    from petru_train.evaluate import (
+        BASE_GGUF,
+        REQUESTS_FILE,
+        TASKS_DIR,
+        EvalResult,
+        evaluate,
+        tasks_signature,
+    )
 
     target = ctx.baseline_dir / "eval_base.json"
-    if target.is_file():
-        ctx.skip("baseline already evaluated (tool validity and task pass do not depend on the dataset)")
+    if target.is_file() and EvalResult.load(target).signature == tasks_signature(
+        TASKS_DIR, REQUESTS_FILE, TASK_LIMIT
+    ):
+        ctx.skip("baseline already evaluated on these tasks (they do not depend on the dataset)")
     result = evaluate(BASE_GGUF, log=ctx.baseline_dir / "server.log")
     result.save(target)
     ctx.notes["eval_base"] = f"tools={result.tool_validity} tasks={result.task_pass}"
