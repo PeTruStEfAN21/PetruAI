@@ -36,7 +36,7 @@ class TrajConfig:
     tier: str = "quality"
     samples_per_task: int = 3
     attempts_per_task: int = 4
-    max_tokens: int = 12000
+    max_tokens: int = 0  # 0 = no limit: every verified example is kept, however long
     base_url: str | None = None
     attempt_timeout_s: int = 900
     max_minutes: int | None = None
@@ -52,7 +52,7 @@ def load_traj_config(path: Path = DEFAULT_CONFIG, base_dir: Path | None = None) 
         tier=str(data.get("tier", "quality")),
         samples_per_task=int(data.get("samples_per_task", 3)),
         attempts_per_task=int(data.get("attempts_per_task", 4)),
-        max_tokens=int(data.get("max_tokens", 12000)),
+        max_tokens=int(data.get("max_tokens", 0)),
         base_url=data.get("base_url"),
         attempt_timeout_s=int(data.get("attempt_timeout_s", 900)),
         max_minutes=data.get("max_minutes"),
@@ -205,14 +205,14 @@ def rejection_reason(result: dict, max_tokens: int) -> str:
         ]
         return f"checks failed: {failed[0]}" if failed else "checks failed"
     tokens = int(result.get("tokens") or 0)
-    if tokens > max_tokens:
+    if max_tokens and tokens > max_tokens:
         return f"too long: {tokens} tokens"
     return ""
 
 
 def result_to_sample(result: dict, task_name: str, max_tokens: int) -> Sample | None:
-    """None unless the checks passed, the turn ended normally and the transcript fits the token budget."""
-    if not result.get("passed") or result.get("stop_reason") or int(result.get("tokens") or 0) > max_tokens:
+    """None unless the checks passed, the turn ended normally and the transcript fits max_tokens (0: any)."""
+    if rejection_reason(result, max_tokens):
         return None
     # The recorded system prompt stays: it is what the agent sees at run time (rules, phase, packages).
     messages = normalize_messages(list(result.get("messages", [])))

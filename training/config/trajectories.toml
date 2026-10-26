@@ -4,6 +4,6 @@ out = "data/trajectories.jsonl"
 tier = "default"            # teacher: the 9B passed the three demos; "quality" (35B) is ~3x slower
 samples_per_task = 3
 attempts_per_task = 4
-max_tokens = 12000          # longer transcripts are dropped (past ~6.5k tokens training spills out of VRAM)
+max_tokens = 0              # no limit: the user wants every verified example, however long
 max_minutes = 150           # total budget for the step; round-robin over tasks so every stack gets attempts
 attempt_timeout_s = 900     # one attempt is killed (whole process tree) after 15 minutes

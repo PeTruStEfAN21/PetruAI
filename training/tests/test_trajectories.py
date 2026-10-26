@@ -159,7 +159,7 @@ def test_load_traj_config(tmp_path):
     cfg = load_traj_config(cfg_file, base_dir=tmp_path)
     assert cfg.tasks_dir == tmp_path / "tasks" and cfg.out == tmp_path / "data" / "trajectories.jsonl"
     assert cfg.tier == "default" and cfg.samples_per_task == 2 and cfg.attempts_per_task == 4
-    assert cfg.max_tokens == 12000 and cfg.base_url is None
+    assert cfg.max_tokens == 0 and cfg.base_url is None
 
 
 def test_rejection_reason_names_what_went_wrong():
@@ -421,3 +421,14 @@ def test_the_build_part_sees_the_confirmed_plan_like_the_agent_did():
     _, build = split_by_phase(sample, build_prompt, load_design_prompt())
     decisions = f"## DECISIONS (final; the latest entry wins)\n- Q -> A\n\n{OFFLINE}"
     assert build.messages[0]["content"] == f"{build_prompt}\n\n## Confirmed plan: T\n1. a\n\n{decisions}"
+
+
+def test_no_length_limit_when_max_tokens_is_zero():
+    from petru_train.trajectories import rejection_reason
+
+    long = good(tokens=50_000)
+    assert result_to_sample(long, "python_x", max_tokens=0) is not None
+    assert rejection_reason(long, 0) == ""
+    assert (
+        TrajConfig(tasks_dir=Path("."), out=Path("t.jsonl")).max_tokens == 0
+    )  # every verified example is kept
