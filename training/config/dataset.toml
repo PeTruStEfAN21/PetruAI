@@ -1,8 +1,8 @@
 # Dataset build configuration. Paths are relative to training/.
 local_repos = "corpus/local_repos.toml"     # the user's own repositories (task E catalog)
-# github_repos = "corpus/repos.toml"        # enabled once the permissive corpus is cloned
+github_repos = "corpus/repos.toml"            # permissive corpus, 42 repos cloned 2026-10-26
 out_dir = "data"
 max_commits_per_repo = 300
 eval_frac = 0.05
 max_share = 0.4
-extra_jsonl = []                            # e.g. "data/trajectories.jsonl"
+extra_jsonl = ["data/trajectories.jsonl"]   # verified trajectories; missing file = ignored

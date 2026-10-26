@@ -1,0 +1,7 @@
+# Trajectory generation. Paths are relative to training/.
+tasks_dir = "tasks"
+out = "data/trajectories.jsonl"
+tier = "default"            # teacher: the 9B passed the three demos; "quality" (35B) is ~3x slower
+samples_per_task = 3
+attempts_per_task = 4
+max_tokens = 12000          # transcripts above this are dropped (the laptop trains at 4096 context anyway)
