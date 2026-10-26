@@ -19,7 +19,7 @@ from petru.tools.registry import default_registry
 from petru.tui.commands import HELP_TEXT, parse_command
 from petru.tui.rich_ui import NonInteractiveUI, RichUI
 
-TIERS = ("default", "quality", "fast")
+TIERS = ("default", "quality", "fast", "tuned")
 
 
 def make_provider(base_url: str) -> OpenAICompatProvider:

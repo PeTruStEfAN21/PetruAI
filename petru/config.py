@@ -45,6 +45,9 @@ def default_tiers() -> dict[str, Tier]:
     }
 
 
+TUNED_FILE = "Qwen3.5-4B-petru.gguf"  # written by training/petru_train/export.py when the gate passes
+
+
 def find_repo_root(start: Path) -> Path:
     """Walk up from `start` to the directory holding infra/llama.cpp or the petru pyproject."""
     for candidate in [start.resolve(), *start.resolve().parents]:
@@ -72,6 +75,8 @@ def load_config(repo_root: Path | None = None) -> Config:
         server_exe=root / "infra" / "llama.cpp" / "bin" / "llama-server.exe",
         tiers=default_tiers(),
     )
+    if (cfg.models_dir / TUNED_FILE).is_file():  # a promoted fine-tune (training pipeline)
+        cfg.tiers["tuned"] = Tier("tuned", TUNED_FILE, ctx=32768)
     user = _user_config()
     server = user.get("server", {})
     if "port" in server:
