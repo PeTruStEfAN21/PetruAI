@@ -126,7 +126,39 @@ def repl(agent: Agent, ui: RichUI, manager: ServerManager, cfg, online: bool, co
             console.print(f"Unknown command /{cmd.name}. /help lists the commands.", markup=False)
 
 
-SUBCOMMANDS = ("memory", "index")
+SUBCOMMANDS = ("memory", "index", "watch")
+
+
+def _watch_command(argv: list[str]) -> int:
+    import time
+
+    from petru.journal.store import Journal
+    from petru.journal.watcher import ProjectWatcher
+
+    parser = argparse.ArgumentParser(prog="petru watch", description="Journal every save in the project.")
+    parser.add_argument("--project", default=".")
+    parser.add_argument("--seconds", type=float, default=None, help="stop after this long (default: Ctrl+C)")
+    ns = parser.parse_args(argv)
+    project = Path(ns.project).resolve()
+    journal = Journal(project / ".petru" / "journal.sqlite")
+    known = journal.snapshot_all(project)
+    watcher = ProjectWatcher(project, journal)
+    watcher.start()
+    print(f"Watching {project} ({known} files snapshotted). Ctrl+C to stop.", flush=True)
+    seen = time.time()
+    deadline = None if ns.seconds is None else time.monotonic() + ns.seconds
+    try:
+        while deadline is None or time.monotonic() < deadline:
+            time.sleep(0.2)
+            for event in journal.recent_events(since_ts=seen):
+                print(f"{time.strftime('%H:%M:%S', time.localtime(event.ts))} {event.kind:8} {event.path}")
+                seen = event.ts + 1e-6
+    except KeyboardInterrupt:
+        pass
+    finally:
+        watcher.stop()
+        journal.close()
+    return 0
 
 
 def _index_command(argv: list[str]) -> int:
@@ -204,6 +236,8 @@ def run_subcommand(argv: list[str]) -> int | None:
         return None
     if argv[0] == "index":
         return _index_command(argv[1:])
+    if argv[0] == "watch":
+        return _watch_command(argv[1:])
     return _memory_command(argv[1:])
 
 
