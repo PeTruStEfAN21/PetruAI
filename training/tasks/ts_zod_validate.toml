@@ -1,0 +1,10 @@
+name = "ts_zod_validate"
+prompt = "Build a TypeScript module that validates user sign-up data with zod, with tests. Ask me your design questions first."
+answers = [
+  "email, password (min 8 chars), age (optional, at least 13)",
+  "export a function that returns the parsed object or throws",
+  "vitest",
+  "yes",
+]
+checks = []
+tier = "default"

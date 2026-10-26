@@ -1,0 +1,10 @@
+name = "python_todo_cli"
+prompt = "Build a small command-line todo app in Python with tests. Ask me your design questions first."
+answers = [
+  "JSON file in the project folder",
+  "add, list, done, remove",
+  "pytest",
+  "yes, commit when green",
+]
+checks = []
+tier = "default"

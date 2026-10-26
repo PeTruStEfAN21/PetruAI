@@ -1,0 +1,10 @@
+name = "python_csv_stats"
+prompt = "Write a Python script that computes statistics for a CSV file, with tests. Ask me your design questions first."
+answers = [
+  "mean, min and max for every numeric column",
+  "csv module from the standard library",
+  "pytest",
+  "yes, commit when green",
+]
+checks = []
+tier = "default"

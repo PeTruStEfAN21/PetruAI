@@ -1,0 +1,9 @@
+name = "ts_stack_queue"
+prompt = "Write a small TypeScript library implementing a typed stack and a typed queue, with tests. Ask me your design questions first."
+answers = [
+  "push, pop, peek, size and isEmpty for both",
+  "vitest",
+  "yes",
+]
+checks = []
+tier = "default"

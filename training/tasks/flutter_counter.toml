@@ -1,0 +1,10 @@
+name = "flutter_counter"
+prompt = "Create a small Flutter app from scratch with widget tests. Ask me your design questions first."
+answers = [
+  "counter with a reset button and a history list",
+  "setState, no packages",
+  "widget tests",
+  "yes",
+]
+checks = []
+tier = "default"

@@ -1,0 +1,10 @@
+name = "python_json_config"
+prompt = "Build a small Python module that loads and validates a JSON config file, with tests. Ask me your design questions first."
+answers = [
+  "required keys: name (string), port (int between 1 and 65535), debug (bool)",
+  "raise ValueError with a clear message",
+  "pytest",
+  "yes, commit when green",
+]
+checks = []
+tier = "default"
