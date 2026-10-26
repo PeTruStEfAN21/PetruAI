@@ -106,7 +106,10 @@ def step_trajectories(ctx: RunContext) -> None:
 
 def stop_llama_servers() -> None:
     """A leftover llama-server (from trajectories) would hold VRAM and push training into shared memory."""
-    subprocess.run(["taskkill", "/IM", "llama-server.exe", "/F"], capture_output=True)
+    if sys.platform == "win32":
+        subprocess.run(["taskkill", "/IM", "llama-server.exe", "/F"], capture_output=True)
+    else:
+        subprocess.run(["pkill", "-f", "llama-server"], capture_output=True)
 
 
 def step_train(ctx: RunContext) -> None:

@@ -133,6 +133,23 @@ def test_a_hung_attempt_is_killed_and_counted_as_failed(tmp_path, monkeypatch):
     assert result["passed"] is False and "timeout" in result["stop_reason"] and killed == [4242]
 
 
+def test_kill_tree_uses_the_platform_tool(monkeypatch):
+    from petru_train import nightly, trajectories
+
+    calls = []
+    monkeypatch.setattr(trajectories.subprocess, "run", lambda cmd, **kw: calls.append(cmd))
+    monkeypatch.setattr(nightly.subprocess, "run", lambda cmd, **kw: calls.append(cmd))
+    monkeypatch.setattr(trajectories.sys, "platform", "win32")
+    trajectories.kill_tree(7)
+    nightly.stop_llama_servers()
+    monkeypatch.setattr(trajectories.sys, "platform", "linux")
+    trajectories.kill_tree(7)
+    nightly.stop_llama_servers()
+    assert calls[0][:3] == ["taskkill", "/PID", "7"] and calls[1][0] == "taskkill"
+    assert calls[2] == ["pkill", "-TERM", "-P", "7"] and calls[3] == ["kill", "-TERM", "7"]
+    assert calls[4] == ["pkill", "-f", "llama-server"]
+
+
 def test_load_traj_config(tmp_path):
     cfg_file = tmp_path / "trajectories.toml"
     cfg_file.write_text(

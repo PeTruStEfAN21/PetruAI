@@ -86,7 +86,11 @@ def result_to_sample(result: dict, task_name: str, max_tokens: int) -> Sample | 
 
 def kill_tree(pid: int) -> None:
     """Kill a process and everything it started (uv -> python -> llama-server, npm, flutter)."""
-    subprocess.run(["taskkill", "/PID", str(pid), "/T", "/F"], capture_output=True)
+    if sys.platform == "win32":
+        subprocess.run(["taskkill", "/PID", str(pid), "/T", "/F"], capture_output=True)
+    else:
+        subprocess.run(["pkill", "-TERM", "-P", str(pid)], capture_output=True)  # children first
+        subprocess.run(["kill", "-TERM", str(pid)], capture_output=True)
 
 
 def run_petru_task(task_path: Path, cfg: TrajConfig, attempt: int) -> dict:
