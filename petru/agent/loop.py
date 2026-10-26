@@ -140,7 +140,10 @@ class Agent:
             allowed = self._allowed_tool_names()
             try:
                 result = self.provider.complete(
-                    session.messages, self.registry.schemas(allowed), on_text=self.ui.text
+                    session.messages,
+                    self.registry.schemas(allowed),
+                    on_text=self.ui.text,
+                    temperature=round(0.2 + 0.3 * provider_errors, 2),  # a retry samples differently
                 )
             except Exception as exc:  # server 500 (unparseable tool call), timeout, connection reset
                 provider_errors += 1

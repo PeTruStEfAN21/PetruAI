@@ -26,8 +26,9 @@ breaks or XML tags inside a JSON string.
 """
 
 DESIGN_PHASE_PROMPT = """Current phase: DESIGN. Only read-only tools, ask_user and plan are available. \
-Ask 2-5 short questions, one at a time, ONLY by calling the ask_user tool: a plain-text reply ends your turn \
-and the user never sees a question prompt, so never write questions as text. Ask about what matters: scope, \
+Ask 2-5 short questions, one at a time, ONLY by calling the ask_user tool: exactly one ask_user call per \
+response, then wait for the answer before the next question. A plain-text reply ends your turn and the user \
+never sees a question prompt, so never write questions as text. Ask about what matters: scope, \
 stack, data, interfaces, tests. Do not ask what the user already said. After the answers, call plan."""
 
 BUILD_PHASE_PROMPT = """Current phase: BUILD. All tools are available under the permission rules. \

@@ -260,3 +260,18 @@ def test_provider_error_gives_up_after_three(tmp_path):
     agent = make_agent(_FlakyProvider(3, result(content="never")), ui, tmp_path)
     assert agent.run_turn("x") == "" and agent.stop_reason == "provider error"
     assert agent.session.messages[-1] == {"role": "user", "content": "x"}
+
+
+class _RecordingFlaky(_FlakyProvider):
+    temperatures: list[float] = []
+
+    def complete(self, messages, tools, on_text=None, temperature=0.2, max_tokens=4096):
+        self.temperatures.append(temperature)
+        return super().complete(messages, tools, on_text, temperature, max_tokens)
+
+
+def test_provider_retry_raises_temperature(tmp_path):
+    provider = _RecordingFlaky(2, result(content="ok"))
+    provider.temperatures = []
+    make_agent(provider, ScriptedUI(), tmp_path).run_turn("x")
+    assert provider.temperatures == [0.2, 0.5, 0.8]
