@@ -85,3 +85,11 @@ Datele brute în format JSON rezultate din fiecare test sunt stocate în:
 * `infra/bench_35b.json`
 
 Scriptul de reproducere automată este `infra/run_benchmark.py`.
+
+---
+
+## 5. Note demo (2026-10-26)
+
+* `petru --model fast -p "..."` într-un folder gol: serverul 4B a pornit automat (~5 s), modelul a apelat `write_file` + `task_complete`, total 14 s, exit 0, `hello.py` corect.
+* Comportament 4B: a scris în rezumat „verificat” fără să ruleze scriptul (nu a apelat `shell` sau `run_checks`). De urmărit la demo-urile e2e; dacă persistă, se întărește promptul BUILD (run_checks obligatoriu înainte de task_complete).
+* REPL-ul interactiv (prompt_toolkit) nu a fost exersat automat; de verificat manual (vezi `docs/demo.md`).
