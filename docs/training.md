@@ -14,8 +14,11 @@ Pipeline-ul este în `training/` (mediu separat, Python 3.12, `uv`).
    licență, commit) rămâne în fiecare sample.
 3. **Traiectorii verificate** ale modelelor locale (Qwen3.5/3.6): agentul `petru` rezolvă sarcinile din
    `training/tasks/` cu un utilizator scriptat; se păstrează doar traiectoriile la care toate verificările
-   (pytest / npm test / tsc / dart analyze / flutter test) trec. Niciun output al unui model comercial din cloud nu intră
-   în date (anti-goal A2).
+   (pytest / npm test / tsc / dart analyze / flutter test) trec; un proiect fără niciun test pică. Transcriptele
+   se normalizează la protocolul agentului: o întrebare de design scrisă ca text devine apel `ask_user`, iar
+   opririle din BUILD urmate de „continue” din partea utilizatorului scriptat dispar. Încercările respinse se
+   păstrează, cu motivul, în `training/data/rejected/` pentru diagnostic. Niciun output al unui model comercial din cloud nu
+   intră în date (anti-goal A2).
 
 Apoi: deduplicare MinHash (5-grame, Jaccard 0,7), echilibrare pe limbaj (niciun limbaj peste 40 %), împărțire
 train/eval stratificată (5 % eval). Rezultatul: `training/data/train.jsonl`, `eval.jsonl`, `stats.json`.
@@ -34,7 +37,7 @@ Scriptul oprește orice `llama-server` (eliberează VRAM) și rulează pașii, �
 | `trajectories` | rulează sarcinile cu modelul local, păstrează ce trece (3 per sarcină, 4 încercări) | `training/data/trajectories.jsonl` |
 | `train` | QLoRA pe Qwen3.5-4B în 4-bit (r=16, α=32, lr 2e-4, 1 epocă, context automat egal cu cel mai lung exemplu, nimic tăiat), checkpoint la 50 de pași, se oprește singur la bugetul de timp | `training/runs/<run>/adapter/` |
 | `export` | unește adaptorul (CPU, bf16) → `convert_hf_to_gguf.py` → `llama-quantize` Q4_K_M | `training/runs/<run>/candidate-Q4_K_M.gguf` |
-| `eval_base` | o singură dată: cele trei metrici pe modelul de bază | `training/runs/baseline/eval_base.json` |
+| `eval_base` | cele trei metrici pe modelul de bază; refăcut doar când se schimbă sarcinile, cererile sau regula de reușită (semnătura din rezultat) | `training/runs/baseline/eval_base.json` |
 | `eval_cand` | aceleași metrici pe candidat + decizia porții | `training/runs/<run>/eval_cand.json`, `gate.json` |
 | `promote` | doar dacă poarta a trecut: copiază GGUF-ul ca tier `tuned` | `infra/llama.cpp/models/Qwen3.5-4B-petru.gguf` |
 
@@ -49,7 +52,8 @@ Trei numere, bază vs candidat:
   valid (nume cunoscut, argumente JSON) sau un răspuns text când nu e nevoie de tool (toleranță 0,05);
 - `task_pass`: rata de reușită pe primele 6 sarcini din `training/tasks/` (trebuie `>=` bază).
 
-Dacă oricare regresează, candidatul rămâne în `training/runs/<run>/` și nimic nu ajunge în `infra/`.
+Dacă oricare regresează, candidatul rămâne în `training/runs/<run>/` și nimic nu ajunge în `infra/`. Poarta
+refuză și o comparație între rezultate cu semnături diferite (alt set de sarcini sau altă regulă de reușită).
 
 ## Folosirea modelului promovat
 
