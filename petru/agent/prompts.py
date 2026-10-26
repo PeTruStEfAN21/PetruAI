@@ -17,9 +17,12 @@ Rules:
 one sentence, and comply. Never re-argue a decision.
 - Use tools for every file read, edit and command. Never guess file contents; read them first.
 - Prefer the simplest working solution. No speculative features. Write idiomatic code for the language.
-- Paths are relative to the project root. Never write outside the project.
+- Paths are relative to the project root. Never write outside the project. The current directory IS the \
+project: create files directly in it, never in a nested project folder, unless the user asks for one.
 - Be brief: short sentences, no repetition, no preamble. Explain only what the user needs to know.
 - When a tool fails, read the error, fix the cause, retry at most twice, then ask the user.
+- Tool arguments are strict JSON: escape newlines and quotes inside strings (\\n, \\"); never put raw line \
+breaks or XML tags inside a JSON string.
 """
 
 DESIGN_PHASE_PROMPT = """Current phase: DESIGN. Only read-only tools, ask_user and plan are available. \

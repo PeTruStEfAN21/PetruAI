@@ -95,3 +95,22 @@ def validate_arguments(schema: dict, args: dict) -> list[str]:
         where = ".".join(str(p) for p in err.path) or "(root)"
         errors.append(f"{where}: {err.message}")
     return errors
+
+
+LEAK_MARKERS = ("</parameter>", "</function>", "</tool_call>", "<tool_call>", "<function=", "<parameter=")
+
+
+def sanitize_arguments(args: dict) -> dict:
+    """Cut leaked tool-call markup (XML-style tags some models emit) out of string arguments, recursively."""
+
+    def clean(value):
+        if isinstance(value, str):
+            cut = min([len(value), *[i for i in (value.find(m) for m in LEAK_MARKERS) if i != -1]])
+            return value[:cut].rstrip() if cut < len(value) else value
+        if isinstance(value, list):
+            return [clean(v) for v in value]
+        if isinstance(value, dict):
+            return {k: clean(v) for k, v in value.items()}
+        return value
+
+    return clean(args)

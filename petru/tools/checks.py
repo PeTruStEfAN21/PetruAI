@@ -40,6 +40,17 @@ def detect_checks(root: Path) -> list[str]:
     return commands
 
 
+SKIP_DIRS = {".git", ".petru", "node_modules", ".venv", ".dart_tool", "build", "dist", "__pycache__"}
+
+
+def find_project_dirs(root: Path) -> list[Path]:
+    """The root when it has checks, else its direct children that do (project scaffolded in a subfolder)."""
+    if detect_checks(root):
+        return [root]
+    children = sorted(p for p in root.iterdir() if p.is_dir() and p.name not in SKIP_DIRS)
+    return [child for child in children if detect_checks(child)]
+
+
 class RunChecksTool(Tool):
     name = "run_checks"
     description = (
@@ -49,18 +60,20 @@ class RunChecksTool(Tool):
     parameters = {"type": "object", "properties": {}, "additionalProperties": False}
 
     def run(self, args: dict, ctx: ToolContext) -> ToolResult:
-        commands = detect_checks(ctx.project_root)
-        if not commands:
+        project_dirs = find_project_dirs(ctx.project_root)
+        if not project_dirs:
             return ToolResult(
                 "No checks detected: no pyproject.toml, pytest.ini or tests/*.py, "
                 "no package.json test script, no tsconfig.json, no pubspec.yaml."
             )
         reports, failed = [], False
-        for cmd in commands:
-            result = run_shell(cmd, ctx.project_root, timeout_s=CHECK_TIMEOUT_S)
-            tail = "\n".join(result.output.splitlines()[-40:])
-            reports.append(f"[{'FAIL' if result.is_error else 'PASS'}] {cmd}\n{tail}")
-            failed = failed or result.is_error
+        for project in project_dirs:
+            label = "" if project == ctx.project_root else f"{project.name}: "
+            for cmd in detect_checks(project):
+                result = run_shell(cmd, project, timeout_s=CHECK_TIMEOUT_S)
+                tail = "\n".join(result.output.splitlines()[-40:])
+                reports.append(f"[{'FAIL' if result.is_error else 'PASS'}] {label}{cmd}\n{tail}")
+                failed = failed or result.is_error
         return ToolResult("\n\n".join(reports), failed)
 
 

@@ -234,3 +234,29 @@ def test_compaction_runs_before_request(tmp_path):
     agent.run_turn("x")
     assert any("[Summary of earlier conversation]" in m.get("content", "") for m in fake.calls[1]["messages"])
     assert fake.calls[1]["messages"][0]["role"] == "system"
+
+
+class _FlakyProvider:
+    def __init__(self, failures, then):
+        self.failures, self.then, self.calls = failures, then, 0
+
+    def complete(self, messages, tools, on_text=None, temperature=0.2, max_tokens=4096):
+        self.calls += 1
+        if self.calls <= self.failures:
+            raise RuntimeError("Error code: 500 - Failed to parse tool call arguments as JSON")
+        return self.then
+
+
+def test_provider_error_is_retried_then_succeeds(tmp_path):
+    ui = ScriptedUI()
+    agent = make_agent(_FlakyProvider(2, result(content="ok")), ui, tmp_path)
+    assert agent.run_turn("x") == "ok" and agent.stop_reason is None
+    assert len(ui.notices) == 2 and "retry" in ui.notices[0].lower()
+    assert agent.session.messages[-1] == {"role": "assistant", "content": "ok"}
+
+
+def test_provider_error_gives_up_after_three(tmp_path):
+    ui = ScriptedUI()
+    agent = make_agent(_FlakyProvider(3, result(content="never")), ui, tmp_path)
+    assert agent.run_turn("x") == "" and agent.stop_reason == "provider error"
+    assert agent.session.messages[-1] == {"role": "user", "content": "x"}

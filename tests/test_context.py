@@ -136,3 +136,11 @@ def test_no_compaction_when_under_budget(tmp_path):
 def test_phase_prompts_force_tool_questions_and_honest_verification():
     assert "ask_user" in DESIGN_PHASE_PROMPT and "ends your turn" in DESIGN_PHASE_PROMPT
     assert "run_checks" in BUILD_PHASE_PROMPT and "actually ran" in BUILD_PHASE_PROMPT
+
+
+def test_base_prompt_says_build_in_the_current_directory():
+    assert "nested" in BASE_SYSTEM_PROMPT
+
+
+def test_base_prompt_requires_strict_json_arguments():
+    assert "escape" in BASE_SYSTEM_PROMPT and "strict JSON" in BASE_SYSTEM_PROMPT

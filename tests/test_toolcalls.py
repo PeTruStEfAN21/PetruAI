@@ -64,3 +64,22 @@ def test_strip_text_tool_calls_removes_blocks_only():
     text = 'Searching now.\n<tool_call>{"name":"grep","arguments":{"pattern":"x"}}</tool_call>\nDone.'
     assert strip_text_tool_calls(text) == "Searching now.\n\nDone."
     assert strip_text_tool_calls("no calls here") == "no calls here"
+
+
+def test_sanitize_arguments_strips_leaked_markup():
+    from petru.agent.toolcalls import sanitize_arguments
+
+    leaked = "Scrollable?</parameter>\n</function>\n</tool_call>\n<tool_call>\n<function=list_dir>"
+    args = {
+        "question": leaked,
+        "options": ["yes<tool_call>", "no"],
+        "timeout": 60,
+        "nested": {"path": "a</parameter>"},
+    }
+    assert sanitize_arguments(args) == {
+        "question": "Scrollable?",
+        "options": ["yes", "no"],
+        "timeout": 60,
+        "nested": {"path": "a"},
+    }
+    assert sanitize_arguments({"content": "x = 1 < 2\n"}) == {"content": "x = 1 < 2\n"}

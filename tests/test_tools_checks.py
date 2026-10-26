@@ -63,3 +63,28 @@ def test_run_checks_with_nothing_detected(tmp_path):
     r = run_checks.run({}, ToolContext(tmp_path, False))
     assert not r.is_error and "No checks detected" in r.output
     assert run_checks.mutating is False and run_checks.name == "run_checks"
+
+
+def test_detect_checks_finds_single_nested_project(tmp_path):
+    from petru.tools.checks import find_project_dirs
+
+    (tmp_path / ".git").mkdir()
+    nested = tmp_path / "counter_app"
+    nested.mkdir()
+    (nested / "pubspec.yaml").write_text(
+        "name: x\ndependencies:\n  flutter:\n    sdk: flutter\n", encoding="utf-8"
+    )
+    assert find_project_dirs(tmp_path) == [nested]
+    (tmp_path / "pyproject.toml").write_text("[tool.pytest.ini_options]\n", encoding="utf-8")
+    assert find_project_dirs(tmp_path) == [tmp_path]
+
+
+def test_run_checks_runs_in_nested_project(tmp_path):
+    from petru.tools.base import ToolContext
+    from petru.tools.checks import run_checks
+
+    nested = tmp_path / "app"
+    (nested / "tests").mkdir(parents=True)
+    (nested / "tests" / "test_ok.py").write_text("def test_ok():\n    assert True\n", encoding="utf-8")
+    result = run_checks.run({}, ToolContext(tmp_path, False))
+    assert not result.is_error and "[PASS] app: python -m pytest -q" in result.output

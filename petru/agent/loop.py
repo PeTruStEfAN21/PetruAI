@@ -7,7 +7,13 @@ from pathlib import Path
 from petru.agent.context import build_system_prompt, compact_if_needed
 from petru.agent.permissions import DESIGN_ALLOWED, decide
 from petru.agent.state import Phase, Session
-from petru.agent.toolcalls import extract_tool_calls, repair_json, strip_text_tool_calls, validate_arguments
+from petru.agent.toolcalls import (
+    extract_tool_calls,
+    repair_json,
+    sanitize_arguments,
+    strip_text_tool_calls,
+    validate_arguments,
+)
 from petru.providers.base import ChatProvider, ToolCall
 from petru.tools.base import ToolContext, ToolResult
 from petru.tools.registry import ToolRegistry
@@ -88,6 +94,7 @@ class Agent:
             args = repair_json(call.raw_arguments)
         if args is None:
             return self._invalid(f"arguments of {call.name} are not a JSON object", allowed), True
+        args = sanitize_arguments(args)
         errors = validate_arguments(tool.parameters, args)
         if errors:
             return self._invalid(f"{call.name} arguments: " + "; ".join(errors), allowed), True
@@ -121,6 +128,7 @@ class Agent:
         session.start_turn(text, quick=quick)
         self.stop_reason = None
         invalid_count = 0
+        provider_errors = 0
         last_text = ""
         while True:
             if session.turn_tool_iterations >= self.max_iterations:
@@ -130,9 +138,19 @@ class Agent:
             self._refresh_system_prompt()
             compact_if_needed(session, self.provider, self.ctx_tokens)
             allowed = self._allowed_tool_names()
-            result = self.provider.complete(
-                session.messages, self.registry.schemas(allowed), on_text=self.ui.text
-            )
+            try:
+                result = self.provider.complete(
+                    session.messages, self.registry.schemas(allowed), on_text=self.ui.text
+                )
+            except Exception as exc:  # server 500 (unparseable tool call), timeout, connection reset
+                provider_errors += 1
+                if provider_errors >= self.max_invalid_retries:
+                    message = f"Model request failed {provider_errors} times: {exc}"
+                    return self._stop("provider error", message, last_text)
+                self.ui.notice(
+                    f"Model error: {exc}. Retrying ({provider_errors}/{self.max_invalid_retries - 1})..."
+                )
+                continue
             calls = extract_tool_calls(result)
             last_text = strip_text_tool_calls(result.content or "")
             if not calls:
