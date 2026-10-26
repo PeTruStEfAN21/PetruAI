@@ -83,6 +83,19 @@ def context_length(configured: int, lengths: list[int], step: int = 256) -> int:
     return -(-longest // step) * step
 
 
+def load_samples(path: Path) -> list:
+    """The samples of a dataset file. Trajectories are normalized here too, so files built by an older
+    pipeline (questions as text, harness 'continue' turns) train the same behaviour as new ones."""
+    from petru_train.samples import read_jsonl
+    from petru_train.trajectories import normalize_messages
+
+    samples = read_jsonl(path)
+    for sample in samples:
+        if sample.source == "trajectory":
+            sample.messages = normalize_messages(sample.messages)
+    return samples
+
+
 def select_by_length(texts: list[str], lengths: list[int], max_len: int) -> tuple[list[str], int]:
     """Keep the samples that fit the context; a truncated sample would teach a reply without its ending."""
     kept = [text for text, length in zip(texts, lengths, strict=True) if length <= max_len]
@@ -169,7 +182,7 @@ def train_in_process(cfg: TrainConfig, run_dir: Path) -> TrainReport:
     from unsloth import FastLanguageModel
     from unsloth.chat_templates import train_on_responses_only
 
-    from petru_train.samples import read_jsonl, render_chat, text_tokenizer
+    from petru_train.samples import render_chat, text_tokenizer
 
     class _Budget(TrainerCallback):
         def __init__(self, inner: TimeBudgetCallback) -> None:
@@ -191,7 +204,7 @@ def train_in_process(cfg: TrainConfig, run_dir: Path) -> TrainReport:
     plain_tokenizer = AutoTokenizer.from_pretrained(str(cfg.base_model))  # lengths first: they size the model
 
     def texts_and_lengths(path: Path) -> tuple[list[str], list[int]]:
-        texts = [render_chat(s, plain_tokenizer) for s in read_jsonl(path)]
+        texts = [render_chat(s, plain_tokenizer) for s in load_samples(path)]
         return texts, [len(ids) for ids in plain_tokenizer(texts, add_special_tokens=False)["input_ids"]]
 
     all_train, train_lengths = texts_and_lengths(cfg.train_file)

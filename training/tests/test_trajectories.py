@@ -184,3 +184,73 @@ def test_rejected_attempts_are_kept_for_diagnosis(tmp_path, capsys):
     saved = json.loads((tmp_path / "rejected" / "flutter_a-1.json").read_text(encoding="utf-8"))
     assert saved["check_output"] == "[FAIL] x"
     assert "flutter_a attempt 1: rejected (0/1): checks failed: [FAIL] x" in capsys.readouterr().out
+
+
+HINT = " (Use the ask_user tool for further questions, then call plan.)"
+CONTINUE = (
+    "Continue with the confirmed plan using tools. Run run_checks, fix failures, commit when green, "
+    "then call task_complete."
+)
+
+
+def harness_transcript() -> list[dict]:
+    def tool_call(call_id, name, args):
+        function = {"name": name, "arguments": json.dumps(args)}
+        return {
+            "role": "assistant",
+            "content": "",
+            "tool_calls": [{"id": call_id, "type": "function", "function": function}],
+        }
+
+    return [
+        {"role": "system", "content": "S"},
+        {"role": "user", "content": "build it"},
+        {"role": "assistant", "content": "**Question 1:** Which runner?"},
+        {"role": "user", "content": "pytest" + HINT},
+        tool_call("c1", "plan", {"title": "T", "steps": ["a"]}),
+        {"role": "tool", "tool_call_id": "c1", "content": "Plan confirmed."},
+        {"role": "assistant", "content": "I will now write the files."},
+        {"role": "user", "content": CONTINUE},
+        tool_call("c2", "task_complete", {"summary": "done"}),
+        {"role": "tool", "tool_call_id": "c2", "content": "done"},
+        {"role": "assistant", "content": "Done."},
+    ]
+
+
+def test_harness_corrections_become_the_behaviour_to_learn():
+    from petru_train.trajectories import normalize_messages
+
+    out = normalize_messages(harness_transcript())
+    roles = ["system", "user", "assistant", "tool", "assistant", "tool", "assistant", "tool", "assistant"]
+    assert [m["role"] for m in out] == roles
+    ask = out[2]["tool_calls"][0]["function"]
+    assert ask["name"] == "ask_user" and json.loads(ask["arguments"]) == {
+        "question": "**Question 1:** Which runner?"
+    }
+    assert out[3] == {"role": "tool", "tool_call_id": out[2]["tool_calls"][0]["id"], "content": "pytest"}
+    assert not any(HINT in str(m.get("content")) or m.get("content") == CONTINUE for m in out)
+    assert normalize_messages(out) == out
+
+
+def test_kept_trajectories_are_normalized():
+    sample = result_to_sample(good(messages=harness_transcript()), "python_x", max_tokens=12000)
+    assert sample is not None and sample.messages[2]["tool_calls"][0]["function"]["name"] == "ask_user"
+
+
+def test_training_loads_trajectory_samples_normalized(tmp_path):
+    from petru_train.samples import Sample, write_jsonl
+    from petru_train.train import load_samples
+
+    traj = Sample("t", "trajectory", "petru", "local", "", "python", harness_transcript(), [])
+    commit = Sample("c", "commit", "r", "MIT", "abc", "python", [{"role": "user", "content": "x" + HINT}], [])
+    write_jsonl(tmp_path / "d.jsonl", [traj, commit])
+    loaded = load_samples(tmp_path / "d.jsonl")
+    assert loaded[0].messages[2]["tool_calls"][0]["function"]["name"] == "ask_user"
+    assert loaded[1].messages == commit.messages  # only trajectories are rewritten
+
+
+def test_harness_markers_match_the_agent_harness():
+    from petru_train.trajectories import CONTINUE_PREFIX, DESIGN_HINT
+
+    source = (Path(__file__).resolve().parents[2] / "petru" / "trajectory.py").read_text(encoding="utf-8")
+    assert DESIGN_HINT.strip() in source and CONTINUE_PREFIX in source

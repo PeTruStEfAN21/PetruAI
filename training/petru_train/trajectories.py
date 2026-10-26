@@ -63,6 +63,45 @@ def language_for(task_name: str) -> str:
     return LANGUAGE_BY_PREFIX.get(task_name.split("_")[0].lower(), "unknown")
 
 
+# What petru.trajectory sends when the model misbehaves (kept in sync with petru/trajectory.py).
+DESIGN_HINT = " (Use the ask_user tool for further questions, then call plan.)"
+CONTINUE_PREFIX = "Continue with the confirmed plan using tools."
+
+
+def normalize_messages(messages: list[dict]) -> list[dict]:
+    """Rewrite the harness's corrections into the behaviour the agent should learn. A design question the
+    model wrote as plain text, answered by the scripted user, becomes an ask_user call whose result is the
+    answer; a BUILD-phase stop followed by the harness's 'continue' is dropped. Idempotent."""
+    out: list[dict] = []
+    i, asked = 0, 0
+    while i < len(messages):
+        message = messages[i]
+        following = messages[i + 1] if i + 1 < len(messages) else {}
+        reply = str(following.get("content") or "")
+        is_text_turn = message.get("role") == "assistant" and not message.get("tool_calls")
+        if is_text_turn and following.get("role") == "user":
+            question = str(message.get("content") or "").strip()
+            if reply.endswith(DESIGN_HINT) and question:
+                asked += 1
+                call_id = f"call_ask_text_{asked}"
+                arguments = json.dumps({"question": question}, ensure_ascii=False)
+                call = {
+                    "id": call_id,
+                    "type": "function",
+                    "function": {"name": "ask_user", "arguments": arguments},
+                }
+                out.append({"role": "assistant", "content": "", "tool_calls": [call]})
+                out.append({"role": "tool", "tool_call_id": call_id, "content": reply[: -len(DESIGN_HINT)]})
+                i += 2
+                continue
+            if reply.startswith(CONTINUE_PREFIX):
+                i += 2
+                continue
+        out.append(message)
+        i += 1
+    return out
+
+
 def rejection_reason(result: dict, max_tokens: int) -> str:
     """Why `result_to_sample` would drop this attempt, in one line; "" when it would be kept."""
     if result.get("stop_reason"):
@@ -83,7 +122,7 @@ def result_to_sample(result: dict, task_name: str, max_tokens: int) -> Sample | 
     if not result.get("passed") or result.get("stop_reason") or int(result.get("tokens") or 0) > max_tokens:
         return None
     # The recorded system prompt stays: it is what the agent sees at run time (rules, phase, packages).
-    messages = list(result.get("messages", []))
+    messages = normalize_messages(list(result.get("messages", [])))
     if not any(m.get("role") == "assistant" for m in messages):
         return None
     digest = hashlib.sha1(json.dumps(messages, ensure_ascii=False).encode("utf-8")).hexdigest()[:10]
