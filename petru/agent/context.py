@@ -13,6 +13,7 @@ from petru.agent.prompts import (
     OFFLINE_RULES_PROMPT,
 )
 from petru.agent.state import Phase, Plan, Session
+from petru.memory.tools import memory_prompt_section
 from petru.offline import load_offline_manifest
 from petru.providers.base import ChatProvider
 
@@ -48,6 +49,9 @@ def build_system_prompt(session: Session, repo_root: Path, online: bool) -> str:
     decisions = read_decisions(session.project_root)
     if decisions:
         parts.append(f"## DECISIONS (final; the latest entry wins)\n{decisions}")
+    memory = memory_prompt_section(session.project_root)
+    if memory:
+        parts.append(memory)
     if not online:
         manifest = load_offline_manifest(repo_root)
         listing = (

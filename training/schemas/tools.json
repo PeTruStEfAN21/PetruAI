@@ -311,5 +311,79 @@
         "additionalProperties": false
       }
     }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "remember",
+      "description": "Save a durable fact for future sessions: a user preference (type user), a correction or working rule (feedback), a project fact not visible in the code (project) or a pointer to an external resource (reference). Same name again adds to it. Use scope global for things true in every project. Never store secrets.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Short title, reused to add to the same memory"
+          },
+          "description": {
+            "type": "string",
+            "description": "One line shown in the memory index"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "user",
+              "feedback",
+              "project",
+              "reference"
+            ]
+          },
+          "content": {
+            "type": "string"
+          },
+          "scope": {
+            "type": "string",
+            "enum": [
+              "project",
+              "global"
+            ],
+            "description": "project (default) or global"
+          }
+        },
+        "required": [
+          "name",
+          "description",
+          "type",
+          "content"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "recall",
+      "description": "Read one memory listed in the memory index, by its name.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "scope": {
+            "type": "string",
+            "enum": [
+              "project",
+              "global"
+            ],
+            "description": "project (default) or global"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false
+      }
+    }
   }
 ]

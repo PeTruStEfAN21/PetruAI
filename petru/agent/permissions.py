@@ -10,7 +10,10 @@ from petru.tools.base import Tool
 from petru.tools.paths import OutsideProjectError, resolve_in_project
 from petru.tools.shell import classify_command
 
-DESIGN_ALLOWED = {"read_file", "list_dir", "glob", "grep", "ask_user", "plan"}
+DESIGN_ALLOWED = {
+    "read_file", "list_dir", "glob", "grep", "ask_user", "plan",
+    "remember", "recall", "search_code", "search_docs",  # memory and search never touch the project's code
+}  # fmt: skip
 
 
 @dataclass

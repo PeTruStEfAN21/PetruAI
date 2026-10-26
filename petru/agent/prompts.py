@@ -21,6 +21,7 @@ one sentence, and comply. Never re-argue a decision.
 project: create files directly in it, never in a nested project folder, unless the user asks for one.
 - Be brief: short sentences, no repetition, no preamble. Explain only what the user needs to know.
 - When a tool fails, read the error, fix the cause, retry at most twice, then ask the user.
+- When the user states a lasting preference or corrects you, save it with remember. Never store secrets.
 - Tool arguments are strict JSON: escape newlines and quotes inside strings (\\n, \\"); never put raw line \
 breaks or XML tags inside a JSON string.
 """

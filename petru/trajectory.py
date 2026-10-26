@@ -7,10 +7,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import tempfile
 import time
 import tomllib
+from collections.abc import Iterator
+from contextlib import contextmanager
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
@@ -109,6 +112,21 @@ def run_checks_for(project: Path, extra: list[str]) -> tuple[bool, str]:
     return ok, "\n\n".join(reports)
 
 
+@contextmanager
+def isolated_home() -> Iterator[Path]:
+    """Point PETRU_HOME at a throwaway folder outside the project for the duration, then restore it."""
+    previous = os.environ.get("PETRU_HOME")
+    with tempfile.TemporaryDirectory(prefix="petru-home-", ignore_cleanup_errors=True) as tmp:
+        os.environ["PETRU_HOME"] = tmp
+        try:
+            yield Path(tmp)
+        finally:
+            if previous is None:
+                os.environ.pop("PETRU_HOME", None)
+            else:
+                os.environ["PETRU_HOME"] = previous
+
+
 def run_task(
     spec: TaskSpec,
     *,
@@ -133,15 +151,16 @@ def run_task(
     registry = default_registry(online)
     agent = Agent(provider, registry, ui, session, repo_root, ctx_tokens, online)
     started = time.monotonic()
-    agent.run_turn(spec.prompt)
     extra = 0
-    while session.phase is not Phase.IDLE and agent.stop_reason is None and extra < max_extra_turns:
-        if session.phase is Phase.DESIGN:
-            message = f"{ui.next_answer()} (Use the ask_user tool for further questions, then call plan.)"
-        else:
-            message = CONTINUE_PROMPT
-        extra += 1
-        agent.run_turn(message)
+    with isolated_home():  # scripted runs must never write into the user's real global memory
+        agent.run_turn(spec.prompt)
+        while session.phase is not Phase.IDLE and agent.stop_reason is None and extra < max_extra_turns:
+            if session.phase is Phase.DESIGN:
+                message = f"{ui.next_answer()} (Use the ask_user tool for further questions, then call plan.)"
+            else:
+                message = CONTINUE_PROMPT
+            extra += 1
+            agent.run_turn(message)
     completed = session.phase is Phase.IDLE and agent.stop_reason is None
     if completed:
         ok, output = run_checks_for(project, spec.checks)

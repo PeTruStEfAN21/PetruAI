@@ -11,6 +11,7 @@ from rich.console import Console
 from petru.agent.loop import Agent
 from petru.agent.state import Session
 from petru.config import find_repo_root, load_config
+from petru.memory.tools import memory_prompt_section
 from petru.offline import is_online
 from petru.providers.openai_compat import OpenAICompatProvider
 from petru.server import ServerManager, ServerStartError
@@ -95,6 +96,9 @@ def repl(agent: Agent, ui: RichUI, manager: ServerManager, cfg, online: bool, co
             console.print(HELP_TEXT, markup=False)
         elif cmd.name == "status":
             console.print(_status(session, online), markup=False)
+        elif cmd.name == "memory":
+            section = memory_prompt_section(session.project_root, max_tokens=10_000)
+            console.print(section or "No memories yet.", markup=False)
         elif cmd.name == "model":
             if cmd.arg:
                 _switch_model(manager, agent, cfg, cmd.arg, console)

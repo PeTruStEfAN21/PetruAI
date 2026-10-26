@@ -99,6 +99,37 @@ def test_run_task_fails_when_a_check_fails(tmp_path):
     assert not res.passed and "[FAIL] python hello.py" in res.check_output
 
 
+def test_run_task_isolates_global_memory(tmp_path, monkeypatch):
+    real_home = tmp_path / "real-home"
+    monkeypatch.setenv("PETRU_HOME", str(real_home))
+    provider = FakeProvider(
+        [
+            result(
+                tool_calls=[
+                    call(
+                        "remember",
+                        {"name": "x", "description": "d", "type": "user", "content": "c", "scope": "global"},
+                    )
+                ]
+            ),  # fmt: skip
+            result(content="ok"),
+        ]
+    )
+    run_task(
+        spec(),
+        provider=provider,
+        repo_root=tmp_path,
+        project=tmp_path / "p",
+        ctx_tokens=8192,
+        max_extra_turns=0,
+    )
+    assert not (real_home / "memory").exists()
+    assert not (tmp_path / "p" / ".petru-home").exists()
+    import os
+
+    assert os.environ["PETRU_HOME"] == str(real_home)  # restored
+
+
 def test_task_result_round_trips_through_json(tmp_path):
     res = TaskResult("t", True, 1.5, 0, None, [{"role": "user", "content": "x"}], [], "ok", 0)
     path = tmp_path / "r.json"

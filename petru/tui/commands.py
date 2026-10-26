@@ -22,6 +22,7 @@ Commands:
   /done            end the current task and go back to idle
   /yolo            toggle yolo mode (no confirmations, build immediately)
   /status          phase, tier, project, online/offline
+  /memory          what Petru remembers (global and project memory)
   /exit            quit (Ctrl+D also works)
 """
 
