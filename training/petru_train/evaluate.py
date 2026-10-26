@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import dataclasses
 import hashlib
 import json
 import math
@@ -12,7 +11,7 @@ import sys
 import tempfile
 import urllib.request
 from collections.abc import Callable
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from pathlib import Path
 
 from petru_train.samples import load_tools, read_jsonl, render_chat, text_tokenizer
@@ -272,8 +271,8 @@ def gate_inputs(base: EvalResult, cand: EvalResult, train_report: dict) -> tuple
     """Both losses come from the training run itself (base measured before step 0 on the same eval set and
     mask), so a rebuilt dataset never compares a new candidate with an old baseline loss."""
     return (
-        dataclasses.replace(base, loss=float(train_report["base_eval_loss"])),
-        dataclasses.replace(cand, loss=float(train_report["eval_loss"])),
+        replace(base, loss=float(train_report["base_eval_loss"])),
+        replace(cand, loss=float(train_report["eval_loss"])),
     )
 
 
