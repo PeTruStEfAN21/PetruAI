@@ -26,3 +26,17 @@ def test_committed_schemas_are_in_sync(tmp_path):
     assert out.read_text(encoding="utf-8") == COMMITTED.read_text(encoding="utf-8"), (
         "training/schemas/tools.json is stale; regenerate it with python -m petru.tools.schemas"
     )
+
+
+PROMPT = Path(__file__).resolve().parents[1] / "training" / "schemas" / "system_prompt.txt"
+
+
+def test_build_prompt_export_matches_the_agent(tmp_path):
+    from petru.agent.prompts import BASE_SYSTEM_PROMPT, BUILD_PHASE_PROMPT
+    from petru.tools.schemas import build_phase_prompt, dump_system_prompt
+
+    assert build_phase_prompt() == f"{BASE_SYSTEM_PROMPT}\n\n{BUILD_PHASE_PROMPT}"
+    out = tmp_path / "system_prompt.txt"
+    dump_system_prompt(out)
+    assert PROMPT.is_file(), "run: py -3.14 -m uv run python -m petru.tools.schemas"
+    assert out.read_text(encoding="utf-8") == PROMPT.read_text(encoding="utf-8"), "system_prompt.txt is stale"

@@ -26,6 +26,14 @@ class Sample:
     tools: list[dict] = field(default_factory=list)
 
 
+PROMPT_FILE = SCHEMAS_FILE.with_name("system_prompt.txt")
+
+
+def load_system_prompt(path: Path = PROMPT_FILE) -> str:
+    """The agent's BUILD-phase system prompt, exported by `python -m petru.tools.schemas`."""
+    return path.read_text(encoding="utf-8")
+
+
 def load_tools(path: Path = SCHEMAS_FILE) -> list[dict]:
     return json.loads(path.read_text(encoding="utf-8"))
 

@@ -19,12 +19,8 @@ from petru_train.filters import (
     is_trivial_message,
     language_of,
 )
-from petru_train.samples import Sample, load_tools
+from petru_train.samples import Sample, load_system_prompt, load_tools
 
-TRAJECTORY_SYSTEM = (
-    "You are Petru, a local coding agent working in the user's project through tools. Read the files you "
-    "need, make the change with edit_file or write_file, then call task_complete with a short summary."
-)
 MAX_EDIT_LINES = 40
 MAX_EDIT_BLOCKS = 6
 MAX_CONTEXT_LINES = 3
@@ -165,7 +161,7 @@ def _call(call_id: str, name: str, args: dict) -> dict:
 def commit_to_sample(commit: Commit, repo_name: str, license: str, tools: list[dict]) -> Sample:
     paths = ", ".join(f.path for f in commit.files)
     messages: list[dict] = [
-        {"role": "system", "content": TRAJECTORY_SYSTEM},
+        {"role": "system", "content": load_system_prompt()},  # the same prompt the agent runs with
         {"role": "user", "content": f"{commit.message}\n\nProject: {repo_name}. Files involved: {paths}."},
     ]
     for i, change in enumerate(commit.files, start=1):

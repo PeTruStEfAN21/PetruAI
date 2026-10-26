@@ -95,6 +95,16 @@ def test_commit_to_sample_has_read_then_write_then_complete():
     assert read_message["content"] == "1\tprint('v1')"  # numbered, exactly like the agent's read_file
 
 
+def test_commit_samples_use_the_agent_build_prompt():
+    from petru_train.samples import load_system_prompt
+
+    prompt = load_system_prompt()
+    assert "You are Petru" in prompt and "Current phase: BUILD" in prompt
+    commit = Commit("e" * 40, "Tweak", [FileChange("a.py", "x = 1\n", "x = 2\n", "python")], "2026-01-01")
+    sample = commit_to_sample(commit, "demo", "MIT", load_tools())
+    assert sample.messages[0] == {"role": "system", "content": prompt}
+
+
 def test_read_result_matches_the_agent_read_file_tool():
     from petru_train.commits import read_result
 
