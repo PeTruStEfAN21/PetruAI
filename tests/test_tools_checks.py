@@ -97,3 +97,16 @@ def test_detect_checks_python_test_files_in_the_root(tmp_path):
     assert detect_checks(tmp_path) == ["python -m pytest -q"]
     (tmp_path / "test_stats.py").rename(tmp_path / "stats_test.py")
     assert detect_checks(tmp_path) == ["python -m pytest -q"]
+
+
+def test_check_output_keeps_the_first_failure_and_the_summary():
+    from petru.tools.checks import summarize_output
+
+    lines = ["EXCEPTION CAUGHT", "Expected: one widget", "  Actual: none"] + [
+        f"#{i} frame" for i in range(100)
+    ]
+    lines += ["?????????????????????????????", "Some tests failed."]
+    out = summarize_output("\n".join(lines)).splitlines()
+    assert out[:3] == lines[:3] and out[-1] == "Some tests failed." and any("omitted" in line for line in out)
+    assert "?????????????????????????????" not in out and len(out) < 70
+    assert summarize_output("1 passed") == "1 passed"

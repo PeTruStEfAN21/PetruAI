@@ -53,6 +53,22 @@ def find_project_dirs(root: Path) -> list[Path]:
     return [child for child in children if detect_checks(child)]
 
 
+def _is_decoration(line: str) -> bool:
+    """A rule of box-drawing characters, or what a console code page left of one ('????')."""
+    text = line.strip()
+    return len(text) >= 10 and set(text) <= set("?=-─═╡╞│ ")
+
+
+def summarize_output(text: str, head: int = 25, tail: int = 35) -> str:
+    """The start and the end of a check's output: the first failure (flutter test and pytest print the
+    expectation that broke first) and the final summary, without decorative rules."""
+    lines = [line for line in text.splitlines() if not _is_decoration(line)]
+    if len(lines) <= head + tail:
+        return "\n".join(lines)
+    omitted = len(lines) - head - tail
+    return "\n".join([*lines[:head], f"... {omitted} lines omitted ...", *lines[-tail:]])
+
+
 class RunChecksTool(Tool):
     name = "run_checks"
     description = (
@@ -73,8 +89,8 @@ class RunChecksTool(Tool):
             label = "" if project == ctx.project_root else f"{project.name}: "
             for cmd in detect_checks(project):
                 result = run_shell(cmd, project, timeout_s=CHECK_TIMEOUT_S)
-                tail = "\n".join(result.output.splitlines()[-40:])
-                reports.append(f"[{'FAIL' if result.is_error else 'PASS'}] {label}{cmd}\n{tail}")
+                summary = summarize_output(result.output)
+                reports.append(f"[{'FAIL' if result.is_error else 'PASS'}] {label}{cmd}\n{summary}")
                 failed = failed or result.is_error
         return ToolResult("\n\n".join(reports), failed)
 
