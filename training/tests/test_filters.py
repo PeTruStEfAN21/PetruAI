@@ -30,7 +30,7 @@ def test_has_secret():
     assert has_secret("api_key = 'x'")
     assert has_secret("token = 'QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVowMTIzNDU2Nzg5'")  # 40+ base64 chars
     assert not has_secret("def add(a, b):\n    return a + b\n")
-    assert not has_secret("digest = 'QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVowMTIzNDU'")  # 39 chars
+    assert not has_secret("digest = 'QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVow'")  # 36 chars, under the limit
 
 
 def test_language_of():
