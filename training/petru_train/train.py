@@ -84,15 +84,20 @@ def context_length(configured: int, lengths: list[int], step: int = 256) -> int:
 
 
 def load_samples(path: Path) -> list:
-    """The samples of a dataset file. Trajectories are normalized here too, so files built by an older
-    pipeline (questions as text, harness 'continue' turns) train the same behaviour as new ones."""
-    from petru_train.samples import read_jsonl
-    from petru_train.trajectories import normalize_messages
+    """The samples of a dataset file. Trajectories are normalized here (so files built by an older pipeline
+    train the same behaviour as new ones) and split into their DESIGN and BUILD parts, each under its own
+    prompt."""
+    from petru_train.samples import load_design_prompt, load_system_prompt, read_jsonl
+    from petru_train.trajectories import normalize_messages, split_by_phase
 
-    samples = read_jsonl(path)
-    for sample in samples:
+    build_prompt, design_prompt = load_system_prompt(), load_design_prompt()
+    samples = []
+    for sample in read_jsonl(path):
         if sample.source == "trajectory":
             sample.messages = normalize_messages(sample.messages)
+            samples.extend(split_by_phase(sample, build_prompt, design_prompt))
+        else:
+            samples.append(sample)
     return samples
 
 

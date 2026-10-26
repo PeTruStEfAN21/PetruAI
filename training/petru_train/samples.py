@@ -34,6 +34,14 @@ def load_system_prompt(path: Path = PROMPT_FILE) -> str:
     return path.read_text(encoding="utf-8")
 
 
+DESIGN_PROMPT_FILE = SCHEMAS_FILE.with_name("design_prompt.txt")
+
+
+def load_design_prompt(path: Path = DESIGN_PROMPT_FILE) -> str:
+    """The agent's DESIGN-phase system prompt, exported by `python -m petru.tools.schemas`."""
+    return path.read_text(encoding="utf-8")
+
+
 def load_tools(path: Path = SCHEMAS_FILE) -> list[dict]:
     return json.loads(path.read_text(encoding="utf-8"))
 

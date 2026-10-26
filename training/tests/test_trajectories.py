@@ -320,3 +320,104 @@ def test_invalid_calls_are_dropped_and_the_corrected_one_stays():
         {"role": "tool", "tool_call_id": "c2", "content": "pytest"},
     ]
     assert normalize_messages(messages) == [messages[0], *messages[3:]]
+
+
+OFFLINE = "Environment: no internet, the machine is offline. Packages: pytest"
+
+
+def phased_sample(build_prompt: str) -> tuple:
+    def single(call_id, name, args):
+        function = {"name": name, "arguments": json.dumps(args)}
+        return {
+            "role": "assistant",
+            "content": "",
+            "tool_calls": [{"id": call_id, "type": "function", "function": function}],
+        }
+
+    final = (
+        f"{build_prompt}\n\n## Confirmed plan: T\n1. a\n\n"
+        f"## DECISIONS (final; the latest entry wins)\n# Decizii\n\n- 2026-10-27: Q -> A\n\n{OFFLINE}"
+    )
+    messages = [
+        {"role": "system", "content": final},
+        {"role": "user", "content": "build it"},
+        single("c1", "ask_user", {"question": "Q"}),
+        {"role": "tool", "tool_call_id": "c1", "content": "A"},
+        single("c2", "plan", {"title": "T", "steps": ["a"]}),
+        {"role": "tool", "tool_call_id": "c2", "content": "Plan confirmed. You are now in BUILD phase."},
+        single("c3", "write_file", {"path": "a.py", "content": "x"}),
+        {"role": "tool", "tool_call_id": "c3", "content": "Wrote 1 bytes to a.py"},
+        {"role": "assistant", "content": "Done."},
+    ]
+    return final, messages
+
+
+def test_a_trajectory_splits_into_design_and_build_samples_with_their_own_prompts():
+    from petru_train.samples import Sample, load_design_prompt, load_system_prompt
+    from petru_train.trajectories import split_by_phase
+
+    build_prompt, design_prompt = load_system_prompt(), load_design_prompt()
+    final, messages = phased_sample(build_prompt)
+    sample = Sample("t", "trajectory", "petru", "local", "", "python", messages, [])
+    design, build = split_by_phase(sample, build_prompt, design_prompt)
+    assert (design.id, build.id) == ("t#design", "t#build")
+    assert design.messages[0]["content"] == f"{design_prompt}\n\n{OFFLINE}"  # no plan, no decisions yet
+    assert design.messages[1:] == messages[1:6]
+    assert build.messages == [messages[0], messages[1], *messages[6:]]
+    assert split_by_phase(design, build_prompt, design_prompt) == [design]
+    assert split_by_phase(build, build_prompt, design_prompt) == [build]
+
+
+def test_samples_that_cannot_be_split_stay_whole():
+    from petru_train.samples import Sample, load_design_prompt, load_system_prompt
+    from petru_train.trajectories import split_by_phase
+
+    build_prompt, design_prompt = load_system_prompt(), load_design_prompt()
+    _, messages = phased_sample(build_prompt)
+    commit = Sample("c", "commit", "r", "MIT", "abc", "python", messages, [])
+    unknown_prompt = Sample(
+        "u", "trajectory", "p", "local", "", "python", [{"role": "system", "content": "S"}, *messages[1:]], []
+    )
+    no_plan = Sample("n", "trajectory", "p", "local", "", "python", messages[:4], [])
+    for sample in (commit, unknown_prompt, no_plan):
+        assert split_by_phase(sample, build_prompt, design_prompt) == [sample]
+
+
+def test_training_loads_each_trajectory_as_its_two_phases(tmp_path):
+    from petru_train.samples import Sample, load_system_prompt, write_jsonl
+    from petru_train.train import load_samples
+
+    _, messages = phased_sample(load_system_prompt())
+    write_jsonl(
+        tmp_path / "d.jsonl", [Sample("t", "trajectory", "petru", "local", "", "python", messages, [])]
+    )
+    assert [s.id for s in load_samples(tmp_path / "d.jsonl")] == ["t#design", "t#build"]
+
+
+def test_prompt_sections_match_the_agent_sources():
+    from petru_train.trajectories import PLAN_CONFIRMED, PROMPT_SECTIONS
+
+    petru = Path(__file__).resolve().parents[2] / "petru"
+    sources = "".join(
+        (petru / rel).read_text(encoding="utf-8")
+        for rel in ("agent/context.py", "agent/prompts.py", "memory/tools.py", "journal/summarize.py")
+    )
+    assert all(header.strip() in sources for header in PROMPT_SECTIONS)
+    assert f'"{PLAN_CONFIRMED}.' in (petru / "tools" / "interaction.py").read_text(encoding="utf-8")
+
+
+def test_the_build_part_sees_the_confirmed_plan_like_the_agent_did():
+    from petru_train.samples import Sample, load_design_prompt, load_system_prompt
+    from petru_train.trajectories import split_by_phase
+
+    build_prompt = load_system_prompt()
+    _, messages = phased_sample(build_prompt)
+    after_task = f"{build_prompt}\n\n## DECISIONS (final; the latest entry wins)\n- Q -> A\n\n{OFFLINE}"
+    messages = [
+        {"role": "system", "content": after_task},
+        *messages[1:],
+    ]  # the plan section is gone at the end
+    sample = Sample("t", "trajectory", "petru", "local", "", "python", messages, [])
+    _, build = split_by_phase(sample, build_prompt, load_design_prompt())
+    decisions = f"## DECISIONS (final; the latest entry wins)\n- Q -> A\n\n{OFFLINE}"
+    assert build.messages[0]["content"] == f"{build_prompt}\n\n## Confirmed plan: T\n1. a\n\n{decisions}"

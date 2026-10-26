@@ -11,7 +11,7 @@ import tempfile
 import time
 import tomllib
 from collections.abc import Callable
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from pathlib import Path
 
 from petru_train.samples import Sample
@@ -112,6 +112,87 @@ def normalize_messages(messages: list[dict]) -> list[dict]:
         out.append(message)
         i += 1
     return out
+
+
+PLAN_CONFIRMED = "Plan confirmed"  # petru/tools/interaction.py, PlanTool
+# The sections the agent appends to its system prompt (petru/agent/context.py), in order; the first two exist
+# only once a plan is confirmed, so the DESIGN-phase prompt never had them.
+PROMPT_SECTIONS = (
+    "## Confirmed plan: ",
+    "## Project instructions (AGENTS.md)",
+    "## DECISIONS (final; the latest entry wins)",
+    "## Memory (global)",
+    "## Memory (project)",
+    "## Recent commits (journal)",
+    "Environment: no internet",
+)
+BUILD_ONLY_SECTIONS = PROMPT_SECTIONS[0], PROMPT_SECTIONS[2]
+
+
+def design_system_prompt(final: str, build_prompt: str, design_prompt: str) -> str | None:
+    """The system prompt the agent had during DESIGN, rebuilt from the one a transcript ends with (BUILD):
+    the phase text swapped and the plan and decisions sections removed. None for an unknown prompt."""
+    if not final.startswith(build_prompt):
+        return None
+    rest = final[len(build_prompt) :]
+    starts = sorted(i for i in (rest.find(f"\n\n{header}") for header in PROMPT_SECTIONS) if i != -1)
+    kept = rest[: starts[0]] if starts else rest
+    for start, end in zip(starts, [*starts[1:], len(rest)], strict=True):
+        if not rest[start + 2 : end].startswith(BUILD_ONLY_SECTIONS):
+            kept += rest[start:end]
+    return design_prompt + kept
+
+
+def _plan_section(message: dict) -> str | None:
+    """The '## Confirmed plan' section of the agent's BUILD prompt (petru/agent/context.py, render_plan),
+    rebuilt from the plan call."""
+    for call in message.get("tool_calls") or []:
+        if call.get("function", {}).get("name") != "plan":
+            continue
+        try:
+            args = json.loads(call["function"].get("arguments") or "{}")
+        except json.JSONDecodeError:
+            return None
+        steps = "\n".join(f"{i}. {step}" for i, step in enumerate(args.get("steps") or [], start=1))
+        return f"{PROMPT_SECTIONS[0]}{args.get('title', '')}\n{steps}"
+    return None
+
+
+def split_by_phase(sample: Sample, build_prompt: str, design_prompt: str) -> list[Sample]:
+    """A trajectory as two samples, each under the system prompt the agent really had: DESIGN (questions and
+    the plan, up to its confirmation) and BUILD (the request, then the work). A transcript keeps only its last
+    prompt (BUILD), which would otherwise teach questions under the BUILD prompt. Anything else stays
+    whole."""
+    messages = sample.messages
+    if sample.source != "trajectory" or len(messages) < 2 or messages[0].get("role") != "system":
+        return [sample]
+    confirmed = next(
+        (
+            i
+            for i, m in enumerate(messages)
+            if m.get("role") == "tool" and str(m.get("content") or "").startswith(PLAN_CONFIRMED)
+        ),
+        None,
+    )
+    if (
+        confirmed is None
+        or confirmed + 1 >= len(messages)
+        or messages[confirmed + 1].get("role") != "assistant"
+    ):
+        return [sample]
+    design_system = design_system_prompt(str(messages[0].get("content") or ""), build_prompt, design_prompt)
+    if design_system is None or messages[1].get("role") != "user":
+        return [sample]
+    design = [{"role": "system", "content": design_system}, *messages[1 : confirmed + 1]]
+    build_system = str(messages[0].get("content") or "")
+    plan = _plan_section(messages[confirmed - 1])
+    if plan and PROMPT_SECTIONS[0] not in build_system:  # captured after task_complete cleared the plan
+        build_system = f"{build_prompt}\n\n{plan}{build_system[len(build_prompt) :]}"
+    build = [{"role": "system", "content": build_system}, messages[1], *messages[confirmed + 1 :]]
+    return [
+        replace(sample, id=f"{sample.id}#design", messages=design),
+        replace(sample, id=f"{sample.id}#build", messages=build),
+    ]
 
 
 def rejection_reason(result: dict, max_tokens: int) -> str:
