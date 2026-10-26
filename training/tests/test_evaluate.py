@@ -23,6 +23,15 @@ def test_gate_inputs_take_both_losses_from_the_same_training_run():
     assert gate(b, c)[0]
 
 
+def test_gate_inputs_keep_the_task_signatures():
+    from petru_train.evaluate import gate_inputs
+
+    base = EvalResult(float("nan"), 0.9, 0.5, {}, signature="old")
+    cand = EvalResult(float("nan"), 0.9, 0.5, {}, signature="new")
+    b, c = gate_inputs(base, cand, {"base_eval_loss": 1.2, "eval_loss": 0.8})
+    assert (b.signature, c.signature) == ("old", "new") and not gate(b, c)[0]
+
+
 def test_tasks_signature_tracks_the_evaluated_tasks(tmp_path):
     from petru_train.evaluate import tasks_signature
 

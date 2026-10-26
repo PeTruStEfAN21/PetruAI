@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import hashlib
 import json
 import math
@@ -271,8 +272,8 @@ def gate_inputs(base: EvalResult, cand: EvalResult, train_report: dict) -> tuple
     """Both losses come from the training run itself (base measured before step 0 on the same eval set and
     mask), so a rebuilt dataset never compares a new candidate with an old baseline loss."""
     return (
-        EvalResult(float(train_report["base_eval_loss"]), base.tool_validity, base.task_pass, base.details),
-        EvalResult(float(train_report["eval_loss"]), cand.tool_validity, cand.task_pass, cand.details),
+        dataclasses.replace(base, loss=float(train_report["base_eval_loss"])),
+        dataclasses.replace(cand, loss=float(train_report["eval_loss"])),
     )
 
 
