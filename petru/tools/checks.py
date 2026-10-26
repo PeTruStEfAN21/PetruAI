@@ -15,7 +15,9 @@ def _has_python_tests(root: Path) -> bool:
     if (root / "pyproject.toml").is_file() or (root / "pytest.ini").is_file():
         return True
     tests = root / "tests"
-    return tests.is_dir() and any(tests.rglob("*.py"))
+    if tests.is_dir() and any(tests.rglob("*.py")):
+        return True
+    return any(root.glob("test_*.py")) or any(root.glob("*_test.py"))  # pytest's default discovery
 
 
 def detect_checks(root: Path) -> list[str]:
@@ -63,7 +65,7 @@ class RunChecksTool(Tool):
         project_dirs = find_project_dirs(ctx.project_root)
         if not project_dirs:
             return ToolResult(
-                "No checks detected: no pyproject.toml, pytest.ini or tests/*.py, "
+                "No checks detected: no pyproject.toml, pytest.ini, tests/*.py or test_*.py, "
                 "no package.json test script, no tsconfig.json, no pubspec.yaml."
             )
         reports, failed = [], False

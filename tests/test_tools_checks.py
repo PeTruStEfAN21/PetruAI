@@ -88,3 +88,12 @@ def test_run_checks_runs_in_nested_project(tmp_path):
     (nested / "tests" / "test_ok.py").write_text("def test_ok():\n    assert True\n", encoding="utf-8")
     result = run_checks.run({}, ToolContext(tmp_path, False))
     assert not result.is_error and "[PASS] app: python -m pytest -q" in result.output
+
+
+def test_detect_checks_python_test_files_in_the_root(tmp_path):
+    (tmp_path / "stats.py").write_text("x = 1\n", encoding="utf-8")
+    assert detect_checks(tmp_path) == []
+    (tmp_path / "test_stats.py").write_text("def test_x():\n    pass\n", encoding="utf-8")
+    assert detect_checks(tmp_path) == ["python -m pytest -q"]
+    (tmp_path / "test_stats.py").rename(tmp_path / "stats_test.py")
+    assert detect_checks(tmp_path) == ["python -m pytest -q"]

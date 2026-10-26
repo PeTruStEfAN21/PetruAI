@@ -22,7 +22,8 @@ REPO_ROOT = TRAINING_DIR.parent
 REQUESTS_FILE = TRAINING_DIR / "eval" / "tool_requests.json"
 TASKS_DIR = TRAINING_DIR / "tasks"
 TASK_LIMIT = 6  # the first tasks by name are the evaluated ones
-HARNESS_VERSION = 2  # bump when petru.trajectory changes what counts as a pass (2: no checks = fail)
+HARNESS_VERSION = 2  # bump when the harness changes what counts as a pass
+# 2: a task without any check fails; root test_*.py files are detected as pytest projects
 BASE_GGUF = REPO_ROOT / "infra" / "llama.cpp" / "models" / "Qwen3.5-4B.IQ4_XS.gguf"
 TOOL_TOLERANCE = 0.05
 EVAL_SYSTEM = (
