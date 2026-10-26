@@ -147,3 +147,15 @@ se păstrează, cum a cerut utilizatorul. O epocă pe datasetul v3 e estimată l
 | `flutter/samples` | 2.290 |
 | site-ul Flutter | 2.604 |
 | Total | 6.631 fișiere, 50.498 bucăți, 97 s (doar BM25) |
+
+## 11. Dataset v3 (prima noapte, 2026-10-26)
+
+| Măsură | Valoare |
+|---|---|
+| Exemple din commit-uri (9 repo-uri locale + 42 GitHub) | 1.354 |
+| Eliminate ca duplicate (MinHash) | 95 |
+| Antrenare / evaluare | 1.197 / 62 |
+| Cod (TypeScript 186, Python 105, Dart 65, Go 50, Rust 45, JS 31, Java 19, C/C++ 23, C# 7, shell 14) | ~55 % |
+| Documentație și configurări (Markdown 236, YAML 215, necunoscut 186, JSON 33, TOML 31) | ~45 % |
+
+Filtrul de actualizări de versiuni a scos aproape toate commit-urile „bump” (JSON: 183 → 33 față de v1).
