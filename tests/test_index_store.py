@@ -1,6 +1,7 @@
 import math
 import re
 import sqlite3
+import zlib
 
 from petru.index.embeddings import Embedder
 from petru.index.store import CodeIndex
@@ -21,7 +22,7 @@ class FakeEmbedder:
             vec = [0.0] * 32
             for word in re.findall(r"[a-z]+", text.lower()):
                 word = SYNONYMS.get(word, word)
-                vec[hash(word) % 32] += 1.0
+                vec[zlib.crc32(word.encode()) % 32] += 1.0  # hash() is salted per process: flaky
             norm = math.sqrt(sum(v * v for v in vec)) or 1.0
             vectors.append([v / norm for v in vec])
         return vectors
