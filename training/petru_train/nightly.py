@@ -137,6 +137,7 @@ def step_eval_base(ctx: RunContext) -> None:
     from petru_train.evaluate import (
         BASE_GGUF,
         REQUESTS_FILE,
+        TASK_LIMIT,
         TASKS_DIR,
         EvalResult,
         evaluate,
