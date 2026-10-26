@@ -93,3 +93,13 @@ Scriptul de reproducere automată este `infra/run_benchmark.py`.
 * `petru --model fast -p "..."` într-un folder gol: serverul 4B a pornit automat (~5 s), modelul a apelat `write_file` + `task_complete`, total 14 s, exit 0, `hello.py` corect.
 * Comportament 4B: a scris în rezumat „verificat” fără să ruleze scriptul (nu a apelat `shell` sau `run_checks`). De urmărit la demo-urile e2e; dacă persistă, se întărește promptul BUILD (run_checks obligatoriu înainte de task_complete).
 * REPL-ul interactiv (prompt_toolkit) nu a fost exersat automat; de verificat manual (vezi `docs/demo.md`).
+
+## 6. Rezultate demo e2e (2026-10-26, online, utilizator scriptat)
+
+| Demo | Tier | Rezultat | Timp | Observații |
+|---|---|---|---|---|
+| Python todo CLI | default (9B) | PASS | 115 s | 4 întrebări prin ask_user, plan, 2 fișiere, 3 runde run_checks, commit |
+| Flutter counter | default (9B) | PASS | 187 s | 5 întrebări, flutter create în subfolder (acceptat), 5 iterații flutter test, commit |
+| TypeScript notes API | default (9B) | FAIL | 431 s | ajunge la teste (vitest+supertest) dar nu reușește izolarea stării între teste în 40 de iterații; rulare pe quality (35B) în curs |
+
+Probleme de harness găsite și reparate pe parcurs: întrebări puse în text în loc de ask_user (prompt), întrebări multiple într-un răspuns până la max_tokens → 500 de la server (retry cu temperatură crescută + prompt), marcaje XML scurse în argumente (sanitizare), proiect creat în subfolder (prompt + run_checks acceptă proiect imbricat), depășirea contextului la 16k (numărare exactă prin /tokenize + compactare forțată), node_modules comis (gitignore implicit la primul commit).
