@@ -70,6 +70,18 @@ def test_write_jsonl_is_atomic(tmp_path, monkeypatch):
     assert [p.name for p in tmp_path.iterdir()] == ["s.jsonl"]
 
 
+def test_read_jsonl_ignores_a_truncated_last_line_only(tmp_path):
+    path = tmp_path / "traj.jsonl"
+    write_jsonl(path, [sample(1), sample(2)])
+    with path.open("a", encoding="utf-8") as fh:
+        fh.write('{"id": "s3", "source": "traj')  # an append cut short
+    assert [s.id for s in read_jsonl(path)] == ["s1", "s2"]
+    broken_middle = tmp_path / "bad.jsonl"
+    broken_middle.write_text('{"id": "x"\n' + path.read_text(encoding="utf-8"), encoding="utf-8")
+    with pytest.raises(json.JSONDecodeError):
+        read_jsonl(broken_middle)
+
+
 def test_split_is_stratified_and_deterministic():
     samples = [sample(i) for i in range(100)] + [sample(100 + i, "dart") for i in range(30)]
     train, eval_ = split(samples, eval_frac=0.05, seed=42)

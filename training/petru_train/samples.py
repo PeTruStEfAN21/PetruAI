@@ -48,11 +48,16 @@ def write_jsonl(path: Path, samples: Iterable[Sample]) -> int:
 
 
 def read_jsonl(path: Path) -> list[Sample]:
+    """All samples; a truncated LAST line (an append cut short) is skipped, corruption elsewhere raises."""
+    lines = [line for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
     samples = []
-    with path.open(encoding="utf-8") as fh:
-        for line in fh:
-            if line.strip():
-                samples.append(Sample(**json.loads(line)))
+    for number, line in enumerate(lines, start=1):
+        try:
+            samples.append(Sample(**json.loads(line)))
+        except json.JSONDecodeError:
+            if number == len(lines):
+                break
+            raise
     return samples
 
 
