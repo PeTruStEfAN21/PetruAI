@@ -22,6 +22,11 @@ from petru.tui.port import UIPort
 CANCELLED = "Cancelled by the user."
 
 
+def _is_context_overflow(exc: Exception) -> bool:
+    text = str(exc).lower()
+    return "exceeds" in text and ("context" in text or "tokens" in text)
+
+
 class Agent:
     def __init__(
         self,
@@ -153,6 +158,8 @@ class Agent:
                 self.ui.notice(
                     f"Model error: {exc}. Retrying ({provider_errors}/{self.max_invalid_retries - 1})..."
                 )
+                if _is_context_overflow(exc):
+                    compact_if_needed(session, self.provider, self.ctx_tokens, force=True)
                 continue
             calls = extract_tool_calls(result)
             last_text = strip_text_tool_calls(result.content or "")

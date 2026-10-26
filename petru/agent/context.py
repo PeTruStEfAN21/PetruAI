@@ -58,16 +58,29 @@ def build_system_prompt(session: Session, repo_root: Path, online: bool) -> str:
     return "\n\n".join(parts)
 
 
+def transcript_tokens(messages: list[dict], provider: ChatProvider | None = None) -> int:
+    """The provider's exact count (llama-server /tokenize) when it offers one, else the chars/4 estimate."""
+    text = json.dumps(messages, ensure_ascii=False)
+    counter = getattr(provider, "count_tokens", None)
+    if counter is not None:
+        counted = counter(text)
+        if isinstance(counted, int):
+            return counted
+    return estimate_tokens(text)
+
+
 def compact_if_needed(
     session: Session,
     provider: ChatProvider,
     ctx_tokens: int,
     reserve_tokens: int = 4096,
     keep_recent_tokens: int = 6000,
+    force: bool = False,
 ) -> bool:
-    """Summarize old messages when the transcript nears the context limit. Never splits a tool-call pair."""
+    """Summarize old messages when the transcript nears the context limit (or when forced after the server
+    rejected the request as too long). Never splits a tool-call pair."""
     msgs = session.messages
-    if _tokens_of(msgs) <= ctx_tokens - reserve_tokens:
+    if not force and transcript_tokens(msgs, provider) <= ctx_tokens - reserve_tokens:
         return False
     start = 1 if msgs and msgs[0].get("role") == "system" else 0
     k, kept = len(msgs), 0

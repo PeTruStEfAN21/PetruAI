@@ -9,6 +9,20 @@ from petru.tools.base import Tool, ToolContext, ToolResult
 from petru.tools.shell import truncate_output
 
 ACTIONS = ("status", "diff", "log", "add", "commit")
+DEFAULT_GITIGNORE = (
+    "# Added by PetruAI before the first commit; edit freely.\n"
+    "node_modules/\n.venv/\nvenv/\n__pycache__/\n*.pyc\n.pytest_cache/\n.ruff_cache/\n"
+    ".dart_tool/\nbuild/\ndist/\n.env\n.env.*\n*.log\n"
+)
+
+
+def ensure_gitignore(root: Path) -> bool:
+    """Write a default .gitignore when the project has none; True when written."""
+    path = root / ".gitignore"
+    if path.exists():
+        return False
+    path.write_text(DEFAULT_GITIGNORE, encoding="utf-8", newline="\n")
+    return True
 
 
 def _run_git(args: list[str], cwd: Path, timeout_s: int = 120) -> ToolResult:
@@ -82,10 +96,16 @@ class GitTool(Tool):
             if not message:
                 return ToolResult("commit requires a non-empty message", True)
             ensure_repo(root)
+            wrote_ignore = ensure_gitignore(root)
             staged = _run_git(["add", "-A"], root)
             if staged.is_error:
                 return staged
-            return _run_git(["commit", "-m", str(message), *extra], root)
+            committed = _run_git(["commit", "-m", str(message), *extra], root)
+            if wrote_ignore and not committed.is_error:
+                committed.output = (
+                    "Created a default .gitignore (node_modules, .venv, build...).\n" + committed.output
+                )
+            return committed
         return ToolResult(f"Unknown git action {action!r}. Allowed: {', '.join(ACTIONS)}.", True)
 
 

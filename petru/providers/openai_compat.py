@@ -23,12 +23,39 @@ def parse_arguments(raw: str) -> dict | None:
     return parsed if isinstance(parsed, dict) else None
 
 
+HttpPost = Callable[[str, dict, float], dict]
+
+
+def _default_http_post(url: str, payload: dict, timeout: float) -> dict:
+    import urllib.request
+
+    data = json.dumps(payload).encode("utf-8")
+    request = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(request, timeout=timeout) as resp:
+        return json.loads(resp.read().decode("utf-8"))
+
+
 class OpenAICompatProvider:
     def __init__(
-        self, base_url: str, model: str = "local", client: OpenAI | None = None, timeout_s: float = 600.0
+        self,
+        base_url: str,
+        model: str = "local",
+        client: OpenAI | None = None,
+        timeout_s: float = 600.0,
+        http_post: HttpPost = _default_http_post,
     ):
         self.model = model
+        self._server_root = base_url.rstrip("/").removesuffix("/v1")
+        self._http_post = http_post
         self._client = client or OpenAI(base_url=base_url, api_key="local", timeout=timeout_s)
+
+    def count_tokens(self, text: str) -> int | None:
+        """Exact token count from llama-server's /tokenize; None when the server cannot answer."""
+        try:
+            tokens = self._http_post(f"{self._server_root}/tokenize", {"content": text}, 30.0).get("tokens")
+        except Exception:
+            return None
+        return len(tokens) if isinstance(tokens, list) else None
 
     def complete(
         self,
