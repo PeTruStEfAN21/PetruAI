@@ -17,7 +17,8 @@ def tiny_repo(root: Path, name: str, n: int) -> Path:
     git(repo, "config", "user.name", "t")
     git(repo, "config", "user.email", "t@t")
     for i in range(n):
-        commit_file(repo, f"mod{i}.py", f"value = {i}\n" * (i + 1), f"Add module number {i} with values")
+        content = f"{name} value = {i}\n" * (i + 1)  # distinct per repo, so dedup keeps every commit
+        commit_file(repo, f"mod{i}.py", content, f"Add module number {i} with values")
     return repo
 
 
