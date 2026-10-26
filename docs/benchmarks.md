@@ -100,6 +100,7 @@ Scriptul de reproducere automată este `infra/run_benchmark.py`.
 |---|---|---|---|---|
 | Python todo CLI | default (9B) | PASS | 115 s | 4 întrebări prin ask_user, plan, 2 fișiere, 3 runde run_checks, commit |
 | Flutter counter | default (9B) | PASS | 187 s | 5 întrebări, flutter create în subfolder (acceptat), 5 iterații flutter test, commit |
-| TypeScript notes API | default (9B) | FAIL | 431 s | ajunge la teste (vitest+supertest) dar nu reușește izolarea stării între teste în 40 de iterații; rulare pe quality (35B) în curs |
+| TypeScript notes API | default (9B) | FAIL | 431 s | ajunge la teste (vitest+supertest) dar nu reușește izolarea stării între teste în 40 de iterații |
+| TypeScript notes API | quality (35B) | TIMEOUT | > 2400 s | depășește timeout-ul pytest de 40 min (13 tok/s); de reluat cu timeout mai mare dacă utilizatorul vrea |
 
 Probleme de harness găsite și reparate pe parcurs: întrebări puse în text în loc de ask_user (prompt), întrebări multiple într-un răspuns până la max_tokens → 500 de la server (retry cu temperatură crescută + prompt), marcaje XML scurse în argumente (sanitizare), proiect creat în subfolder (prompt + run_checks acceptă proiect imbricat), depășirea contextului la 16k (numărare exactă prin /tokenize + compactare forțată), node_modules comis (gitignore implicit la primul commit).
