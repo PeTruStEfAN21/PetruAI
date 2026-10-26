@@ -99,6 +99,15 @@ def test_module_code_outside_definitions_is_kept_as_a_window():
     assert any(c.kind == "window" and c.start == 1 and "CONFIG" in c.text for c in chunks)
 
 
+def test_iter_project_files_keeps_non_ascii_names_in_git_repos(tmp_path):
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    (tmp_path / "notițe.md").write_text("# notițe\n", encoding="utf-8")
+    (tmp_path / "școală").mkdir()
+    (tmp_path / "școală" / "temă.py").write_text("x = 1\n", encoding="utf-8")
+    found = sorted(p.relative_to(tmp_path).as_posix() for p in iter_project_files(tmp_path))
+    assert found == ["notițe.md", "școală/temă.py"]
+
+
 def test_iter_project_files_never_yields_secret_files(tmp_path):
     from petru.index.chunker import is_secret_file
 

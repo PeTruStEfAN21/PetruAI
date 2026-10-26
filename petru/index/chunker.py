@@ -231,13 +231,23 @@ def iter_project_files(root: Path) -> Iterator[Path]:
     """Indexable text files: git's view (tracked + untracked, minus ignored) in a repo, else a walk."""
     rels: list[str] = []
     if (root / ".git").exists():
+        # -z: NUL-separated raw UTF-8 paths; without it git quotes names like "notițe.md" and they are lost
+        cmd = [
+            "git",
+            "-c",
+            "core.quotepath=off",
+            "ls-files",
+            "-z",
+            "--cached",
+            "--others",
+            "--exclude-standard",
+        ]
         proc = subprocess.run(
-            ["git", "ls-files", "--cached", "--others", "--exclude-standard"],
-            cwd=str(root), capture_output=True, text=True, encoding="utf-8",
+            cmd, cwd=str(root), capture_output=True, text=True, encoding="utf-8",
             creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
         )  # fmt: skip
         if proc.returncode == 0:
-            rels = [line for line in proc.stdout.splitlines() if line]
+            rels = [path for path in proc.stdout.split("\x00") if path]
     if not rels:
         for dirpath, dirnames, filenames in os.walk(root):
             dirnames[:] = sorted(d for d in dirnames if d not in IGNORED_DIRS and d != ".petru")
