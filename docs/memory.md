@@ -64,8 +64,9 @@ Construiește `~/.petru/docs_index.sqlite` din sursa SDK-ului Flutter instalat (
 curent) și din clonele din `infra/offline/docs/` (site-ul Flutter, `flutter/samples`, site-ul Dart). Tool-ul
 `search_docs` caută acolo; e remediul pentru API-uri Flutter depreciate pe care modelul le-ar ghici altfel.
 
-Gramaticile tree-sitter se descarcă la prima folosire în `~/.cache/tree-sitter-language-pack`; pe acest laptop sunt
-deja descărcate. Fără gramatică, un fișier e indexat pe ferestre.
+Gramaticile tree-sitter se descarcă la prima folosire în `%LOCALAPPDATA%/tree-sitter-language-pack` (tot pachetul
+pentru Windows, deci apoi merg toate offline); pe acest laptop sunt deja descărcate. Fără gramatică, un fișier e
+indexat pe ferestre. `petru doctor` verifică dacă există.
 
 ## Jurnal
 

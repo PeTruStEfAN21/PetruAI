@@ -130,7 +130,18 @@ def repl(agent: Agent, ui: RichUI, manager: ServerManager, cfg, online: bool, co
             console.print(f"Unknown command /{cmd.name}. /help lists the commands.", markup=False)
 
 
-SUBCOMMANDS = ("memory", "index", "watch", "journal")
+SUBCOMMANDS = ("memory", "index", "watch", "journal", "doctor")
+
+
+def _doctor_command(argv: list[str]) -> int:
+    from petru import doctor
+
+    argparse.ArgumentParser(
+        prog="petru doctor", description="Check what is ready and what is missing."
+    ).parse_args(argv)
+    checks = doctor.run_doctor(load_config(find_repo_root(Path(__file__))))
+    print(doctor.render(checks))
+    return 1 if any(c.status == "fail" for c in checks) else 0
 
 
 def _journal_command(argv: list[str]) -> int:
@@ -278,6 +289,8 @@ def run_subcommand(argv: list[str]) -> int | None:
         return _watch_command(argv[1:])
     if argv[0] == "journal":
         return _journal_command(argv[1:])
+    if argv[0] == "doctor":
+        return _doctor_command(argv[1:])
     return _memory_command(argv[1:])
 
 
