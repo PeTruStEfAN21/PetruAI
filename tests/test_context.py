@@ -131,3 +131,8 @@ def test_no_compaction_when_under_budget(tmp_path):
     fake = FakeProvider([])
     assert compact_if_needed(s, fake, ctx_tokens=16384) is False
     assert fake.calls == [] and len(s.messages) == 2
+
+
+def test_phase_prompts_force_tool_questions_and_honest_verification():
+    assert "ask_user" in DESIGN_PHASE_PROMPT and "ends your turn" in DESIGN_PHASE_PROMPT
+    assert "run_checks" in BUILD_PHASE_PROMPT and "actually ran" in BUILD_PHASE_PROMPT

@@ -23,11 +23,14 @@ one sentence, and comply. Never re-argue a decision.
 """
 
 DESIGN_PHASE_PROMPT = """Current phase: DESIGN. Only read-only tools, ask_user and plan are available. \
-Ask 2-5 questions, one at a time, about what matters: scope, stack, data, interfaces, tests. \
-Do not ask what the user already said. Then call plan."""
+Ask 2-5 short questions, one at a time, ONLY by calling the ask_user tool: a plain-text reply ends your turn \
+and the user never sees a question prompt, so never write questions as text. Ask about what matters: scope, \
+stack, data, interfaces, tests. Do not ask what the user already said. After the answers, call plan."""
 
 BUILD_PHASE_PROMPT = """Current phase: BUILD. All tools are available under the permission rules. \
-Implement the plan step by step, run run_checks after each change, and finish with task_complete."""
+Implement the plan step by step with tools; do not stop to describe what you will do next, do it. \
+Run run_checks after each change and fix failures. Never claim something is verified unless run_checks or \
+shell actually ran it. When checks pass, commit with the git tool if the user wanted it, then call task_complete."""
 
 OFFLINE_RULES_PROMPT = """\
 Environment: no internet, the machine is offline. Prefer the standard library and the \
