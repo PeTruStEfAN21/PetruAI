@@ -31,12 +31,19 @@ def load_tools(path: Path = SCHEMAS_FILE) -> list[dict]:
 
 
 def write_jsonl(path: Path, samples: Iterable[Sample]) -> int:
+    """Atomic: a temporary file replaces the target only when complete, so an interrupted night never leaves
+    a truncated cache that a resumed run would trust."""
     path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(path.name + ".tmp")
     count = 0
-    with path.open("w", encoding="utf-8", newline="\n") as fh:
-        for sample in samples:
-            fh.write(json.dumps(asdict(sample), ensure_ascii=False) + "\n")
-            count += 1
+    try:
+        with tmp.open("w", encoding="utf-8", newline="\n") as fh:
+            for sample in samples:
+                fh.write(json.dumps(asdict(sample), ensure_ascii=False) + "\n")
+                count += 1
+        tmp.replace(path)
+    finally:
+        tmp.unlink(missing_ok=True)
     return count
 
 

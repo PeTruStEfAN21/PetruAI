@@ -50,6 +50,26 @@ def test_jsonl_round_trip(tmp_path):
     assert path.read_text(encoding="utf-8").count("\n") == 2
 
 
+def test_write_jsonl_is_atomic(tmp_path, monkeypatch):
+    path = tmp_path / "s.jsonl"
+    write_jsonl(path, [sample(1)])
+    newer = [sample(2), sample(3)]  # built before json.dumps is broken below
+
+    def broken(*args, **kwargs):
+        raise KeyboardInterrupt  # the night is stopped in the middle of a write
+
+    import json as json_module
+
+    monkeypatch.setattr(json_module, "dumps", broken)
+    try:
+        write_jsonl(path, newer)
+    except KeyboardInterrupt:
+        pass
+    monkeypatch.undo()
+    assert read_jsonl(path) == [sample(1)]  # the old complete file survives
+    assert [p.name for p in tmp_path.iterdir()] == ["s.jsonl"]
+
+
 def test_split_is_stratified_and_deterministic():
     samples = [sample(i) for i in range(100)] + [sample(100 + i, "dart") for i in range(30)]
     train, eval_ = split(samples, eval_frac=0.05, seed=42)
