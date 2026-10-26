@@ -96,7 +96,10 @@ def step_build(ctx: RunContext) -> None:
 def step_trajectories(ctx: RunContext) -> None:
     from petru_train.trajectories import generate, load_traj_config
 
-    stats = generate(load_traj_config())
+    cfg = load_traj_config()
+    third = int(ctx.remaining_minutes() // 3)  # never let extra data eat the training time
+    cfg.max_minutes = min(cfg.max_minutes or third, third)
+    stats = generate(cfg)
     ctx.notes["trajectories"] = f"kept={sum(stats['kept'].values())}"
     step_build(ctx)  # the new trajectories join the dataset
 
