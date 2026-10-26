@@ -160,3 +160,27 @@ def test_load_traj_config(tmp_path):
     assert cfg.tasks_dir == tmp_path / "tasks" and cfg.out == tmp_path / "data" / "trajectories.jsonl"
     assert cfg.tier == "default" and cfg.samples_per_task == 2 and cfg.attempts_per_task == 4
     assert cfg.max_tokens == 12000 and cfg.base_url is None
+
+
+def test_rejection_reason_names_what_went_wrong():
+    from petru_train.trajectories import rejection_reason
+
+    failing = good(
+        passed=False, check_output="[PASS] dart analyze\n[FAIL] flutter test\nExpected: 1\n  Actual: 0"
+    )
+    assert rejection_reason(failing, max_tokens=12000) == "checks failed: [FAIL] flutter test"
+    assert rejection_reason(good(stop_reason="iteration limit"), 12000) == "stopped: iteration limit"
+    assert rejection_reason(good(tokens=20000), 12000) == "too long: 20000 tokens"
+    assert rejection_reason(good(passed=False, check_output=""), 12000) == "checks failed"
+    assert rejection_reason(good(), 12000) == ""
+
+
+def test_rejected_attempts_are_kept_for_diagnosis(tmp_path, capsys):
+    write_tasks(tmp_path / "tasks", ["flutter_a"])
+    cfg = TrajConfig(
+        tasks_dir=tmp_path / "tasks", out=tmp_path / "traj.jsonl", samples_per_task=1, attempts_per_task=1
+    )
+    generate(cfg, runner=lambda task, cfg, attempt: good("flutter_a", passed=False, check_output="[FAIL] x"))
+    saved = json.loads((tmp_path / "rejected" / "flutter_a-1.json").read_text(encoding="utf-8"))
+    assert saved["check_output"] == "[FAIL] x"
+    assert "flutter_a attempt 1: rejected (0/1): checks failed: [FAIL] x" in capsys.readouterr().out

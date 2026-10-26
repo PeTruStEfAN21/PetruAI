@@ -63,6 +63,21 @@ def language_for(task_name: str) -> str:
     return LANGUAGE_BY_PREFIX.get(task_name.split("_")[0].lower(), "unknown")
 
 
+def rejection_reason(result: dict, max_tokens: int) -> str:
+    """Why `result_to_sample` would drop this attempt, in one line; "" when it would be kept."""
+    if result.get("stop_reason"):
+        return f"stopped: {result['stop_reason']}"
+    if not result.get("passed"):
+        failed = [
+            line for line in str(result.get("check_output") or "").splitlines() if line.startswith("[FAIL]")
+        ]
+        return f"checks failed: {failed[0]}" if failed else "checks failed"
+    tokens = int(result.get("tokens") or 0)
+    if tokens > max_tokens:
+        return f"too long: {tokens} tokens"
+    return ""
+
+
 def result_to_sample(result: dict, task_name: str, max_tokens: int) -> Sample | None:
     """None unless the checks passed, the turn ended normally and the transcript fits the token budget."""
     if not result.get("passed") or result.get("stop_reason") or int(result.get("tokens") or 0) > max_tokens:
@@ -126,6 +141,15 @@ def run_petru_task(task_path: Path, cfg: TrajConfig, attempt: int) -> dict:
         return json.loads(out.read_text(encoding="utf-8"))
 
 
+def _save_rejected(cfg: TrajConfig, name: str, attempt: int, result: dict) -> None:
+    """The full transcript of a rejected attempt, next to the output, so a failing stack can be diagnosed."""
+    folder = cfg.out.parent / "rejected"
+    folder.mkdir(parents=True, exist_ok=True)
+    (folder / f"{name}-{attempt}.json").write_text(
+        json.dumps(result, ensure_ascii=False, indent=1), encoding="utf-8"
+    )
+
+
 def _append_jsonl(path: Path, sample: Sample) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8", newline="\n") as fh:
@@ -174,12 +198,18 @@ def generate(
                 continue
             progress = True
             attempts += 1
-            sample = result_to_sample(runner(task, cfg, attempts), name, cfg.max_tokens)
+            result = runner(task, cfg, attempts)
+            sample = result_to_sample(result, name, cfg.max_tokens)
             if sample is not None:
                 _append_jsonl(cfg.out, sample)
                 kept += 1
-            verdict = "kept" if sample else "rejected"
-            print(f"{name} attempt {attempts}: {verdict} ({kept}/{cfg.samples_per_task})", flush=True)
+                verdict = "kept"
+            else:
+                _save_rejected(cfg, name, attempts, result)
+                verdict = "rejected"
+            line = f"{name} attempt {attempts}: {verdict} ({kept}/{cfg.samples_per_task})"
+            reason = rejection_reason(result, cfg.max_tokens) if sample is None else ""
+            print(f"{line}: {reason}" if reason else line, flush=True)
             state["kept"][name], state["attempts"][name] = kept, attempts
             save()
     save()
