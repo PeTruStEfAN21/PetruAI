@@ -16,6 +16,7 @@ from petru.config import Config
 Status = Literal["ok", "warn", "fail"]
 SETUP = "powershell -ExecutionPolicy Bypass -File infra/setup.ps1"
 EMBED_MODEL = "embeddinggemma-2-Q8_0.gguf"
+MODEL_FLAGS = {"default": "-IncludeMedium", "quality": "-IncludeAll", "fast": ""}  # setup-models.ps1 switches
 
 
 @dataclass
@@ -118,7 +119,7 @@ def _models(cfg: Config) -> list[Check]:
                     f"model {name}",
                     status,
                     f"missing {tier.model_file}",
-                    "powershell -File infra/setup-models.ps1 -IncludeMedium",
+                    f"powershell -File infra/setup-models.ps1 {MODEL_FLAGS.get(name, '-IncludeMedium')}",
                 )
             )
     embed = cfg.models_dir / EMBED_MODEL
@@ -161,8 +162,8 @@ def _tools(probe: Probe) -> list[Check]:
 
 
 def _offline(cfg: Config, probe: Probe) -> list[Check]:
-    wheels = cfg.repo_root / "infra" / "offline" / "wheels" / "py314"
-    count = len(list(wheels.glob("*.whl"))) if wheels.is_dir() else 0
+    wheels = cfg.repo_root / "infra" / "offline" / "wheels"
+    count = len(list(wheels.glob("py3*/*.whl"))) if wheels.is_dir() else 0
     npm = probe.local_appdata / "npm-cache" / "_cacache"
     pub = probe.local_appdata / "Pub" / "Cache"
     grammars = list((probe.local_appdata / "tree-sitter-language-pack").glob("*/libs/*"))

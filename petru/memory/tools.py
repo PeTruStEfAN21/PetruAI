@@ -8,9 +8,9 @@ from pathlib import Path
 from petru.memory.store import MEMORY_TYPES, MemoryStore, memory_dir
 from petru.tools.base import Tool, ToolContext, ToolResult
 
-_SECRET = re.compile(
-    r"-----BEGIN [A-Z ]*PRIVATE KEY|\bsk-[A-Za-z0-9]{20,}"
-    r"|\b(?:api[_-]?key|secret|password|passwd|token)\s*[=:]",
+_SECRET = re.compile(  # a credential-looking VALUE, so advice such as "password: hash with bcrypt" is allowed
+    r"-----BEGIN [A-Z ]*PRIVATE KEY|\b(?:sk|ghp|gho|xox[bp])[-_][A-Za-z0-9]{10,}"
+    r"|\b(?:api[_-]?key|secret|password|passwd|token)\s*[=:]\s*['\"]?[A-Za-z0-9_\-+/=.]*[0-9][A-Za-z0-9_\-+/=.]*",
     re.IGNORECASE,
 )
 SCOPE_SCHEMA = {"type": "string", "enum": ["project", "global"], "description": "project (default) or global"}
@@ -45,13 +45,18 @@ class RememberTool(Tool):
         if _SECRET.search(str(args.get("content", ""))):
             return ToolResult("Refused: the content looks like a secret (key, token or password).", True)
         scope = str(args.get("scope") or "project")
+        store = _store(scope, ctx)
+        previous = store.get(str(args["name"]))
         try:
-            memory = _store(scope, ctx).remember(
+            memory = store.remember(
                 str(args["name"]), str(args["description"]), str(args["type"]), str(args["content"])
             )
         except ValueError as exc:
             return ToolResult(str(exc), True)
-        return ToolResult(f"Remembered {memory.name!r} ({scope} memory, {memory.type}).")
+        note = ""
+        if previous is not None and previous.type != memory.type:
+            note = f" Its type changed from {previous.type} to {memory.type}."
+        return ToolResult(f"Remembered {memory.name!r} ({scope} memory, {memory.type}).{note}")
 
 
 class RecallTool(Tool):

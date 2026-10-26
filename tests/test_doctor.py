@@ -64,6 +64,20 @@ def test_missing_default_model_and_server_fail_with_a_fix(tmp_path):
     assert checks["llama-server"].status == "fail" and "setup.ps1" in checks["llama-server"].fix
 
 
+def test_model_fixes_name_the_right_download_flag(tmp_path):
+    checks = by_name(run_doctor(make_cfg(tmp_path, models=()), healthy_probe(tmp_path)))
+    assert "-IncludeAll" in checks["model quality"].fix and "-IncludeMedium" in checks["model default"].fix
+    assert "-IncludeAll" not in checks["model fast"].fix
+
+
+def test_wheelhouse_found_for_any_python_version(tmp_path):
+    cfg = make_cfg(tmp_path)
+    wheels = cfg.repo_root / "infra" / "offline" / "wheels" / "py315"
+    wheels.mkdir(parents=True)
+    (wheels / "x.whl").write_bytes(b"w")
+    assert by_name(run_doctor(cfg, healthy_probe(tmp_path)))["python wheelhouse"].status == "ok"
+
+
 def test_missing_git_fails_and_missing_flutter_warns(tmp_path):
     probe = healthy_probe(tmp_path)
     probe.which = lambda name: None if name in ("git", "flutter") else f"C:/bin/{name}.exe"

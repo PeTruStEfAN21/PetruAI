@@ -19,7 +19,7 @@ def hook_script(repo_root: Path) -> str:
         "#!/bin/sh\n"
         f"{HOOK_MARK}: queue this commit for a summary; never blocks or fails the commit\n"
         f'if [ -x "$(dirname "$0")/{USER_HOOK}" ]; then "$(dirname "$0")/{USER_HOOK}" "$@" || true; fi\n'
-        f'( py -3.14 -m uv run --project "{root}" python -m petru.journal.hook enqueue "$PWD" '
+        f'( py -3.14 -m uv run --no-sync --project "{root}" python -m petru.journal.hook enqueue "$PWD" '
         ">/dev/null 2>&1 || true ) &\n"
         "exit 0\n"
     )

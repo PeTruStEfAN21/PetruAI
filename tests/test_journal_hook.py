@@ -63,6 +63,7 @@ def test_hook_script_points_at_the_petru_checkout():
         and "|| true" in script
         and script.rstrip().endswith("exit 0")
     )
+    assert "uv run --no-sync" in script  # a background hook must never re-sync the agent's environment
 
 
 def test_a_real_commit_is_queued(tmp_path):

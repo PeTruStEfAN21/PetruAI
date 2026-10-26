@@ -58,6 +58,32 @@ def test_remember_rejects_secrets_and_bad_types(tmp_path):
     assert secret.is_error and "secret" in secret.output.lower()
 
 
+def test_secret_filter_allows_advice_about_passwords(tmp_path):
+    advice = RememberTool().run(
+        {
+            "name": "auth",
+            "description": "d",
+            "type": "feedback",
+            "content": "password: hash with bcrypt, never log it",
+        },
+        ctx(tmp_path),
+    )
+    assert not advice.is_error
+    for secret in ("password=Sup3rS3cretValue", "token: 'ghp_abcdefghijklmnop'", "api_key = abcdef123456"):
+        r = RememberTool().run(
+            {"name": "s", "description": "d", "type": "reference", "content": secret}, ctx(tmp_path)
+        )
+        assert r.is_error, secret
+
+
+def test_changing_the_type_of_a_memory_is_reported(tmp_path):
+    RememberTool().run({"name": "Db", "description": "d", "type": "project", "content": "a"}, ctx(tmp_path))
+    r = RememberTool().run(
+        {"name": "Db", "description": "d", "type": "feedback", "content": "b"}, ctx(tmp_path)
+    )
+    assert "type changed from project to feedback" in r.output
+
+
 def test_recall_returns_body_or_not_found(tmp_path):
     RememberTool().run(
         {"name": "Db", "description": "sqlite", "type": "project", "content": "SQLite file."}, ctx(tmp_path)
