@@ -31,12 +31,12 @@ Se poate rula de câte ori vrei: fiecare pas sare peste ce există deja. Opțiun
 
 ## `petru doctor`
 
-Verifică tot ce contează și spune cum se repară ce lipsește: Python, uv, llama-server, GPU și VRAM, fiecare model,
+Verifică tot ce contează și spune cum se repară ce lipsește: Python, uv, Python-ul folosit de proiectele generate
+(cel de pe PATH, în afara mediului lui PetruAI, cu pytest), llama-server, GPU și VRAM, fiecare model,
 git/node/npm/flutter/dart, cache-urile offline (wheel-uri Python, npm, pub), gramaticile tree-sitter, indexul de
 documentație, spațiul pe disc, mediul de antrenare și conexiunea. Ieșire 1 dacă ceva împiedică pornirea.
 
-Exemplu pe laptopul de dezvoltare (RTX 4050 6 GB, 32 GB RAM): 20 OK, 1 avertisment (indexul de documentație nu era
-construit încă).
+Exemplu pe laptopul de dezvoltare (RTX 4050 6 GB, 32 GB RAM): 22 OK, 0 avertismente.
 
 ## Înainte să rămâi fără internet
 
