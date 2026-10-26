@@ -77,6 +77,17 @@ def test_time_budget_callback_stops_and_saves_after_the_budget():
     assert control.should_training_stop and control.should_save
 
 
+def test_empty_cache_callback_releases_cuda_blocks_after_each_step():
+    from petru_train.train import EmptyCacheCallback
+
+    calls = []
+    control = FakeControl()
+    callback = EmptyCacheCallback(empty=lambda: calls.append(1))
+    assert callback.on_step_end(None, None, control) is control
+    callback.on_step_end(None, None, control)
+    assert calls == [1, 1]
+
+
 def test_time_budget_callback_without_budget_never_stops():
     control = FakeControl()
     TimeBudgetCallback(budget_min=None, clock=lambda: 1e9).on_step_end(None, None, control)

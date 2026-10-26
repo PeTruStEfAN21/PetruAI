@@ -98,6 +98,23 @@ def latest_checkpoint(run_dir: Path) -> Path | None:
     return best[1] if best else None
 
 
+class EmptyCacheCallback:
+    """Give cached CUDA blocks back after every step. On a 6 GB card a long sample spills into shared system
+    memory (WDDM fallback); without this, short samples after it would reuse those slow blocks."""
+
+    def __init__(self, empty: Callable[[], None] | None = None) -> None:
+        self._empty = empty
+
+    def on_step_end(self, args, state, control, **kwargs):
+        if self._empty is not None:
+            self._empty()
+        else:
+            import torch
+
+            torch.cuda.empty_cache()
+        return control
+
+
 class TimeBudgetCallback:
     """Stops training (after a checkpoint) once the wall-clock budget is spent. Duck-typed TrainerCallback."""
 
@@ -157,6 +174,13 @@ def train_in_process(cfg: TrainConfig, run_dir: Path) -> TrainReport:
     class _Budget(TrainerCallback):
         def __init__(self, inner: TimeBudgetCallback) -> None:
             self.inner = inner
+
+        def on_step_end(self, args, state, control, **kwargs):
+            return self.inner.on_step_end(args, state, control, **kwargs)
+
+    class _EmptyCache(TrainerCallback):
+        def __init__(self) -> None:
+            self.inner = EmptyCacheCallback()
 
         def on_step_end(self, args, state, control, **kwargs):
             return self.inner.on_step_end(args, state, control, **kwargs)
@@ -228,7 +252,7 @@ def train_in_process(cfg: TrainConfig, run_dir: Path) -> TrainReport:
         train_dataset=train_ds,
         eval_dataset=eval_ds,
         args=args,
-        callbacks=[_Budget(TimeBudgetCallback(cfg.time_budget_min))],
+        callbacks=[_Budget(TimeBudgetCallback(cfg.time_budget_min)), _EmptyCache()],
     )
     trainer = train_on_responses_only(trainer, instruction_part=INSTRUCTION_PART, response_part=RESPONSE_PART)
     checkpoint = latest_checkpoint(run_dir)
