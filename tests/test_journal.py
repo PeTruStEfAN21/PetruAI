@@ -86,6 +86,22 @@ def test_watcher_records_saves_and_skips_ignored_folders(tmp_path):
     assert not any(e.path.startswith("node_modules") for e in journal.recent_events())
 
 
+def test_watcher_never_journals_secret_files(tmp_path):
+    root = tmp_path / "p"
+    root.mkdir()
+    journal = Journal(tmp_path / "j.sqlite")
+    watcher = ProjectWatcher(root, journal, debounce_s=0.2)
+    watcher.start()
+    try:
+        (root / ".env").write_text("API_KEY=abc\n", encoding="utf-8")
+        (root / "id_rsa").write_text("-----BEGIN OPENSSH PRIVATE KEY-----\n", encoding="utf-8")
+        (root / "main.py").write_text("print(1)\n", encoding="utf-8")
+        assert wait_for(lambda: any(e.path == "main.py" for e in journal.recent_events()))
+    finally:
+        watcher.stop()
+    assert {e.path for e in journal.recent_events()} == {"main.py"}
+
+
 def test_cli_watch_runs_for_a_bounded_time(tmp_path, capsys):
     root = tmp_path / "p"
     root.mkdir()

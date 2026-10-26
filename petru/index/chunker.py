@@ -205,8 +205,26 @@ def _is_binary(path: Path) -> bool:
         return True
 
 
+SECRET_NAMES = {".npmrc", ".pypirc", ".netrc", "credentials.json", "secrets.toml", "secrets.json"}
+SECRET_SUFFIXES = (".pem", ".key", ".pfx", ".p12", ".keystore", ".jks")
+
+
+def is_secret_file(rel: str) -> bool:
+    """Files that hold credentials: they never go into an index, a journal or an export."""
+    name = PurePosixPath(rel.replace("\\", "/")).name.lower()
+    return (
+        name == ".env"
+        or name.startswith(".env.")
+        or name.startswith("id_rsa")
+        or name.startswith("id_ed25519")
+        or name.startswith("id_ecdsa")
+        or name in SECRET_NAMES
+        or name.endswith(SECRET_SUFFIXES)
+    )
+
+
 def _ignored(rel: str) -> bool:
-    return any(part in IGNORED_DIRS for part in PurePosixPath(rel).parts[:-1])
+    return any(part in IGNORED_DIRS for part in PurePosixPath(rel).parts[:-1]) or is_secret_file(rel)
 
 
 def iter_project_files(root: Path) -> Iterator[Path]:

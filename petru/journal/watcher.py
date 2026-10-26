@@ -8,7 +8,7 @@ from pathlib import Path, PurePosixPath
 from watchdog.events import FileSystemEvent, FileSystemEventHandler
 from watchdog.observers import Observer
 
-from petru.index.chunker import MAX_FILE_BYTES
+from petru.index.chunker import MAX_FILE_BYTES, is_secret_file
 from petru.journal.store import Journal
 from petru.tools.fs import IGNORED_DIRS
 
@@ -30,7 +30,7 @@ class ProjectWatcher(FileSystemEventHandler):
             rel = Path(path).resolve().relative_to(self.root).as_posix()
         except ValueError:
             return None
-        if any(part in SKIP_DIRS for part in PurePosixPath(rel).parts):
+        if any(part in SKIP_DIRS for part in PurePosixPath(rel).parts) or is_secret_file(rel):
             return None
         return rel
 

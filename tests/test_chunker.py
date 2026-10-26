@@ -99,6 +99,18 @@ def test_module_code_outside_definitions_is_kept_as_a_window():
     assert any(c.kind == "window" and c.start == 1 and "CONFIG" in c.text for c in chunks)
 
 
+def test_iter_project_files_never_yields_secret_files(tmp_path):
+    from petru.index.chunker import is_secret_file
+
+    secrets = [".env", ".env.local", "id_rsa", "id_ed25519", "server.pem", "cert.key", "store.pfx"]
+    for name in [*secrets, ".npmrc", "credentials.json", "secrets.toml"]:
+        (tmp_path / name).write_text("SECRET=1\n", encoding="utf-8")
+        assert is_secret_file(name), name
+    (tmp_path / "app.py").write_text("x = 1\n", encoding="utf-8")
+    (tmp_path / "env.py").write_text("x = 2\n", encoding="utf-8")
+    assert sorted(p.name for p in iter_project_files(tmp_path)) == ["app.py", "env.py"]
+
+
 def test_iter_project_files_uses_git_and_skips_noise(tmp_path):
     (tmp_path / "src").mkdir()
     (tmp_path / "src" / "a.py").write_text("x = 1\n", encoding="utf-8")
