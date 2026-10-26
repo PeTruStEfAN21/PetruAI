@@ -1,0 +1,20 @@
+# QLoRA fine-tuning of Qwen3.5-4B on the RTX 4050 (6 GB). Paths are relative to training/.
+base_model = "../infra/llama.cpp/models/hf/Qwen3.5-4B"
+train_file = "data/train.jsonl"
+eval_file = "data/eval.jsonl"
+out_dir = "runs"
+
+max_seq_len = 4096          # lower to 2048 if the GPU runs out of memory (see docs/benchmarks.md, "Training")
+lora_r = 16
+lora_alpha = 32
+lora_dropout = 0.0
+lr = 2e-4
+epochs = 1.0
+batch_size = 1
+grad_accum = 8
+warmup_ratio = 0.05
+weight_decay = 0.01
+seed = 3407
+save_steps = 50
+# max_steps = 20            # smoke runs only
+# time_budget_min = 420     # the nightly orchestrator sets this from its --hours
