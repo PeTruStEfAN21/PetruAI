@@ -79,7 +79,9 @@ An autonomous, resumable nightly pipeline (Python 3.12, Unsloth + TRL):
    verified through the GitHub API; copyleft and unknown licenses excluded) become read/edit/complete tool
    trajectories. Filters drop generated files, lockfiles, secrets, trivial messages and oversized changes; MinHash
    deduplication and per-language balancing follow. Verified trajectories of the local models solving scripted tasks
-   (kept only when all checks pass) are mixed in. No output of any proprietary model is used.
+   (kept only when all checks pass) are mixed in, normalized to the agent's protocol (a question written as text
+   becomes an `ask_user` call, harness nudges and rejected calls are dropped) and split into a DESIGN and a BUILD
+   sample, each under the system prompt the agent had in that phase. No output of any proprietary model is used.
 2. **QLoRA** on Qwen3.5-4B in 4-bit with assistant-only loss, checkpoints, automatic resume and a time budget.
 3. **Export**: adapter merge, conversion to GGUF and Q4_K_M quantization.
 4. **Gate**: the candidate is promoted only if it does not regress against the base model on held-out loss
