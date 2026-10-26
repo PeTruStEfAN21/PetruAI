@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import subprocess
+from collections.abc import Callable
 from pathlib import Path
 
 from petru.journal.store import Journal
@@ -41,22 +42,28 @@ def commit_prompt(project: Path, journal: Journal, sha: str) -> str:
     return "\n\n".join(parts)
 
 
-def summarize_pending(project: Path, provider: ChatProvider, limit: int = 5) -> int:
+def summarize_pending(
+    project: Path, provider: ChatProvider, limit: int = 5, notify: Callable[[int], None] | None = None
+) -> int:
+    """Summarize queued commits; `notify(n)` is called first when there is work, so a UI can say why it waits.
+    An empty answer closes the commit (status done, empty summary) instead of retrying it forever."""
     db = project / ".petru" / "journal.sqlite"
     if not db.is_file():
         return 0
     journal = Journal(db)
     done = 0
     try:
-        for sha, _ts in journal.pending_commits(limit):
+        pending = journal.pending_commits(limit)
+        if pending and notify is not None:
+            notify(len(pending))
+        for sha, _ts in pending:
             messages = [
                 {"role": "system", "content": SYSTEM},
                 {"role": "user", "content": commit_prompt(project, journal, sha)},
             ]
             summary = provider.complete(messages, None, max_tokens=200).content.strip()
-            if summary:
-                journal.set_summary(sha, summary)
-                done += 1
+            journal.set_summary(sha, summary)
+            done += bool(summary)
     finally:
         journal.close()
     return done

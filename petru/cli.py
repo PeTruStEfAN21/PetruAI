@@ -336,7 +336,12 @@ def main(argv: list[str] | None = None) -> int:
             print(text)
             return 1 if agent.stop_reason in ("iteration limit", "invalid tool calls") else 0
         try:  # lazy journal: summarize a few queued commits while the model is loaded anyway
-            done = summarize_pending(project, provider, limit=3)
+            done = summarize_pending(
+                project,
+                provider,
+                limit=3,
+                notify=lambda n: console.print(f"Journal: summarizing {n} new commits...", markup=False),
+            )
             if done:
                 console.print(f"Journal: summarized {done} new commits (/journal).", markup=False)
         except Exception as exc:  # the journal is a convenience; never block the REPL on it

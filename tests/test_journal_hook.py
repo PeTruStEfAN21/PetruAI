@@ -95,6 +95,18 @@ def test_summarize_pending_stores_summaries_once(tmp_path):
     assert "Change the value" in prompt and "-x = 1" in prompt and "+x = 2" in prompt
 
 
+def test_empty_summary_is_not_retried_forever_and_notify_announces_work(tmp_path):
+    repo = make_repo(tmp_path)
+    commit(repo, "a.py", "x = 1\n", "Add a module")
+    sha = git(repo, "rev-parse", "HEAD").stdout.strip()
+    journal = Journal(repo / ".petru" / "journal.sqlite")
+    journal.enqueue_commit(sha)
+    announced = []
+    assert summarize_pending(repo, FakeProvider([result(content="  ")]), notify=announced.append) == 0
+    assert announced == [1] and journal.pending_commits() == [] and journal.recent_summaries() == []
+    assert summarize_pending(repo, FakeProvider([]), notify=announced.append) == 0 and announced == [1]
+
+
 def test_system_prompt_shows_recent_commit_summaries(tmp_path):
     journal = Journal(tmp_path / ".petru" / "journal.sqlite")
     journal.enqueue_commit("a" * 40)

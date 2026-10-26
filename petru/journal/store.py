@@ -132,7 +132,8 @@ class Journal:
     def recent_summaries(self, n: int = 5) -> list[tuple[str, str]]:
         with self._lock:
             rows = self.db.execute(
-                "select sha, summary from commits where status = 'done' order by ts desc, rowid desc limit ?",
+                "select sha, summary from commits where status = 'done' and summary != '' "
+                "order by ts desc, rowid desc limit ?",
                 (n,),
             ).fetchall()
         return [(sha, summary) for sha, summary in rows]
