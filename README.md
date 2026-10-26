@@ -42,7 +42,9 @@ time by training on the user's own repositories.
 - **Safety.** Paths cannot escape the project root; shell commands are classified safe, unknown or dangerous; anything
   not clearly safe asks for confirmation (`--yolo` disables prompts).
 - **Robust tool calling with small models.** Native tool calls with a text fallback (`<tool_call>` tags, JSON
-  fences), JSON repair, schema validation, sanitizing of leaked markup, bounded retries with rising temperature,
+  fences), JSON repair (including arguments that run into the markup of further calls), schema validation, a
+  transcript that only ever holds canonical JSON (llama-server rejects a history with malformed arguments), bounded
+  retries with rising temperature, guards against a model re-asking the same question, a cap on any tool result,
   exact token counting through the server and transcript compaction that never splits a tool call from its result.
 - **Model tiers**, started and health-checked automatically:
 
