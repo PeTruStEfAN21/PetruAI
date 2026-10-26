@@ -20,6 +20,12 @@ function Act([string]$description, [scriptblock]$action) {
     else { Write-Host "$description"; & $action }
 }
 function Fail([string]$message) { Write-Host "ERROR: $message" -ForegroundColor Red; exit 1 }
+function Test-Native([string]$commandLine) {
+    # Windows PowerShell 5.1 turns redirected native stderr into a terminating error under
+    # $ErrorActionPreference = "Stop"; running the probe inside cmd keeps PowerShell out of it.
+    & cmd /c "$commandLine >nul 2>&1"
+    return ($LASTEXITCODE -eq 0)
+}
 
 # 1. Hardware ---------------------------------------------------------------------------------------
 Step "Hardware"
@@ -35,10 +41,10 @@ Write-Host "GPU: $gpuName, $vramGB GB VRAM; RAM: $ramGB GB"
 # 2. Python 3.14 and uv -------------------------------------------------------------------------------
 Step "Python 3.14 and uv"
 if (-not (Get-Command py -ErrorAction SilentlyContinue)) { Fail "Python launcher 'py' missing. Install Python 3.14: winget install Python.Python.3.14" }
-& py -3.14 --version 2>$null
-if ($LASTEXITCODE -ne 0) { Fail "Python 3.14 missing. Install it: winget install Python.Python.3.14" }
-& py -3.14 -m uv --version 2>$null
-if ($LASTEXITCODE -ne 0) { Act "Install uv (py -3.14 -m pip install uv)" { & py -3.14 -m pip install uv } }
+if (-not (Test-Native "py -3.14 --version")) { Fail "Python 3.14 missing. Install it: winget install Python.Python.3.14" }
+Write-Host "Python 3.14 found."
+if (Test-Native "py -3.14 -m uv --version") { Write-Host "uv found." }
+else { Act "Install uv (py -3.14 -m pip install uv)" { & py -3.14 -m pip install uv } }
 
 # 3. Agent environment ----------------------------------------------------------------------------------
 Step "Agent environment"
