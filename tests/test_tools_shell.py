@@ -145,3 +145,11 @@ def test_shell_commands_do_not_run_inside_the_agents_virtualenv(tmp_path, monkey
     (tmp_path / "proj").mkdir()
     r = run_shell('Write-Output "venv=[$env:VIRTUAL_ENV]"', tmp_path / "proj")
     assert "venv=[]" in r.output
+
+
+def test_shell_output_has_no_terminal_color_codes(tmp_path):
+    r = run_shell(
+        'Write-Output "$([char]27)[33mwarn$([char]27)[39m $([char]27)[7m$([char]27)[1mRUN$([char]27)[22m"',
+        tmp_path,
+    )
+    assert "warn RUN" in r.output and "[33m" not in r.output and "\x1b" not in r.output

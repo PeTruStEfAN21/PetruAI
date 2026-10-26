@@ -80,6 +80,14 @@ def classify_command(cmd: str) -> CommandKind:
     return "unknown"
 
 
+_ANSI_RE = re.compile(r"\x1b\[[0-9;?]*[ -/]*[@-~]")
+
+
+def _decode(raw: bytes) -> str:
+    """Command output as text: UTF-8, Windows line ends and terminal color codes (vitest, npm) removed."""
+    return _ANSI_RE.sub("", raw.decode("utf-8", errors="replace").replace("\r\n", "\n"))
+
+
 def truncate_output(text: str, max_chars: int) -> str:
     if len(text) <= max_chars:
         return text
@@ -161,9 +169,9 @@ def run_shell(cmd: str, cwd: Path, timeout_s: int = 120, max_chars: int = 20000)
             raw, _ = proc.communicate(timeout=5)
         except subprocess.TimeoutExpired:
             raw = b""
-        text = truncate_output(raw.decode("utf-8", errors="replace").replace("\r\n", "\n"), max_chars)
+        text = truncate_output(_decode(raw), max_chars)
         return ToolResult(f"{text}\n[timed out after {timeout_s:g}s; process tree killed]".strip(), True)
-    text = truncate_output(raw.decode("utf-8", errors="replace").replace("\r\n", "\n"), max_chars)
+    text = truncate_output(_decode(raw), max_chars)
     return ToolResult(f"{text}\nexit code: {proc.returncode}".strip(), proc.returncode != 0)
 
 
