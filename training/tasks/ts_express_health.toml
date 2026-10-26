@@ -1,9 +1,9 @@
 name = "ts_express_health"
 prompt = "Build a minimal Express server in TypeScript with a /health endpoint and a test. Ask me your design questions first."
 answers = [
-  "GET /health returns {\"status\": \"ok\"} as JSON",
-  "vitest with supertest",
-  "yes",
+  'Endpoint: GET /health returns the JSON object {"status": "ok"}.',
+  "Tests: vitest with supertest.",
+  "Everything else: your choice, keep it simple.",
 ]
 checks = []
 tier = "default"

@@ -1,10 +1,10 @@
 name = "flutter_tip_calculator"
 prompt = "Create a small Flutter tip calculator app with widget tests. Ask me your design questions first."
 answers = [
-  "bill amount field, tip percentage slider from 0 to 30, total shown",
-  "setState, no packages",
-  "widget tests",
-  "yes",
+  "UI: a bill amount field, a tip percentage slider from 0 to 30, the total shown below.",
+  "State: setState only, no extra packages.",
+  "Tests: widget tests.",
+  "Everything else: your choice, keep it simple.",
 ]
 checks = []
 tier = "default"

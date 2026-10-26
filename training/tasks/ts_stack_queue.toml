@@ -1,9 +1,9 @@
 name = "ts_stack_queue"
 prompt = "Write a small TypeScript library implementing a typed stack and a typed queue, with tests. Ask me your design questions first."
 answers = [
-  "push, pop, peek, size and isEmpty for both",
-  "vitest",
-  "yes",
+  "Operations: push, pop, peek, size and isEmpty, for both the stack and the queue, generic over the item type.",
+  "Tests: vitest.",
+  "Everything else: your choice, keep it simple.",
 ]
 checks = []
 tier = "default"

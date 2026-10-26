@@ -1,11 +1,11 @@
 name = "ts_express_notes"
 prompt = "Build a small REST API for notes in TypeScript with tests. Ask me your design questions first."
 answers = [
-  "Express with TypeScript",
-  "in-memory array",
-  "GET /notes, POST /notes, DELETE /notes/:id",
-  "vitest with supertest",
-  "yes",
+  "Stack: Express with TypeScript.",
+  "Storage: an in-memory array.",
+  "Endpoints: GET /notes, POST /notes, DELETE /notes/:id.",
+  "Tests: vitest with supertest.",
+  "Everything else: your choice, keep it simple.",
 ]
 checks = []
 tier = "default"

@@ -1,10 +1,10 @@
 name = "flutter_todo_list"
 prompt = "Create a small Flutter todo list app with widget tests. Ask me your design questions first."
 answers = [
-  "add a todo from a text field, toggle done with a checkbox, delete with a swipe",
-  "setState, no packages",
-  "widget tests for add and toggle",
-  "yes",
+  "Features: add a todo from a text field, toggle done with a checkbox, delete with a swipe.",
+  "State: setState only, no extra packages.",
+  "Tests: widget tests for adding and toggling.",
+  "Everything else: your choice, keep it simple.",
 ]
 checks = []
 tier = "default"

@@ -1,10 +1,10 @@
 name = "python_cli_wordcount"
 prompt = "Build a command-line word counter in Python with tests. Ask me your design questions first."
 answers = [
-  "read a file path given as argument, print the total words and the 5 most common",
-  "argparse, standard library only",
-  "pytest",
-  "yes, commit when green",
+  "Behaviour: read the file path given as an argument, print the total word count and the 5 most common words.",
+  "Libraries: argparse and the standard library only.",
+  "Tests: pytest.",
+  "Git: commit when all checks are green.",
 ]
 checks = []
 tier = "default"

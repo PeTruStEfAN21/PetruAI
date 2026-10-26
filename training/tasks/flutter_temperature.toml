@@ -1,10 +1,10 @@
 name = "flutter_temperature"
 prompt = "Create a small Flutter app that converts temperatures between Celsius and Fahrenheit, with widget tests. Ask me your design questions first."
 answers = [
-  "one text field, a switch for the direction, the result shown below",
-  "setState, no packages",
-  "widget tests",
-  "yes",
+  "UI: one text field, a switch for the direction (Celsius to Fahrenheit or back), the result shown below.",
+  "State: setState only, no extra packages.",
+  "Tests: widget tests.",
+  "Everything else: your choice, keep it simple.",
 ]
 checks = []
 tier = "default"
