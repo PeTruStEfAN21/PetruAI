@@ -40,3 +40,17 @@ def test_build_prompt_export_matches_the_agent(tmp_path):
     dump_system_prompt(out)
     assert PROMPT.is_file(), "run: py -3.14 -m uv run python -m petru.tools.schemas"
     assert out.read_text(encoding="utf-8") == PROMPT.read_text(encoding="utf-8"), "system_prompt.txt is stale"
+
+
+def test_design_prompt_export_matches_the_agent(tmp_path):
+    from petru.agent.prompts import BASE_SYSTEM_PROMPT, DESIGN_PHASE_PROMPT
+    from petru.tools.schemas import design_phase_prompt, dump_design_prompt
+
+    assert design_phase_prompt() == f"{BASE_SYSTEM_PROMPT}\n\n{DESIGN_PHASE_PROMPT}"
+    out = tmp_path / "design_prompt.txt"
+    dump_design_prompt(out)
+    committed = PROMPT.with_name("design_prompt.txt")
+    assert committed.is_file(), "run: py -3.14 -m uv run python -m petru.tools.schemas"
+    assert out.read_text(encoding="utf-8") == committed.read_text(encoding="utf-8"), (
+        "design_prompt.txt is stale"
+    )
