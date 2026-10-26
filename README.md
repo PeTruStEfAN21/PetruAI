@@ -16,8 +16,9 @@ time by training on the user's own repositories.
   questions (`ask_user`), then proposes a plan. Writing tools unlock only after the user confirms the plan. The
   answers are appended to `.petru/DECISIONS.md` and treated as final. `/quick` skips the questions for small fixes.
 - **Tools.** `read_file`, `write_file`, `edit_file` (exact search/replace, refuses ambiguous matches), `list_dir`,
-  `glob`, `grep`, `shell` (PowerShell, timeouts, process-tree kill), `git`, `run_checks` (detects pytest, npm test,
-  tsc, dart analyze, flutter test), `ask_user`, `plan`, `task_complete`.
+  `glob`, `grep`, `search_code`, `search_docs`, `shell` (PowerShell, timeouts, process-tree kill), `git`,
+  `run_checks` (detects pytest, npm test,
+  tsc, dart analyze, flutter test), `ask_user`, `plan`, `task_complete`, `remember`, `recall`.
 - **Safety.** Paths cannot escape the project root; shell commands are classified safe, unknown or dangerous; anything
   not clearly safe asks for confirmation (`--yolo` disables prompts).
 - **Robust tool calling with small models.** Native tool calls with a text fallback (`<tool_call>` tags, JSON
@@ -34,6 +35,19 @@ time by training on the user's own repositories.
 
 - **Offline package caches** for generated projects: a Python wheelhouse, a pre-filled npm cache and a pub cache
   (`infra/offline/`), with the agent told which packages are available.
+
+## Learning without retraining
+
+- **Memory.** `remember` / `recall` write typed Markdown notes (user, feedback, project, reference) to
+  `.petru/memory/` and `~/.petru/memory/`; their indexes go into the system prompt. Updates are append-only deltas,
+  so a small model cannot erase what it learned. `petru memory export|import` moves them between machines.
+- **Code index.** tree-sitter chunks (functions, classes, methods; 20 languages) in SQLite with FTS5 (BM25) and
+  sqlite-vec (EmbeddingGemma 2 vectors on a CPU llama-server), fused by reciprocal rank; `search_code` refreshes it
+  incrementally before each search. `search_docs` does the same over the Flutter SDK source and offline docs.
+- **Journal.** `petru watch` records every save as a diff; a git post-commit hook queues commits, and the local
+  model writes a 2–4 line "what and why" summary per commit, shown in the prompt and under `/journal`.
+
+See `docs/memory.md`.
 
 ## Training pipeline (`training/`)
 
@@ -62,7 +76,9 @@ py -3.14 -m uv run petru                     # REPL in the current folder, tier 
 py -3.14 -m uv run petru --model fast -p "Create hello.py that prints the date"   # one-shot
 ```
 
-Slash commands: `/help`, `/model [tier]`, `/plan`, `/quick <text>`, `/done`, `/yolo`, `/status`, `/exit`.
+Slash commands: `/help`, `/model [tier]`, `/plan`, `/quick <text>`, `/done`, `/yolo`, `/status`, `/memory`,
+`/journal`, `/exit`. Subcommands: `petru index [--docs]`, `petru watch`, `petru journal hook install`,
+`petru memory export|import`.
 
 ## Tests
 
@@ -90,6 +106,6 @@ tests/        unit tests and live end-to-end demos
 
 ## Status and roadmap
 
-Done: the agent (phases, tools, permissions, TUI, model tiers) and the training pipeline. Next: project and global
-memory, a searchable code index (tree-sitter, sqlite-vec), a file-change journal, a one-script setup with
-`petru doctor`, and memory export/import.
+Done: the agent (phases, tools, permissions, TUI, model tiers), the training pipeline, project and global memory
+with export/import, the hybrid code index, the offline docs index and the change journal. Next: a one-script setup
+with `petru doctor` for other machines, and the first promoted fine-tuned model.

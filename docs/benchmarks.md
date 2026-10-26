@@ -104,3 +104,20 @@ Scriptul de reproducere automată este `infra/run_benchmark.py`.
 | TypeScript notes API | quality (35B) | TIMEOUT | > 2400 s | depășește timeout-ul pytest de 40 min (13 tok/s); de reluat cu timeout mai mare dacă utilizatorul vrea |
 
 Probleme de harness găsite și reparate pe parcurs: întrebări puse în text în loc de ask_user (prompt), întrebări multiple într-un răspuns până la max_tokens → 500 de la server (retry cu temperatură crescută + prompt), marcaje XML scurse în argumente (sanitizare), proiect creat în subfolder (prompt + run_checks acceptă proiect imbricat), depășirea contextului la 16k (numărare exactă prin /tokenize + compactare forțată), node_modules comis (gitignore implicit la primul commit).
+
+## 7. Index de cod (2026-10-26)
+
+| Măsură | Valoare |
+|---|---|
+| Repo indexat | PetruAI (acest repo) |
+| Fișiere / bucăți | 247 / 1.253 |
+| Bucăți cu vectori | 1.226 (EmbeddingGemma 2 Q8_0 pe CPU) |
+| Timp total | 122 s |
+
+## 8. Evaluarea modelului de bază pentru poarta de antrenare (Qwen3.5-4B IQ4_XS, 2026-10-26)
+
+| Metrică | Valoare |
+|---|---|
+| Tool calling valid (20 de cereri fixe) | 1,00 |
+| Sarcini reale trecute | 2 din 6 (python_cli_wordcount, python_csv_stats; toate cele 4 Flutter pică) |
+| Durata evaluării | 21 min |
