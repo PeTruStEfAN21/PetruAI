@@ -126,7 +126,49 @@ def repl(agent: Agent, ui: RichUI, manager: ServerManager, cfg, online: bool, co
             console.print(f"Unknown command /{cmd.name}. /help lists the commands.", markup=False)
 
 
-SUBCOMMANDS = ("memory",)
+SUBCOMMANDS = ("memory", "index")
+
+
+def _index_command(argv: list[str]) -> int:
+    import time
+
+    from petru.index import tools as index_tools
+    from petru.index.embed_server import EmbedServer
+    from petru.index.embeddings import Embedder
+    from petru.index.store import CodeIndex
+
+    parser = argparse.ArgumentParser(prog="petru index", description="Build or update the search indexes.")
+    parser.add_argument("--project", default=".")
+    parser.add_argument("--docs", action="store_true", help="index the Flutter SDK and offline docs instead")
+    parser.add_argument("--no-embed", action="store_true", help="BM25 only, no embeddings server")
+    ns = parser.parse_args(argv)
+    repo_root = find_repo_root(Path(__file__))
+    server = None if ns.no_embed else EmbedServer(load_config(repo_root))
+    url = server.ensure() if server is not None else None
+    if server is not None and url is None:
+        print("Embeddings server unavailable: indexing for keyword search only.")
+    embedder = Embedder(url) if url else None
+    started = time.monotonic()
+    try:
+        if ns.docs:
+            index = CodeIndex(index_tools.docs_index_path(), embedder)
+            for label, root in index_tools.docs_roots(repo_root).items():
+                stats = index.update(root, prefix=label)
+                print(
+                    f"{label}: {stats['added']} added, {stats['updated']} updated, {stats['removed']} removed"
+                )
+        else:
+            project = Path(ns.project).resolve()
+            index = CodeIndex(project / ".petru" / "index.sqlite", embedder)
+            index.update(project)
+        totals = index.stats()
+        index.close()
+    finally:
+        if server is not None:
+            server.stop()
+    print(f"{totals['files']} files, {totals['chunks']} chunks, {totals['embedded']} embedded "
+          f"in {time.monotonic() - started:.0f} s")  # fmt: skip
+    return 0
 
 
 def _memory_command(argv: list[str]) -> int:
@@ -160,6 +202,8 @@ def run_subcommand(argv: list[str]) -> int | None:
     """`petru memory ...` and friends; None means "not a subcommand", so the REPL/one-shot parser runs."""
     if not argv or argv[0] not in SUBCOMMANDS:
         return None
+    if argv[0] == "index":
+        return _index_command(argv[1:])
     return _memory_command(argv[1:])
 
 

@@ -127,12 +127,17 @@ class CodeIndex:
         self.db.execute("insert into files(path, sha1) values (?, ?)", (path, sha1))
         self._store_vectors(ids, [f"{path} {c.name}\n{c.text}" for c in chunks])
 
-    def update(self, root: Path) -> dict:
+    def update(self, root: Path, prefix: str = "") -> dict:
+        """Index `root` incrementally. With a prefix, paths are stored as `prefix/rel` and only that prefix's
+        files are considered for removal, so several roots (SDK, docs) can share one index."""
+        lead = f"{prefix}/" if prefix else ""
         known = dict(self.db.execute("select path, sha1 from files"))
+        if prefix:
+            known = {path: sha1 for path, sha1 in known.items() if path.startswith(lead)}
         seen: set[str] = set()
         stats = {"added": 0, "updated": 0, "removed": 0}
         for file in iter_project_files(root):
-            rel = file.relative_to(root).as_posix()
+            rel = lead + file.relative_to(root).as_posix()
             seen.add(rel)
             data = file.read_bytes()
             sha1 = hashlib.sha1(data).hexdigest()

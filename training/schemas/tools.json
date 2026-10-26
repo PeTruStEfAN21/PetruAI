@@ -385,5 +385,55 @@
         "additionalProperties": false
       }
     }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "search_code",
+      "description": "Search this project's code by identifier, words or meaning. Returns path:lines, the definition kind and name, and the code. Use it before reading files when you do not know where something lives.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "identifiers, words or a description of what you look for"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "search_docs",
+      "description": "Search the offline documentation: the installed Flutter SDK source (current API) and the Flutter, Dart and samples docs. Use it for Flutter/Dart API questions instead of guessing.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "identifiers, words or a description of what you look for"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "additionalProperties": false
+      }
+    }
   }
 ]
