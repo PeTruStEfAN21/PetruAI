@@ -32,6 +32,15 @@ def _is_context_overflow(exc: Exception) -> bool:
 MAX_TOOL_RESULT_CHARS = 24_000  # a backstop above read_file's 400 lines; tools keep their own, smaller limits
 
 
+def _recordable(call: ToolCall) -> str:
+    """Arguments as they go into the transcript. llama-server re-parses them to render the chat template and
+    answers 500 to every later request if they are not JSON, so unparseable ones are recorded as {} (the tool
+    result already tells the model its call was invalid)."""
+    if call.arguments is not None:
+        return call.raw_arguments
+    return "{}"
+
+
 class Agent:
     def __init__(
         self,
@@ -80,7 +89,7 @@ class Agent:
             "role": "assistant",
             "content": strip_text_tool_calls(content or ""),
             "tool_calls": [
-                {"id": c.id, "type": "function", "function": {"name": c.name, "arguments": c.raw_arguments}}
+                {"id": c.id, "type": "function", "function": {"name": c.name, "arguments": _recordable(c)}}
                 for c in calls
             ],
         }

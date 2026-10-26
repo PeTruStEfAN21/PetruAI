@@ -314,3 +314,18 @@ def test_a_huge_tool_result_is_cut_before_it_reaches_the_model(tmp_path):
         len(content) < MAX_TOOL_RESULT_CHARS + 200 and content.startswith("HEAD") and content.endswith("TAIL")
     )
     assert "truncated" in content
+
+
+def test_unparseable_arguments_never_reach_the_server_again(tmp_path):
+    import json
+
+    broken = ToolCall("c1", "ask_user", None, "<<not json at all")
+    fake = FakeProvider([result(tool_calls=[broken]), result(content="ok")])
+    agent = make_agent(fake, ScriptedUI(), tmp_path)
+    agent.run_turn("x")
+    history = fake.calls[1]["messages"]
+    recorded = history[-2]["tool_calls"][0]["function"]["arguments"]
+    assert (
+        json.loads(recorded) == {}
+    )  # llama-server answers 500 to every request whose history has invalid JSON
+    assert "not a JSON object" in history[-1]["content"]
