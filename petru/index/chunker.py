@@ -1,4 +1,4 @@
-"""Split source files into searchable chunks: one per definition (tree-sitter), windows for everything else."""
+"""Split source files into searchable chunks: one per definition (tree-sitter), windows for the rest."""
 
 from __future__ import annotations
 
