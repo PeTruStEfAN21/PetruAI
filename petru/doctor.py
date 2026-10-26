@@ -48,6 +48,18 @@ def _online() -> bool:
     return is_online()
 
 
+def _project_python() -> tuple[int, str]:
+    """`python` with pytest as the agent's own shell commands see it: outside PetruAI's virtualenv."""
+    import tempfile
+
+    from petru.tools.shell import run_shell
+
+    result = run_shell(
+        'python -c "import sys, pytest; print(sys.executable)"', Path(tempfile.gettempdir()), 60
+    )
+    return (1 if result.is_error else 0), result.output.splitlines()[0] if result.output else ""
+
+
 @dataclass
 class Probe:
     """Everything the checks look at outside Python, injectable for tests."""
@@ -58,6 +70,7 @@ class Probe:
     local_appdata: Path = field(default_factory=lambda: Path(os.environ.get("LOCALAPPDATA", Path.home())))
     free_gb: Callable[[Path], float] = _free_gb
     online: Callable[[], bool] = _online
+    project_python: Callable[[], tuple[int, str]] = _project_python
 
 
 def _python(probe: Probe) -> list[Check]:
@@ -78,6 +91,15 @@ def _python(probe: Probe) -> list[Check]:
     checks.append(
         Check(
             "uv", "ok" if has_uv else "warn", "found" if has_uv else "missing", "py -3.14 -m pip install uv"
+        )
+    )
+    code, found = probe.project_python()
+    checks.append(
+        Check(
+            "python for projects",
+            "ok" if code == 0 else "warn",
+            found if code == 0 else f"generated Python projects cannot run their tests: {found}",
+            "" if code == 0 else "py -m pip install pytest (into the Python on PATH, not PetruAI's .venv)",
         )
     )
     return checks

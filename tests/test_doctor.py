@@ -117,3 +117,14 @@ def test_render_and_exit_code(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(doctor, "run_doctor", lambda cfg, probe=None: [Check("a", "ok", "fine")])
     assert cli.run_subcommand(["doctor"]) == 0
     assert "a" in capsys.readouterr().out
+
+
+def test_project_python_is_checked_outside_the_agents_environment(tmp_path):
+    cfg = make_cfg(tmp_path)
+    probe = healthy_probe(tmp_path)
+    probe.project_python = lambda: (0, "C:/Python314/python.exe")
+    check = by_name(run_doctor(cfg, probe))["python for projects"]
+    assert check.status == "ok" and "C:/Python314/python.exe" in check.detail
+    probe.project_python = lambda: (1, "No module named pytest")
+    check = by_name(run_doctor(cfg, probe))["python for projects"]
+    assert check.status == "warn" and "pytest" in check.fix
