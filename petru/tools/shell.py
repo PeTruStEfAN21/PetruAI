@@ -136,6 +136,9 @@ def project_env(cwd: Path, environ: Mapping[str, str] | None = None) -> dict[str
     active = env.get("VIRTUAL_ENV")
     if active and not _belongs_to(Path(active), cwd):
         del env["VIRTUAL_ENV"]
+    env.setdefault(
+        "PYTHONUTF8", "1"
+    )  # piped output is cp1252 otherwise: printing "ț" would crash the program
     return env
 
 

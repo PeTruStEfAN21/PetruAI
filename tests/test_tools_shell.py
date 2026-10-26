@@ -153,3 +153,9 @@ def test_shell_output_has_no_terminal_color_codes(tmp_path):
         tmp_path,
     )
     assert "warn RUN" in r.output and "[33m" not in r.output and "\x1b" not in r.output
+
+
+def test_python_programs_can_print_romanian_text(tmp_path):
+    (tmp_path / "salut.py").write_text('print("Bună ziua, țară și șosea")\n', encoding="utf-8")
+    r = run_shell("python salut.py", tmp_path)
+    assert not r.is_error and "Bună ziua, țară și șosea" in r.output
