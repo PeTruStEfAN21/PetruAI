@@ -121,3 +121,19 @@ Probleme de harness găsite și reparate pe parcurs: întrebări puse în text �
 | Tool calling valid (20 de cereri fixe) | 1,00 |
 | Sarcini reale trecute | 2 din 6 (python_cli_wordcount, python_csv_stats; toate cele 4 Flutter pică) |
 | Durata evaluării | 21 min |
+
+## 9. Antrenare QLoRA pe RTX 4050 6 GB (Qwen3.5-4B, 2026-10-26)
+
+Un pas forward+backward pe o secvență, cu LoRA r=16 și gradient checkpointing Unsloth, după instalarea `fla-core`
+(nucleele Triton pentru straturile Gated DeltaNet; fără ele PyTorch folosea o implementare de referință care
+umplea VRAM-ul și trecea în memoria partajată).
+
+| Lungime | Vârf memorie | Timp |
+|---|---|---|
+| model încărcat | 3,88 GB | |
+| 4.096 tokeni | 4,94 GB | 6 s |
+| 6.144 tokeni | 5,41 GB | 20 s |
+| 8.960 tokeni | 6,07 GB (depășește VRAM-ul, Windows mută surplusul în RAM) | 62 s |
+
+Concluzie: ~97 % din exemple (sub 6.144 de tokeni) se antrenează în VRAM; cele mai lungi merg de ~10 ori mai lent, dar
+se păstrează, cum a cerut utilizatorul. O epocă pe datasetul v3 e estimată la ~3 ore.
