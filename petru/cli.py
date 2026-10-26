@@ -126,7 +126,48 @@ def repl(agent: Agent, ui: RichUI, manager: ServerManager, cfg, online: bool, co
             console.print(f"Unknown command /{cmd.name}. /help lists the commands.", markup=False)
 
 
+SUBCOMMANDS = ("memory",)
+
+
+def _memory_command(argv: list[str]) -> int:
+    from petru.memory.transfer import export_memory, import_memory
+
+    parser = argparse.ArgumentParser(prog="petru memory", description="Export or import what Petru learned.")
+    sub = parser.add_subparsers(dest="action", required=True)
+    exp = sub.add_parser("export", help="write global and project memory to a zip")
+    exp.add_argument("zip", type=Path)
+    only = exp.add_mutually_exclusive_group()
+    only.add_argument("--global-only", action="store_true")
+    only.add_argument("--project-only", action="store_true")
+    exp.add_argument("--project", default=".")
+    imp = sub.add_parser("import", help="merge a zip into this machine's memory (never overwrites)")
+    imp.add_argument("zip", type=Path)
+    imp.add_argument("--project", default=".")
+    ns = parser.parse_args(argv)
+    project = Path(ns.project).resolve()
+    if ns.action == "export":
+        count = export_memory(
+            ns.zip, project, include_global=not ns.project_only, include_project=not ns.global_only
+        )
+        print(f"Exported {count} files to {ns.zip}")
+        return 0
+    counts = import_memory(ns.zip, project)
+    print(f"Imported: {counts['added']} added, {counts['merged']} merged, {counts['skipped']} skipped")
+    return 0
+
+
+def run_subcommand(argv: list[str]) -> int | None:
+    """`petru memory ...` and friends; None means "not a subcommand", so the REPL/one-shot parser runs."""
+    if not argv or argv[0] not in SUBCOMMANDS:
+        return None
+    return _memory_command(argv[1:])
+
+
 def main(argv: list[str] | None = None) -> int:
+    argv = sys.argv[1:] if argv is None else argv
+    handled = run_subcommand(argv)
+    if handled is not None:
+        return handled
     ns = build_parser().parse_args(argv)
     console = Console()
     err = Console(stderr=True)

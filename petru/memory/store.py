@@ -56,6 +56,17 @@ class Memory:
     path: Path
 
 
+_NOTE = re.compile(r"^---\r?\nname: (.*)\r?\ndescription: (.*)\r?\ntype: (.*)\r?\n---\r?\n(.*)$", re.DOTALL)
+
+
+def parse_note(text: str) -> tuple[str, str, str, str] | None:
+    """(name, description, type, body) of a memory file, or None when it has no frontmatter."""
+    match = _NOTE.match(text)
+    if not match:
+        return None
+    return match[1].strip(), match[2].strip(), match[3].strip(), match[4].strip("\r\n")
+
+
 def _one_line(text: str) -> str:
     return " ".join(str(text).split())
 
@@ -102,11 +113,11 @@ class MemoryStore:
     def _read(self, path: Path) -> Memory | None:
         if not path.is_file():
             return None
-        text = path.read_text(encoding="utf-8")
-        match = re.match(r"^---\nname: (.*)\ndescription: (.*)\ntype: (.*)\n---\n(.*)$", text, re.DOTALL)
-        if not match:
-            return Memory(path.stem, "", "reference", text, path)
-        return Memory(match[1], match[2], match[3], match[4].strip("\n"), path)
+        parsed = parse_note(path.read_text(encoding="utf-8"))
+        if parsed is None:
+            return Memory(path.stem, "", "reference", path.read_text(encoding="utf-8"), path)
+        name, description, type, body = parsed
+        return Memory(name, description, type, body, path)
 
     def _write(self, memory: Memory) -> None:
         self.root.mkdir(parents=True, exist_ok=True)
@@ -130,6 +141,21 @@ class MemoryStore:
         entries.append((memory.name, path.name, memory.description))
         self._write_index(entries[-INDEX_MAX_LINES:])
         return memory
+
+    def merge(self, name: str, description: str, type: str, body: str) -> str:
+        """Bring in a note from elsewhere: create it, or append only the lines this one lacks.
+        Returns "added", "merged" or "unchanged" (so importing twice changes nothing)."""
+        existing = self.get(name)
+        if existing is None:
+            self.remember(name, description, type if type in MEMORY_TYPES else "reference", body)
+            return "added"
+        have = set(existing.body.splitlines())
+        new_lines = [line for line in body.splitlines() if line.strip() and line not in have]
+        if not new_lines:
+            return "unchanged"
+        existing.body = existing.body.rstrip("\n") + "\n" + "\n".join(new_lines)
+        self._write(existing)
+        return "merged"
 
     def get(self, name: str) -> Memory | None:
         return self._read(self._file_for(name))
