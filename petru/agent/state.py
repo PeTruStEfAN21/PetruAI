@@ -32,6 +32,7 @@ class Session:
     always_allow: set[str] = field(default_factory=set)
     turn_tool_iterations: int = 0
     pending_decisions: list[str] = field(default_factory=list)
+    turned_away_questions: int = 0  # ask_user calls refused as repeated or excess in this DESIGN phase
 
     def start_turn(self, text: str, quick: bool = False) -> None:
         """Record the user's prompt and arm the right phase for it."""
@@ -43,6 +44,7 @@ class Session:
             else:
                 self.phase = Phase.DESIGN
                 self.pending_decisions = []
+                self.turned_away_questions = 0
         elif self.phase is Phase.DESIGN and quick:
             self.phase = Phase.BUILD
 
@@ -56,3 +58,4 @@ class Session:
         self.phase = Phase.IDLE
         self.plan = None
         self.pending_decisions = []
+        self.turned_away_questions = 0

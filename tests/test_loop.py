@@ -329,3 +329,22 @@ def test_unparseable_arguments_never_reach_the_server_again(tmp_path):
         json.loads(recorded) == {}
     )  # llama-server answers 500 to every request whose history has invalid JSON
     assert "not a JSON object" in history[-1]["content"]
+
+
+def test_design_stops_offering_ask_user_after_two_turned_away_questions(tmp_path):
+    same = {"question": "Same?"}
+    fake = FakeProvider(
+        [
+            result(tool_calls=[call("ask_user", same, "c1")]),
+            result(tool_calls=[call("ask_user", same, "c2")]),
+            result(tool_calls=[call("ask_user", same, "c3")]),
+            result(tool_calls=[call("plan", {"title": "T", "steps": ["a"]}, "c4")]),
+            result(tool_calls=[call("task_complete", {"summary": "done"}, "c5")]),
+            result(content="ok"),
+        ]
+    )
+    ui = ScriptedUI(answers=["A"], plan_action="confirm")
+    agent = make_agent(fake, ui, tmp_path)
+    assert agent.run_turn("make it") == "ok"
+    assert "ask_user" in tool_names(fake.calls[2]) and "ask_user" not in tool_names(fake.calls[3])
+    assert len(ui.questions) == 1 and agent.session.turned_away_questions == 0  # reset when the task closed

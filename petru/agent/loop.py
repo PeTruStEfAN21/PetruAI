@@ -29,6 +29,7 @@ def _is_context_overflow(exc: Exception) -> bool:
     return "exceeds" in text and ("context" in text or "tokens" in text)
 
 
+QUESTION_STRIKES = 2  # refused questions after which DESIGN stops offering ask_user
 MAX_TOOL_RESULT_CHARS = 24_000  # a backstop above read_file's 400 lines; tools keep their own, smaller limits
 
 
@@ -80,7 +81,10 @@ class Agent:
         if phase is Phase.BUILD:
             return self.registry.names()
         if phase is Phase.DESIGN:
-            return [name for name in self.registry.names() if name in DESIGN_ALLOWED]
+            names = [name for name in self.registry.names() if name in DESIGN_ALLOWED]
+            if self.session.turned_away_questions >= QUESTION_STRIKES:  # a looping model: leave it the plan
+                names = [name for name in names if name != "ask_user"]
+            return names
         return []  # IDLE: the task is complete, the model only answers in text
 
     @staticmethod

@@ -45,11 +45,13 @@ class AskUserTool(Tool):
             answered = ctx.session.pending_decisions
             earlier = next((e for e in answered if e.startswith(f"{question} -> ")), None)
             if earlier is not None:  # small models re-ask the same question in a loop; never bother the user
-                answer = earlier[len(question) + 4 :]
+                ctx.session.turned_away_questions += 1
+                answer = earlier[len(question) + 4 :].rstrip(".")
                 return ToolResult(
                     f"{REPEATED_QUESTION} The user answered: {answer}. Ask something else or call plan."
                 )
             if len(answered) >= MAX_DESIGN_QUESTIONS:
+                ctx.session.turned_away_questions += 1
                 return ToolResult(
                     f"{ENOUGH_QUESTIONS} ({len(answered)} answered). "
                     "Call plan now with the steps and the decisions taken."
