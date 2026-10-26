@@ -19,7 +19,22 @@ PREV_FILE = "Qwen3.5-4B-petru.prev.gguf"
 
 
 def merge_adapter(base_model: Path, adapter_dir: Path, out_dir: Path) -> Path:
-    """Merge the LoRA into bf16 weights on the CPU (32 GB RAM) and save them with the tokenizer."""
+    """Merge the LoRA into bf16 weights on the CPU (32 GB RAM) and save them with the tokenizer.
+    Runs in a child process so the ~9 GB of weights leave RAM when it is done."""
+    from petru_train.isolate import run_isolated
+
+    run_isolated(
+        "petru_train.export:merge_from_json",
+        {"base_model": str(base_model), "adapter_dir": str(adapter_dir), "out_dir": str(out_dir)},
+    )
+    return out_dir
+
+
+def merge_from_json(base_model: str, adapter_dir: str, out_dir: str) -> str:
+    return str(_merge_in_process(Path(base_model), Path(adapter_dir), Path(out_dir)))
+
+
+def _merge_in_process(base_model: Path, adapter_dir: Path, out_dir: Path) -> Path:
     import torch
     from peft import PeftModel
     from transformers import AutoProcessor, AutoTokenizer

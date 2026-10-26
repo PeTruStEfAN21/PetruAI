@@ -133,6 +133,26 @@ def test_server_command_uses_the_tier_flags():
     assert "--cache-type-k" in cmd and "--flash-attn" in cmd
 
 
+def test_assistant_spans_cover_each_reply_through_its_end_marker():
+    from petru_train.evaluate import assistant_spans
+
+    text = (
+        "<|im_start|>system\nS<|im_end|>\n<|im_start|>user\nU<|im_end|>\n"
+        "<|im_start|>assistant\nA1<|im_end|>\n<|im_start|>user\nU2<|im_end|>\n"
+        "<|im_start|>assistant\nA2<|im_end|>\n"
+    )
+    spans = assistant_spans(text)
+    assert [text[a:b] for a, b in spans] == ["A1<|im_end|>", "A2<|im_end|>"]
+
+
+def test_label_mask_keeps_only_tokens_inside_spans():
+    from petru_train.evaluate import label_mask
+
+    offsets = [(0, 5), (5, 8), (8, 10), (10, 14), (14, 14)]  # the last one is a zero-width special token
+    assert label_mask(offsets, [(8, 14)]) == [False, False, True, True, False]
+    assert label_mask(offsets, []) == [False] * 5
+
+
 @pytest.mark.gpu
 def test_held_out_loss_is_finite(tmp_path):
     from petru_train.evaluate import held_out_loss

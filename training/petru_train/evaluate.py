@@ -160,10 +160,55 @@ def task_pass(
     return rate, details
 
 
+ASSISTANT_START = "<|im_start|>assistant\n"
+TURN_END = "<|im_end|>"
+
+
+def assistant_spans(text: str) -> list[tuple[int, int]]:
+    """Character spans of every assistant reply, end marker included: exactly what training puts loss on."""
+    spans = []
+    start = text.find(ASSISTANT_START)
+    while start != -1:
+        body = start + len(ASSISTANT_START)
+        end = text.find(TURN_END, body)
+        end = len(text) if end == -1 else end + len(TURN_END)
+        spans.append((body, end))
+        start = text.find(ASSISTANT_START, end)
+    return spans
+
+
+def label_mask(offsets: list[tuple[int, int]], spans: list[tuple[int, int]]) -> list[bool]:
+    """True for tokens whose characters lie inside an assistant span (zero-width tokens never count)."""
+    return [a < b and any(lo <= a and b <= hi for lo, hi in spans) for a, b in offsets]
+
+
 def held_out_loss(
     model_dir: Path, adapter_dir: Path | None, eval_file: Path, max_seq_len: int = 4096
 ) -> float:
-    """Mean token loss over the held-out transcripts (4-bit base plus optional adapter). Frees the GPU."""
+    """Mean loss over the assistant tokens of the held-out transcripts (4-bit base plus optional adapter).
+    Runs in a child process so the GPU is free again afterwards."""
+    from petru_train.isolate import run_isolated
+
+    return run_isolated(
+        "petru_train.evaluate:assistant_loss_from_json",
+        {
+            "model_dir": str(model_dir),
+            "adapter_dir": str(adapter_dir) if adapter_dir else None,
+            "eval_file": str(eval_file),
+            "max_seq_len": max_seq_len,
+        },
+    )
+
+
+def assistant_loss_from_json(
+    model_dir: str, adapter_dir: str | None, eval_file: str, max_seq_len: int
+) -> float:
+    return _assistant_loss(
+        Path(model_dir), Path(adapter_dir) if adapter_dir else None, Path(eval_file), max_seq_len
+    )
+
+
+def _assistant_loss(model_dir: Path, adapter_dir: Path | None, eval_file: Path, max_seq_len: int) -> float:
     import torch
     from unsloth import FastLanguageModel
 
@@ -176,17 +221,28 @@ def held_out_loss(
 
         model = PeftModel.from_pretrained(model, str(adapter_dir))
     FastLanguageModel.for_inference(model)
-    losses = []
+    total_loss, total_tokens = 0.0, 0
     with torch.no_grad():
         for sample in read_jsonl(eval_file):
+            text = render_chat(sample, tokenizer)
             encoded = tokenizer(
-                render_chat(sample, tokenizer), return_tensors="pt", truncation=True, max_length=max_seq_len
-            ).to("cuda")
-            output = model(input_ids=encoded.input_ids, labels=encoded.input_ids)
-            losses.append(float(output.loss))
-    del model
-    torch.cuda.empty_cache()
-    return round(sum(losses) / len(losses), 4) if losses else float("nan")
+                text,
+                return_offsets_mapping=True,
+                truncation=True,
+                max_length=max_seq_len,
+                add_special_tokens=False,
+            )
+            mask = label_mask([tuple(o) for o in encoded["offset_mapping"]], assistant_spans(text))
+            if sum(mask) < 2:
+                continue
+            ids = torch.tensor([encoded["input_ids"]], device="cuda")
+            labels = ids.clone()
+            labels[0, [i for i, keep in enumerate(mask) if not keep]] = -100
+            output = model(input_ids=ids, labels=labels)
+            counted = sum(mask[1:])  # the model predicts token i from tokens < i, so position 0 never counts
+            total_loss += float(output.loss) * counted
+            total_tokens += counted
+    return round(total_loss / total_tokens, 4) if total_tokens else float("nan")
 
 
 def evaluate(

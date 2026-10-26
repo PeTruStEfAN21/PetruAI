@@ -99,7 +99,33 @@ class TimeBudgetCallback:
         raise AttributeError(name)
 
 
+PATH_FIELDS = ("base_model", "train_file", "eval_file", "out_dir")
+
+
+def config_to_json(cfg: TrainConfig) -> dict:
+    return {k: (str(v) if k in PATH_FIELDS else v) for k, v in asdict(cfg).items()}
+
+
+def config_from_json(data: dict) -> TrainConfig:
+    return TrainConfig(**{k: (Path(v) if k in PATH_FIELDS else v) for k, v in data.items()})
+
+
 def train(cfg: TrainConfig, run_dir: Path) -> TrainReport:
+    """Train in a child process, so the GPU is completely free again for the next step (eval, export)."""
+    from petru_train.isolate import run_isolated
+
+    data = run_isolated(
+        "petru_train.train:train_from_json", {"cfg": config_to_json(cfg), "run_dir": str(run_dir)}
+    )
+    return TrainReport(**data)
+
+
+def train_from_json(cfg: dict, run_dir: str) -> dict:
+    return asdict(train_in_process(config_from_json(cfg), Path(run_dir)))
+
+
+def train_in_process(cfg: TrainConfig, run_dir: Path) -> TrainReport:
+    """The GPU work itself; call it only from a process that ends afterwards (CLI or `train`)."""
     import torch
     from datasets import Dataset
     from transformers import TrainerCallback
@@ -202,7 +228,7 @@ def main(argv: list[str] | None = None) -> int:
         cfg.max_steps = args.max_steps
     if args.time_budget_min is not None:
         cfg.time_budget_min = args.time_budget_min
-    report = train(cfg, args.run)
+    report = train_in_process(cfg, args.run)  # this CLI process ends right after, freeing the GPU
     print(json.dumps(asdict(report), indent=2))
     return 0
 
