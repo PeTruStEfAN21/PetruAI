@@ -137,3 +137,13 @@ umplea VRAM-ul și trecea în memoria partajată).
 
 Concluzie: ~97 % din exemple (sub 6.144 de tokeni) se antrenează în VRAM; cele mai lungi merg de ~10 ori mai lent, dar
 se păstrează, cum a cerut utilizatorul. O epocă pe datasetul v3 e estimată la ~3 ore.
+
+## 10. Index de documentație offline (`petru index --docs --no-embed`, 2026-10-26)
+
+| Sursă | Fișiere |
+|---|---|
+| SDK Flutter (`packages/flutter/lib`) | 718 |
+| site-ul Dart | 1.019 |
+| `flutter/samples` | 2.290 |
+| site-ul Flutter | 2.604 |
+| Total | 6.631 fișiere, 50.498 bucăți, 97 s (doar BM25) |
