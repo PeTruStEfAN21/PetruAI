@@ -18,6 +18,7 @@ from petru.agent.toolcalls import (
 from petru.providers.base import ChatProvider, ToolCall
 from petru.tools.base import ToolContext, ToolResult
 from petru.tools.registry import ToolRegistry
+from petru.tools.shell import truncate_output
 from petru.tui.port import UIPort
 
 CANCELLED = "Cancelled by the user."
@@ -26,6 +27,9 @@ CANCELLED = "Cancelled by the user."
 def _is_context_overflow(exc: Exception) -> bool:
     text = str(exc).lower()
     return "exceeds" in text and ("context" in text or "tokens" in text)
+
+
+MAX_TOOL_RESULT_CHARS = 24_000  # a backstop above read_file's 400 lines; tools keep their own, smaller limits
 
 
 class Agent:
@@ -124,7 +128,8 @@ class Agent:
         except Exception as exc:  # a buggy tool must not end the session
             result = ToolResult(f"{type(exc).__name__}: {exc}", True)
         self.ui.tool_finished(call.name, result)
-        return (f"ERROR: {result.output}" if result.is_error else result.output), False
+        output = truncate_output(result.output, MAX_TOOL_RESULT_CHARS)  # one result must not fill the context
+        return (f"ERROR: {output}" if result.is_error else output), False
 
     # -- the turn -----------------------------------------------------------
 

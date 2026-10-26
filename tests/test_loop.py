@@ -290,3 +290,27 @@ def test_repaired_tool_calls_are_recorded_in_canonical_form(tmp_path):
     recorded = agent.session.messages[-3]["tool_calls"][0]["function"]["arguments"]
     assert json.loads(recorded) == {"question": "SQLite or Postgres?"} and "<" not in recorded
     assert agent.session.messages[-2]["content"] == "SQLite"
+
+
+class _FloodTool(Tool):
+    name = "flood"
+    description = "returns a huge output"
+
+    def run(self, args, ctx):
+        from petru.tools.base import ToolResult
+
+        return ToolResult("HEAD" + "x" * 200_000 + "TAIL")
+
+
+def test_a_huge_tool_result_is_cut_before_it_reaches_the_model(tmp_path):
+    from petru.agent.loop import MAX_TOOL_RESULT_CHARS
+
+    fake = FakeProvider([result(tool_calls=[call("flood", {})]), result(content="x")])
+    agent = make_agent(fake, ScriptedUI(), tmp_path)
+    agent.registry.register(_FloodTool())
+    agent.run_turn("x", quick=True)
+    content = fake.calls[1]["messages"][-1]["content"]
+    assert (
+        len(content) < MAX_TOOL_RESULT_CHARS + 200 and content.startswith("HEAD") and content.endswith("TAIL")
+    )
+    assert "truncated" in content
