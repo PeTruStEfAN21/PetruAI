@@ -2,10 +2,10 @@ import json
 from pathlib import Path
 
 import pytest
-from petru_train.train import TimeBudgetCallback, TrainConfig, latest_checkpoint, load_train_config
 
 from petru_train.env import MODEL_DIR
 from petru_train.samples import Sample, write_jsonl
+from petru_train.train import TimeBudgetCallback, TrainConfig, latest_checkpoint, load_train_config
 
 CONFIG_TOML = """\
 base_model = "../infra/llama.cpp/models/hf/Qwen3.5-4B"
@@ -36,6 +36,13 @@ def test_train_config_overrides(tmp_path):
     )
     cfg = load_train_config(path, base_dir=tmp_path)
     assert cfg.max_seq_len == 2048 and cfg.max_steps == 20 and cfg.time_budget_min == 90
+
+
+def test_select_by_length_drops_samples_that_would_be_truncated():
+    from petru_train.train import select_by_length
+
+    kept, dropped = select_by_length(["a", "b", "c", "d"], [100, 4096, 4097, 9000], max_len=4096)
+    assert kept == ["a", "b"] and dropped == 2
 
 
 def test_latest_checkpoint_picks_the_highest_step(tmp_path):

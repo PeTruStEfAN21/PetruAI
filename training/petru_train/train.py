@@ -68,6 +68,15 @@ class TrainReport:
     minutes: float
     adapter_dir: str
     resumed_from: str | None
+    samples: int = 0
+    dropped_long: int = 0
+    peak_vram_gb: float = 0.0
+
+
+def select_by_length(texts: list[str], lengths: list[int], max_len: int) -> tuple[list[str], int]:
+    """Keep the samples that fit the context; a truncated sample would teach a reply without its ending."""
+    kept = [text for text, length in zip(texts, lengths, strict=True) if length <= max_len]
+    return kept, len(texts) - len(kept)
 
 
 def latest_checkpoint(run_dir: Path) -> Path | None:
@@ -156,8 +165,17 @@ def train_in_process(cfg: TrainConfig, run_dir: Path) -> TrainReport:
         use_gradient_checkpointing="unsloth",
         random_state=cfg.seed,
     )
-    train_ds = Dataset.from_dict({"text": [render_chat(s, tokenizer) for s in read_jsonl(cfg.train_file)]})
-    eval_ds = Dataset.from_dict({"text": [render_chat(s, tokenizer) for s in read_jsonl(cfg.eval_file)]})
+
+    def fitting_texts(path: Path) -> tuple[list[str], int]:
+        texts = [render_chat(s, tokenizer) for s in read_jsonl(path)]
+        lengths = [len(ids) for ids in tokenizer(texts, add_special_tokens=False)["input_ids"]]
+        return select_by_length(texts, lengths, cfg.max_seq_len)
+
+    train_texts, dropped = fitting_texts(cfg.train_file)
+    eval_texts, _ = fitting_texts(cfg.eval_file)
+    print(f"training on {len(train_texts)} samples; {dropped} longer than {cfg.max_seq_len} tokens dropped")
+    train_ds = Dataset.from_dict({"text": train_texts})
+    eval_ds = Dataset.from_dict({"text": eval_texts})
     bf16 = bool(torch.cuda.is_bf16_supported())
     if cfg.max_steps is not None:
         total_steps = cfg.max_steps
@@ -211,6 +229,9 @@ def train_in_process(cfg: TrainConfig, run_dir: Path) -> TrainReport:
         minutes=round((time.monotonic() - started) / 60, 2),
         adapter_dir=str(adapter_dir),
         resumed_from=checkpoint.name if checkpoint else None,
+        samples=len(train_texts),
+        dropped_long=dropped,
+        peak_vram_gb=round(torch.cuda.max_memory_allocated() / 1e9, 2),
     )
     (run_dir / "train_report.json").write_text(json.dumps(asdict(report), indent=2), encoding="utf-8")
     return report
