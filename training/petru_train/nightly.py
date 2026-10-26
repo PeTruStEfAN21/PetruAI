@@ -99,6 +99,7 @@ def step_trajectories(ctx: RunContext) -> None:
     cfg = load_traj_config()
     third = int(ctx.remaining_minutes() // 3)  # never let extra data eat the training time
     cfg.max_minutes = min(cfg.max_minutes or third, third)
+    cfg.state_file = ctx.run_dir / "trajectories.state.json"  # a fresh budget of attempts every night
     stats = generate(cfg)
     ctx.notes["trajectories"] = f"kept={sum(stats['kept'].values())}"
     step_build(ctx)  # the new trajectories join the dataset

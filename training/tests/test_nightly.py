@@ -114,3 +114,18 @@ def test_eval_base_is_reused_only_when_its_signature_matches(tmp_path, monkeypat
     with pytest.raises(nightly.SkipStep):
         nightly.step_eval_base(ctx)  # same tasks: reused
     assert len(calls) == 1
+
+
+def test_trajectories_keep_their_state_in_the_run_folder(tmp_path, monkeypatch):
+    from petru_train import nightly, trajectories
+    from petru_train.trajectories import TrajConfig
+
+    seen = []
+    monkeypatch.setattr(
+        trajectories, "load_traj_config", lambda: TrajConfig(tasks_dir=tmp_path, out=tmp_path / "t.jsonl")
+    )
+    monkeypatch.setattr(trajectories, "generate", lambda cfg: seen.append(cfg) or {"kept": {}})
+    monkeypatch.setattr(nightly, "step_build", lambda ctx: None)
+    ctx = RunContext(run="r1", runs_dir=tmp_path, hours=3.0)
+    nightly.step_trajectories(ctx)
+    assert seen[0].state_file == ctx.run_dir / "trajectories.state.json"

@@ -440,3 +440,18 @@ def test_tool_results_lose_terminal_color_codes():
     esc = chr(27)
     messages = [{"role": "tool", "tool_call_id": "c1", "content": f"{esc}[33mwarn{esc}[39m ok"}]
     assert normalize_messages(messages)[0]["content"] == "warn ok"
+
+
+def test_a_state_file_per_run_lets_every_night_generate_again(tmp_path):
+    write_tasks(tmp_path / "tasks", ["python_a"])
+    out = tmp_path / "traj.jsonl"
+
+    def config(night):
+        return TrajConfig(
+            tasks_dir=tmp_path / "tasks", out=out, samples_per_task=1, attempts_per_task=1,
+            state_file=tmp_path / night / "state.json",
+        )  # fmt: skip
+
+    generate(config("n1"), runner=lambda task, cfg, attempt: good("python_a"))
+    generate(config("n2"), runner=lambda task, cfg, attempt: good("python_a", seconds=11.0))
+    assert len(read_jsonl(out)) == 2 and (tmp_path / "n2" / "state.json").is_file()

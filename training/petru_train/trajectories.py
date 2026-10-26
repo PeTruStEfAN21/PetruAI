@@ -41,6 +41,7 @@ class TrajConfig:
     base_url: str | None = None
     attempt_timeout_s: int = 900
     max_minutes: int | None = None
+    state_file: Path | None = None  # progress per task; the night keeps one per run so each night generates
 
 
 def load_traj_config(path: Path = DEFAULT_CONFIG, base_dir: Path | None = None) -> TrajConfig:
@@ -293,7 +294,7 @@ def _append_jsonl(path: Path, sample: Sample) -> None:
 
 
 def _state_path(cfg: TrajConfig) -> Path:
-    return cfg.out.with_name(cfg.out.name + ".state.json")
+    return cfg.state_file or cfg.out.with_name(cfg.out.name + ".state.json")
 
 
 def _load_state(path: Path) -> dict:
