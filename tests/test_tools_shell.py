@@ -112,3 +112,36 @@ def test_git_action_classification_and_unknown_action(tmp_path):
     assert not GitTool.is_mutating({"action": "status"})
     r = git.run({"action": "push"}, ToolContext(tmp_path, False))
     assert r.is_error and "push" in r.output
+
+
+def test_project_env_drops_virtualenvs_of_other_projects(tmp_path):
+    import os
+
+    from petru.tools.shell import project_env
+
+    def venv(root):
+        (root / "Scripts").mkdir(parents=True)
+        (root / "pyvenv.cfg").write_text("home = x\n", encoding="utf-8")
+        return root
+
+    agent = venv(tmp_path / "petru" / ".venv")
+    own = venv(tmp_path / "proj" / ".venv")
+    system = str(tmp_path / "python")
+    environ = {
+        "PATH": os.pathsep.join([str(agent / "Scripts"), str(own / "Scripts"), system]),
+        "VIRTUAL_ENV": str(agent),
+        "HOME": "h",
+    }
+    env = project_env(tmp_path / "proj" / "app", environ)
+    assert env["PATH"].split(os.pathsep) == [str(own / "Scripts"), system]
+    assert "VIRTUAL_ENV" not in env and env["HOME"] == "h"
+    assert project_env(tmp_path / "proj", {**environ, "VIRTUAL_ENV": str(own)})["VIRTUAL_ENV"] == str(own)
+
+
+def test_shell_commands_do_not_run_inside_the_agents_virtualenv(tmp_path, monkeypatch):
+    monkeypatch.setenv("VIRTUAL_ENV", str(tmp_path / "agent" / ".venv"))
+    (tmp_path / "agent" / ".venv").mkdir(parents=True)
+    (tmp_path / "agent" / ".venv" / "pyvenv.cfg").write_text("home = x\n", encoding="utf-8")
+    (tmp_path / "proj").mkdir()
+    r = run_shell('Write-Output "venv=[$env:VIRTUAL_ENV]"', tmp_path / "proj")
+    assert "venv=[]" in r.output

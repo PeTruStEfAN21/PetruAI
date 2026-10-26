@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import os
 import re
 import subprocess
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Literal
 
@@ -92,6 +94,43 @@ def _kill_tree(proc: subprocess.Popen) -> None:
         proc.kill()
 
 
+def _venv_root(entry: str) -> Path | None:
+    """The virtual environment a PATH entry (its Scripts/ or bin/ folder) belongs to, if any."""
+    try:
+        folder = Path(entry)
+        if folder.name.lower() in ("scripts", "bin") and (folder.parent / "pyvenv.cfg").is_file():
+            return folder.parent
+    except OSError, ValueError:
+        pass
+    return None
+
+
+def _belongs_to(venv: Path, cwd: Path) -> bool:
+    """True when the environment is the project's own: it sits in `cwd` or in one of its parents."""
+    try:
+        return cwd.resolve().is_relative_to(venv.parent.resolve())
+    except OSError:
+        return False
+
+
+def project_env(cwd: Path, environ: Mapping[str, str] | None = None) -> dict[str, str]:
+    """The environment for the user's commands. Virtual environments of other projects are removed, above
+    all the agent's own (`uv run` puts it first on PATH and sets VIRTUAL_ENV, which the Windows `python` alias
+    also follows), so `python`, `pytest` and `pip` are the user's and not PetruAI's."""
+    env = dict(os.environ if environ is None else environ)
+    key = next((k for k in env if k.upper() == "PATH"), "PATH")
+    kept = []
+    for entry in env.get(key, "").split(os.pathsep):
+        venv = _venv_root(entry) if entry else None
+        if venv is None or _belongs_to(venv, cwd):
+            kept.append(entry)
+    env[key] = os.pathsep.join(kept)
+    active = env.get("VIRTUAL_ENV")
+    if active and not _belongs_to(Path(active), cwd):
+        del env["VIRTUAL_ENV"]
+    return env
+
+
 def run_shell(cmd: str, cwd: Path, timeout_s: int = 120, max_chars: int = 20000) -> ToolResult:
     argv = [
         "powershell",
@@ -106,6 +145,7 @@ def run_shell(cmd: str, cwd: Path, timeout_s: int = 120, max_chars: int = 20000)
         proc = subprocess.Popen(
             argv,
             cwd=str(cwd),
+            env=project_env(cwd),
             stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
