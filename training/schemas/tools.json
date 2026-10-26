@@ -1,0 +1,315 @@
+[
+  {
+    "type": "function",
+    "function": {
+      "name": "read_file",
+      "description": "Read a UTF-8 text file from the project with line numbers. Use offset/limit for long files.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Path relative to the project root"
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "First line to show (1-based)"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Maximum lines to show (default 400)"
+          }
+        },
+        "required": [
+          "path"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "write_file",
+      "description": "Create or overwrite a UTF-8 text file inside the project. Parent folders are created.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Path relative to the project root"
+          },
+          "content": {
+            "type": "string",
+            "description": "Full file content"
+          }
+        },
+        "required": [
+          "path",
+          "content"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "edit_file",
+      "description": "Replace one exact occurrence of `old` with `new` in a file. `old` must match exactly once (whitespace differences are tolerated); set replace_all to replace every occurrence.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "old": {
+            "type": "string",
+            "description": "Text to find"
+          },
+          "new": {
+            "type": "string",
+            "description": "Replacement text"
+          },
+          "replace_all": {
+            "type": "boolean",
+            "description": "Replace every occurrence (default false)"
+          }
+        },
+        "required": [
+          "path",
+          "old",
+          "new"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "list_dir",
+      "description": "List the entries of a directory inside the project. Directories end with '/'.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Directory relative to the project root (default '.')"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "glob",
+      "description": "Find files by glob pattern (e.g. '**/*.py'). Returns paths relative to the project root.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "pattern": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string",
+            "description": "Directory to search in (default '.')"
+          }
+        },
+        "required": [
+          "pattern"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "grep",
+      "description": "Search file contents with a regular expression. Output: path:line: text.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "pattern": {
+            "type": "string",
+            "description": "Python regular expression"
+          },
+          "path": {
+            "type": "string",
+            "description": "Directory or file to search (default '.')"
+          },
+          "glob": {
+            "type": "string",
+            "description": "Only files whose name matches, e.g. '*.py'"
+          },
+          "max_results": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Default 100"
+          }
+        },
+        "required": [
+          "pattern"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "shell",
+      "description": "Run a PowerShell command in the project directory and return its output and exit code. Use it to run programs, install packages, and run tests.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "command": {
+            "type": "string",
+            "description": "PowerShell command line"
+          },
+          "timeout": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Seconds before the command is killed (default 120)"
+          }
+        },
+        "required": [
+          "command"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "git",
+      "description": "Git in the project: status (short), diff, log (last 20), add (all by default), commit (stages everything, needs a message). Pushing is not available.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "status",
+              "diff",
+              "log",
+              "add",
+              "commit"
+            ]
+          },
+          "args": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Extra git arguments"
+          },
+          "message": {
+            "type": "string",
+            "description": "Commit message (commit only)"
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "run_checks",
+      "description": "Detect and run the project's checks (pytest, npm test, tsc, dart analyze, flutter test) and report PASS/FAIL per command. Run it after every change.",
+      "parameters": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "ask_user",
+      "description": "Ask the user one short design question and wait for the answer. One question per call; offer options when the choice is between a few known alternatives.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "question": {
+            "type": "string"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Optional short list of choices"
+          }
+        },
+        "required": [
+          "question"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "plan",
+      "description": "Propose the implementation plan after the design questions: a title, 3-8 concrete steps and the decisions taken. The user confirms, edits or rejects it; writing tools unlock only after confirmation.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1
+          },
+          "decisions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "title",
+          "steps"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "task_complete",
+      "description": "Call when the task is finished and verified. Give a short summary of what was built and how it was checked.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "summary": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "summary"
+        ],
+        "additionalProperties": false
+      }
+    }
+  }
+]
