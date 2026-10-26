@@ -1,0 +1,54 @@
+# Seed list for the permissive GitHub corpus. One owner/repo per line.
+# Every entry is verified through the GitHub API before cloning; anything not MIT/Apache-2.0/BSD/ISC/0BSD/CC0/Unlicense is dropped.
+# Python
+tiangolo/fastapi
+encode/httpx
+pydantic/pydantic
+Textualize/rich
+fastapi/typer
+sqlalchemy/sqlalchemy
+pallets/flask
+django/django
+psf/requests
+python-poetry/poetry
+# TypeScript / JavaScript
+expressjs/express
+colinhacks/zod
+vitejs/vite
+honojs/hono
+trpc/trpc
+drizzle-team/drizzle-orm
+prisma/prisma
+TanStack/query
+vitest-dev/vitest
+vercel/next.js
+nestjs/nest
+fastify/fastify
+shadcn-ui/ui
+excalidraw/excalidraw
+# Dart / Flutter
+flutter/samples
+flutter/packages
+rrousselGit/riverpod
+felangel/bloc
+cfug/dio
+jonataslaw/getx
+# Go
+gin-gonic/gin
+spf13/cobra
+gohugoio/hugo
+# Rust
+BurntSushi/ripgrep
+tokio-rs/tokio
+clap-rs/clap
+# Java / Kotlin
+spring-projects/spring-boot
+google/guava
+# C#
+dotnet/aspnetcore
+# C / C++
+fmtlib/fmt
+nlohmann/json
+ggml-org/llama.cpp
+# SQL / infra
+sqlfluff/sqlfluff

@@ -54,7 +54,7 @@ def minhash_dedup(
 def balance_by_language(samples: list[Sample], max_share: float = 0.4, seed: int = 42) -> list[Sample]:
     """Downsample any language above `max_share` of the final total; order is preserved.
 
-    A language is capped relative to the others (n <= max_share / (1 - max_share) * rest), so a single-language
+    A language is capped relative to the others (n <= share/(1-share) * rest), so a single-language
     set is left alone. Two passes settle the rare case of several languages over the share at once."""
     rng = random.Random(seed)
     by_language: dict[str, list[Sample]] = defaultdict(list)
