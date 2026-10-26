@@ -75,7 +75,7 @@ class SearchCodeTool(Tool):
     def run(self, args: dict, ctx: ToolContext) -> ToolResult:
         index = project_index(ctx.project_root)
         try:
-            index.update(ctx.project_root)
+            index.update(ctx.project_root, backfill=False)  # keep searches fast; petru index backfills
             return ToolResult(format_hits(index.search(str(args["query"]), int(args.get("limit") or 8))))
         finally:
             index.close()

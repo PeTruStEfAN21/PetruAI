@@ -127,9 +127,36 @@ class CodeIndex:
         self.db.execute("insert into files(path, sha1) values (?, ?)", (path, sha1))
         self._store_vectors(ids, [f"{path} {c.name}\n{c.text}" for c in chunks])
 
-    def update(self, root: Path, prefix: str = "") -> dict:
+    def backfill_vectors(self, batch: int = 64) -> int:
+        """Embed chunks indexed while the embeddings server was down; returns how many got vectors."""
+        if self.embedder is None:
+            return 0
+        done = 0
+        while True:
+            if self._dim() is None:
+                missing = self.db.execute(
+                    "select id, path, name, text from chunks order by id limit ?", (batch,)
+                )
+            else:
+                missing = self.db.execute(
+                    "select id, path, name, text from chunks where id not in (select rowid from chunks_vec) "
+                    "order by id limit ?",
+                    (batch,),
+                )
+            rows = missing.fetchall()
+            if not rows:
+                return done
+            before = self.stats()["embedded"]
+            self._store_vectors([r[0] for r in rows], [f"{r[1]} {r[2]}\n{r[3]}" for r in rows])
+            self.db.commit()
+            if self.stats()["embedded"] == before:
+                return done  # the server stopped answering: try again next time
+            done += len(rows)
+
+    def update(self, root: Path, prefix: str = "", backfill: bool = True) -> dict:
         """Index `root` incrementally. With a prefix, paths are stored as `prefix/rel` and only that prefix's
-        files are considered for removal, so several roots (SDK, docs) can share one index."""
+        files are considered for removal, so several roots (SDK, docs) can share one index. With an embedder,
+        `backfill` also embeds chunks stored earlier without vectors (search_code skips it to stay fast)."""
         lead = f"{prefix}/" if prefix else ""
         known = dict(self.db.execute("select path, sha1 from files"))
         if prefix:
@@ -153,6 +180,8 @@ class CodeIndex:
             self._remove(rel)
             stats["removed"] += 1
         self.db.commit()
+        if backfill:
+            self.backfill_vectors()
         stats["chunks"] = self.db.execute("select count(*) from chunks").fetchone()[0]
         return stats
 

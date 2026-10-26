@@ -79,6 +79,18 @@ def test_index_update_removes_stale_chunks(tmp_path):
     assert index.stats()["embedded"] == len(chunk_ids)
 
 
+def test_chunks_indexed_without_vectors_are_backfilled_later(tmp_path):
+    project = make_project(tmp_path / "p")
+    CodeIndex(tmp_path / "idx.sqlite", embedder=None).update(project)  # server was down
+    index = CodeIndex(tmp_path / "idx.sqlite", embedder=FakeEmbedder())
+    index.update(project, backfill=False)  # a quick refresh inside search_code: no backfill
+    assert index.stats()["embedded"] == 0
+    index.update(project)  # petru index with the server up
+    stats = index.stats()
+    assert stats["embedded"] == stats["chunks"] > 0
+    assert index.search("erase entry")[0].name == "delete_item"
+
+
 def test_unchanged_files_are_not_embedded_again(tmp_path):
     embedder = FakeEmbedder()
     index = CodeIndex(tmp_path / "idx.sqlite", embedder=embedder)
