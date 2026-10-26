@@ -23,6 +23,7 @@ Commands:
   /yolo            toggle yolo mode (no confirmations, build immediately)
   /status          phase, tier, project, online/offline
   /memory          what Petru remembers (global and project memory)
+  /journal         recent commit summaries and pending ones
   /exit            quit (Ctrl+D also works)
 """
 

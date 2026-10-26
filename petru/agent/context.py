@@ -13,6 +13,7 @@ from petru.agent.prompts import (
     OFFLINE_RULES_PROMPT,
 )
 from petru.agent.state import Phase, Plan, Session
+from petru.journal.summarize import journal_prompt_section
 from petru.memory.tools import memory_prompt_section
 from petru.offline import load_offline_manifest
 from petru.providers.base import ChatProvider
@@ -52,6 +53,9 @@ def build_system_prompt(session: Session, repo_root: Path, online: bool) -> str:
     memory = memory_prompt_section(session.project_root)
     if memory:
         parts.append(memory)
+    journal = journal_prompt_section(session.project_root)
+    if journal:
+        parts.append(journal)
     if not online:
         manifest = load_offline_manifest(repo_root)
         listing = (

@@ -11,6 +11,7 @@ from rich.console import Console
 from petru.agent.loop import Agent
 from petru.agent.state import Session
 from petru.config import find_repo_root, load_config
+from petru.journal.summarize import journal_prompt_section, summarize_pending
 from petru.memory.tools import memory_prompt_section
 from petru.offline import is_online
 from petru.providers.openai_compat import OpenAICompatProvider
@@ -99,6 +100,9 @@ def repl(agent: Agent, ui: RichUI, manager: ServerManager, cfg, online: bool, co
         elif cmd.name == "memory":
             section = memory_prompt_section(session.project_root, max_tokens=10_000)
             console.print(section or "No memories yet.", markup=False)
+        elif cmd.name == "journal":
+            section = journal_prompt_section(session.project_root, n=10, max_tokens=4_000)
+            console.print(section or "No commit summaries yet (petru journal hook install).", markup=False)
         elif cmd.name == "model":
             if cmd.arg:
                 _switch_model(manager, agent, cfg, cmd.arg, console)
@@ -126,7 +130,41 @@ def repl(agent: Agent, ui: RichUI, manager: ServerManager, cfg, online: bool, co
             console.print(f"Unknown command /{cmd.name}. /help lists the commands.", markup=False)
 
 
-SUBCOMMANDS = ("memory", "index", "watch")
+SUBCOMMANDS = ("memory", "index", "watch", "journal")
+
+
+def _journal_command(argv: list[str]) -> int:
+    from petru.journal.hook import install_hook, uninstall_hook
+    from petru.journal.summarize import summarize_pending
+
+    parser = argparse.ArgumentParser(prog="petru journal", description="Commit journal: hook and summaries.")
+    sub = parser.add_subparsers(dest="action", required=True)
+    hook = sub.add_parser("hook", help="install or remove the git post-commit hook")
+    hook.add_argument("mode", choices=["install", "uninstall"])
+    hook.add_argument("--project", default=".")
+    summ = sub.add_parser("summarize", help="summarize queued commits with the local model")
+    summ.add_argument("--project", default=".")
+    summ.add_argument("--model", choices=TIERS, default="fast")
+    ns = parser.parse_args(argv)
+    project = Path(ns.project).resolve()
+    repo_root = find_repo_root(Path(__file__))
+    if ns.action == "hook":
+        if ns.mode == "install":
+            print(f"Installed {install_hook(project, repo_root)}")
+        else:
+            uninstall_hook(project)
+            print("Removed the PetruAI post-commit hook.")
+        return 0
+    manager = ServerManager(load_config(repo_root))
+    try:
+        provider = make_provider(manager.ensure_running(ns.model))
+        print(f"Summarized {summarize_pending(project, provider)} commits.")
+    except ServerStartError as exc:
+        print(f"Cannot start the model server: {exc}", file=sys.stderr)
+        return 2
+    finally:
+        manager.stop()
+    return 0
 
 
 def _watch_command(argv: list[str]) -> int:
@@ -238,6 +276,8 @@ def run_subcommand(argv: list[str]) -> int | None:
         return _index_command(argv[1:])
     if argv[0] == "watch":
         return _watch_command(argv[1:])
+    if argv[0] == "journal":
+        return _journal_command(argv[1:])
     return _memory_command(argv[1:])
 
 
@@ -282,6 +322,12 @@ def main(argv: list[str] | None = None) -> int:
             text = agent.run_turn(ns.prompt, quick=True)
             print(text)
             return 1 if agent.stop_reason in ("iteration limit", "invalid tool calls") else 0
+        try:  # lazy journal: summarize a few queued commits while the model is loaded anyway
+            done = summarize_pending(project, provider, limit=3)
+            if done:
+                console.print(f"Journal: summarized {done} new commits (/journal).", markup=False)
+        except Exception as exc:  # the journal is a convenience; never block the REPL on it
+            console.print(f"Journal summaries skipped: {exc}", markup=False)
         repl(agent, ui, manager, cfg, online, console)
         return 0
     finally:
