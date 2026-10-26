@@ -256,3 +256,12 @@ def test_task_details_keep_the_tail_of_the_check_output(tmp_path, monkeypatch):
     data = evaluate.run_task_cli(tmp_path / "t.toml", "http://x/v1", 16384)
     assert "messages" not in data and "tools" not in data and data["turns"] == 50
     assert data["check_output"].endswith("END") and len(data["check_output"]) <= 2000
+
+
+def test_tasks_signature_changes_with_the_harness_pass_rule(tmp_path, monkeypatch):
+    from petru_train import evaluate
+
+    (tmp_path / "a.toml").write_text('prompt = "a"\n', encoding="utf-8")
+    before = evaluate.tasks_signature(tmp_path, tmp_path / "none.json", 6)
+    monkeypatch.setattr(evaluate, "HARNESS_VERSION", evaluate.HARNESS_VERSION + 1)
+    assert evaluate.tasks_signature(tmp_path, tmp_path / "none.json", 6) != before

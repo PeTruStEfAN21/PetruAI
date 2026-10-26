@@ -22,6 +22,7 @@ REPO_ROOT = TRAINING_DIR.parent
 REQUESTS_FILE = TRAINING_DIR / "eval" / "tool_requests.json"
 TASKS_DIR = TRAINING_DIR / "tasks"
 TASK_LIMIT = 6  # the first tasks by name are the evaluated ones
+HARNESS_VERSION = 2  # bump when petru.trajectory changes what counts as a pass (2: no checks = fail)
 BASE_GGUF = REPO_ROOT / "infra" / "llama.cpp" / "models" / "Qwen3.5-4B.IQ4_XS.gguf"
 TOOL_TOLERANCE = 0.05
 EVAL_SYSTEM = (
@@ -50,7 +51,7 @@ class EvalResult:
 
 def tasks_signature(tasks_dir: Path, requests_file: Path, limit: int) -> str:
     """Hash of exactly what tool_validity and task_pass measure, so a stale baseline is noticed."""
-    digest = hashlib.sha1(f"limit={limit}".encode())
+    digest = hashlib.sha1(f"limit={limit} harness={HARNESS_VERSION}".encode())
     digest.update(requests_file.read_bytes() if requests_file.is_file() else b"")
     for task in sorted(tasks_dir.glob("*.toml"))[:limit]:
         digest.update(task.name.encode("utf-8"))
