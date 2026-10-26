@@ -30,7 +30,7 @@ class TrainConfig:
     train_file: Path
     eval_file: Path
     out_dir: Path
-    max_seq_len: int = 4096
+    max_seq_len: int = 0  # 0 = auto: the longest sample, so nothing is truncated or dropped
     lora_r: int = 16
     lora_alpha: int = 32
     lora_dropout: float = 0.0
@@ -71,6 +71,16 @@ class TrainReport:
     samples: int = 0
     dropped_long: int = 0
     peak_vram_gb: float = 0.0
+    base_eval_loss: float = float("nan")
+    context: int = 0
+
+
+def context_length(configured: int, lengths: list[int], step: int = 256) -> int:
+    """The configured context, or (0 = auto) the longest sample rounded up to a multiple of `step`."""
+    if configured:
+        return configured
+    longest = max(lengths, default=step)
+    return -(-longest // step) * step
 
 
 def select_by_length(texts: list[str], lengths: list[int], max_len: int) -> tuple[list[str], int]:
@@ -151,9 +161,24 @@ def train_in_process(cfg: TrainConfig, run_dir: Path) -> TrainReport:
         def on_step_end(self, args, state, control, **kwargs):
             return self.inner.on_step_end(args, state, control, **kwargs)
 
+    from transformers import AutoTokenizer
+
     run_dir.mkdir(parents=True, exist_ok=True)
+    plain_tokenizer = AutoTokenizer.from_pretrained(str(cfg.base_model))  # lengths first: they size the model
+
+    def texts_and_lengths(path: Path) -> tuple[list[str], list[int]]:
+        texts = [render_chat(s, plain_tokenizer) for s in read_jsonl(path)]
+        return texts, [len(ids) for ids in plain_tokenizer(texts, add_special_tokens=False)["input_ids"]]
+
+    all_train, train_lengths = texts_and_lengths(cfg.train_file)
+    all_eval, eval_lengths = texts_and_lengths(cfg.eval_file)
+    seq_len = context_length(cfg.max_seq_len, train_lengths + eval_lengths)
+    train_texts, dropped = select_by_length(all_train, train_lengths, seq_len)
+    eval_texts, _ = select_by_length(all_eval, eval_lengths, seq_len)
+    print(f"training on {len(train_texts)} samples at context {seq_len}; {dropped} longer samples dropped")
+
     model, tokenizer = FastLanguageModel.from_pretrained(
-        str(cfg.base_model), max_seq_length=cfg.max_seq_len, load_in_4bit=True, dtype=None
+        str(cfg.base_model), max_seq_length=seq_len, load_in_4bit=True, dtype=None
     )
     tokenizer = text_tokenizer(tokenizer)  # the processor's text tokenizer; the model is trained on text only
     model = FastLanguageModel.get_peft_model(
@@ -165,15 +190,6 @@ def train_in_process(cfg: TrainConfig, run_dir: Path) -> TrainReport:
         use_gradient_checkpointing="unsloth",
         random_state=cfg.seed,
     )
-
-    def fitting_texts(path: Path) -> tuple[list[str], int]:
-        texts = [render_chat(s, tokenizer) for s in read_jsonl(path)]
-        lengths = [len(ids) for ids in tokenizer(texts, add_special_tokens=False)["input_ids"]]
-        return select_by_length(texts, lengths, cfg.max_seq_len)
-
-    train_texts, dropped = fitting_texts(cfg.train_file)
-    eval_texts, _ = fitting_texts(cfg.eval_file)
-    print(f"training on {len(train_texts)} samples; {dropped} longer than {cfg.max_seq_len} tokens dropped")
     train_ds = Dataset.from_dict({"text": train_texts})
     eval_ds = Dataset.from_dict({"text": eval_texts})
     bf16 = bool(torch.cuda.is_bf16_supported())
@@ -201,7 +217,7 @@ def train_in_process(cfg: TrainConfig, run_dir: Path) -> TrainReport:
         bf16=bf16,
         fp16=not bf16,
         dataset_text_field="text",
-        max_length=cfg.max_seq_len,
+        max_length=seq_len,
         packing=False,
         report_to="none",
         eval_strategy="no",
@@ -216,6 +232,16 @@ def train_in_process(cfg: TrainConfig, run_dir: Path) -> TrainReport:
     )
     trainer = train_on_responses_only(trainer, instruction_part=INSTRUCTION_PART, response_part=RESPONSE_PART)
     checkpoint = latest_checkpoint(run_dir)
+    base_file = run_dir / "base_eval.json"
+    if checkpoint is None:
+        # A fresh LoRA has B = 0, so this is the base model on the same eval set, mask and code path.
+        base_eval_loss = float(trainer.evaluate().get("eval_loss", float("nan")))
+        base_file.write_text(json.dumps({"eval_loss": base_eval_loss}), encoding="utf-8")
+        print(f"base model eval loss (assistant tokens): {base_eval_loss:.4f}")
+    elif base_file.is_file():
+        base_eval_loss = float(json.loads(base_file.read_text(encoding="utf-8"))["eval_loss"])
+    else:
+        base_eval_loss = float("nan")
     started = time.monotonic()
     output = trainer.train(resume_from_checkpoint=str(checkpoint) if checkpoint else None)
     eval_loss = float(trainer.evaluate().get("eval_loss", float("nan")))
@@ -231,6 +257,8 @@ def train_in_process(cfg: TrainConfig, run_dir: Path) -> TrainReport:
         resumed_from=checkpoint.name if checkpoint else None,
         samples=len(train_texts),
         dropped_long=dropped,
+        base_eval_loss=base_eval_loss,
+        context=seq_len,
         peak_vram_gb=round(torch.cuda.max_memory_allocated() / 1e9, 2),
     )
     (run_dir / "train_report.json").write_text(json.dumps(asdict(report), indent=2), encoding="utf-8")

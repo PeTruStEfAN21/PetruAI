@@ -32,7 +32,7 @@ Scriptul oprește orice `llama-server` (eliberează VRAM) și rulează pașii, �
 |---|---|---|
 | `build` | construiește datasetul (cache per repo) | `training/data/` |
 | `trajectories` | rulează sarcinile cu modelul local, păstrează ce trece (3 per sarcină, 4 încercări) | `training/data/trajectories.jsonl` |
-| `train` | QLoRA pe Qwen3.5-4B în 4-bit (r=16, α=32, lr 2e-4, 1 epocă, context 4096), checkpoint la 50 de pași, se oprește singur la bugetul de timp | `training/runs/<run>/adapter/` |
+| `train` | QLoRA pe Qwen3.5-4B în 4-bit (r=16, α=32, lr 2e-4, 1 epocă, context automat egal cu cel mai lung exemplu, nimic tăiat), checkpoint la 50 de pași, se oprește singur la bugetul de timp | `training/runs/<run>/adapter/` |
 | `export` | unește adaptorul (CPU, bf16) → `convert_hf_to_gguf.py` → `llama-quantize` Q4_K_M | `training/runs/<run>/candidate-Q4_K_M.gguf` |
 | `eval_base` | o singură dată: cele trei metrici pe modelul de bază | `training/runs/baseline/eval_base.json` |
 | `eval_cand` | aceleași metrici pe candidat + decizia porții | `training/runs/<run>/eval_cand.json`, `gate.json` |
@@ -44,7 +44,7 @@ reia de la primul pas neterminat. Jurnalul: `training/runs/<run>/nightly.log`.
 ## Poarta de promovare (anti-goal A4)
 
 Trei numere, bază vs candidat:
-- `loss`: pierderea medie pe `eval.jsonl` (trebuie `<=` bază);
+- `loss`: pierderea medie pe tokenii asistentului din `eval.jsonl`; a modelului de bază se măsoară în aceeași rulare, înainte de primul pas (adaptor nou = model de bază), deci pe același set și cu aceeași mască (trebuie `<=` bază);
 - `tool_validity`: din 20 de cereri fixe (`training/eval/tool_requests.json`), câte primesc un apel de tool
   valid (nume cunoscut, argumente JSON) sau un răspuns text când nu e nevoie de tool (toleranță 0,05);
 - `task_pass`: rata de reușită pe primele 6 sarcini din `training/tasks/` (trebuie `>=` bază).

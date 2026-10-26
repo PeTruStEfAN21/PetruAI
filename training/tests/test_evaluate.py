@@ -12,6 +12,17 @@ from petru_train.server import server_command
 REQUESTS = Path(__file__).resolve().parents[1] / "eval" / "tool_requests.json"
 
 
+def test_gate_inputs_take_both_losses_from_the_same_training_run():
+    from petru_train.evaluate import gate_inputs
+
+    base = EvalResult(loss=float("nan"), tool_validity=0.9, task_pass=0.5, details={})
+    cand = EvalResult(loss=float("nan"), tool_validity=0.85, task_pass=0.5, details={})
+    report = {"base_eval_loss": 1.2, "eval_loss": 0.8}
+    b, c = gate_inputs(base, cand, report)
+    assert (b.loss, c.loss) == (1.2, 0.8) and (b.tool_validity, c.tool_validity) == (0.9, 0.85)
+    assert gate(b, c)[0]
+
+
 def test_gate_rejects_regression():
     base = EvalResult(loss=1.0, tool_validity=0.9, task_pass=0.5, details={})
     ok, why = gate(base, EvalResult(1.1, 0.9, 0.5, {}))

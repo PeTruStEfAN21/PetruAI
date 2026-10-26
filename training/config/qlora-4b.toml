@@ -4,7 +4,7 @@ train_file = "data/train.jsonl"
 eval_file = "data/eval.jsonl"
 out_dir = "runs"
 
-max_seq_len = 4096          # lower to 2048 if the GPU runs out of memory (see docs/benchmarks.md, "Training")
+max_seq_len = 0             # 0 = auto: fit the longest sample (nothing truncated or dropped)
 lora_r = 16
 lora_alpha = 32
 lora_dropout = 0.0

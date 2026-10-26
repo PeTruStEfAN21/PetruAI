@@ -120,30 +120,27 @@ def step_export(ctx: RunContext) -> None:
 
 
 def step_eval_base(ctx: RunContext) -> None:
-    from petru_train.env import MODEL_DIR
     from petru_train.evaluate import BASE_GGUF, evaluate
 
     target = ctx.baseline_dir / "eval_base.json"
     if target.is_file():
-        ctx.skip("baseline already evaluated")
-    result = evaluate(MODEL_DIR, None, BASE_GGUF, TRAINING_DIR / "data" / "eval.jsonl",
-                      log=ctx.baseline_dir / "server.log")  # fmt: skip
+        ctx.skip("baseline already evaluated (tool validity and task pass do not depend on the dataset)")
+    result = evaluate(BASE_GGUF, log=ctx.baseline_dir / "server.log")
     result.save(target)
-    ctx.notes["eval_base"] = f"loss={result.loss} tools={result.tool_validity} tasks={result.task_pass}"
+    ctx.notes["eval_base"] = f"tools={result.tool_validity} tasks={result.task_pass}"
 
 
 def step_eval_cand(ctx: RunContext) -> None:
-    from petru_train.env import MODEL_DIR
-    from petru_train.evaluate import EvalResult, evaluate, gate
+    from petru_train.evaluate import EvalResult, evaluate, gate, gate_inputs
     from petru_train.export import candidate_file
 
     candidate = candidate_file(ctx.run_dir)
     if candidate is None:
         raise RuntimeError("no quantized candidate: the export step did not produce one")
-    result = evaluate(MODEL_DIR, ctx.run_dir / "adapter", candidate, TRAINING_DIR / "data" / "eval.jsonl",
-                      log=ctx.run_dir / "server.log")  # fmt: skip
+    result = evaluate(candidate, log=ctx.run_dir / "server.log")
     result.save(ctx.run_dir / "eval_cand.json")
-    base = EvalResult.load(ctx.baseline_dir / "eval_base.json")
+    report = json.loads((ctx.run_dir / "train_report.json").read_text(encoding="utf-8"))
+    base, result = gate_inputs(EvalResult.load(ctx.baseline_dir / "eval_base.json"), result, report)
     passed, why = gate(base, result)
     (ctx.run_dir / "gate.json").write_text(
         json.dumps({"passed": passed, "reason": why}, indent=2), encoding="utf-8"

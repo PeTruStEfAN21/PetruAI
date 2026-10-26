@@ -245,20 +245,26 @@ def _assistant_loss(model_dir: Path, adapter_dir: Path | None, eval_file: Path, 
     return round(total_loss / total_tokens, 4) if total_tokens else float("nan")
 
 
+def gate_inputs(base: EvalResult, cand: EvalResult, train_report: dict) -> tuple[EvalResult, EvalResult]:
+    """Both losses come from the training run itself (base measured before step 0 on the same eval set and
+    mask), so a rebuilt dataset never compares a new candidate with an old baseline loss."""
+    return (
+        EvalResult(float(train_report["base_eval_loss"]), base.tool_validity, base.task_pass, base.details),
+        EvalResult(float(train_report["eval_loss"]), cand.tool_validity, cand.task_pass, cand.details),
+    )
+
+
 def evaluate(
-    model_dir: Path,
-    adapter_dir: Path | None,
     gguf: Path,
-    eval_file: Path,
     tasks_dir: Path = TASKS_DIR,
     requests_file: Path = REQUESTS_FILE,
     port: int = 8081,
     ctx: int = 16384,
     limit: int = 6,
-    max_seq_len: int = 4096,
     log: Path | None = None,
 ) -> EvalResult:
-    loss = held_out_loss(model_dir, adapter_dir, eval_file, max_seq_len)
+    """Tool validity and task pass rate of a GGUF served by llama-server; the loss comes from training."""
+    loss = float("nan")
     proc = start_server(gguf, port, ctx, log=log)
     try:
         if not wait_healthy(port, proc=proc):
@@ -272,40 +278,33 @@ def evaluate(
 
 
 def main(argv: list[str] | None = None) -> int:
-    from petru_train.env import MODEL_DIR
-
     parser = argparse.ArgumentParser(
         description="Evaluate the base model or a run's candidate; write the gate."
     )
     parser.add_argument("--base", action="store_true", help="evaluate the base model into runs/baseline/")
     parser.add_argument(
-        "--run", type=Path, default=None, help="run directory with adapter/ and candidate gguf"
+        "--run", type=Path, default=None, help="run directory with adapter/, train_report.json and a gguf"
     )
-    parser.add_argument("--eval-file", type=Path, default=TRAINING_DIR / "data" / "eval.jsonl")
     parser.add_argument("--limit", type=int, default=6)
     parser.add_argument("--port", type=int, default=8081)
-    parser.add_argument("--max-seq-len", type=int, default=4096)
     args = parser.parse_args(argv)
     if args.base:
         run_dir = TRAINING_DIR / "runs" / "baseline"
-        result = evaluate(MODEL_DIR, None, BASE_GGUF, args.eval_file, limit=args.limit, port=args.port,
-                          max_seq_len=args.max_seq_len, log=run_dir / "server.log")  # fmt: skip
+        result = evaluate(BASE_GGUF, limit=args.limit, port=args.port, log=run_dir / "server.log")
         result.save(run_dir / "eval_base.json")
-        print(
-            json.dumps(
-                {"loss": result.loss, "tool_validity": result.tool_validity, "task_pass": result.task_pass}
-            )
-        )
+        print(json.dumps({"tool_validity": result.tool_validity, "task_pass": result.task_pass}))
         return 0
     if args.run is None:
         parser.error("--base or --run is required")
-    candidates = sorted(args.run.glob("*.gguf"))
+    candidates = sorted(args.run.glob("candidate-Q*.gguf"))
     if not candidates:
         parser.error(f"no candidate gguf in {args.run}; run petru_train.export first")
-    result = evaluate(MODEL_DIR, args.run / "adapter", candidates[0], args.eval_file, limit=args.limit,
-                      port=args.port, max_seq_len=args.max_seq_len, log=args.run / "server.log")  # fmt: skip
+    result = evaluate(candidates[0], limit=args.limit, port=args.port, log=args.run / "server.log")
     result.save(args.run / "eval_cand.json")
-    base = EvalResult.load(TRAINING_DIR / "runs" / "baseline" / "eval_base.json")
+    report = json.loads((args.run / "train_report.json").read_text(encoding="utf-8"))
+    base, result = gate_inputs(
+        EvalResult.load(TRAINING_DIR / "runs" / "baseline" / "eval_base.json"), result, report
+    )
     passed, why = gate(base, result)
     (args.run / "gate.json").write_text(
         json.dumps({"passed": passed, "reason": why}, indent=2), encoding="utf-8"

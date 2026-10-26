@@ -23,7 +23,7 @@ def test_train_config_defaults_match_the_plan(tmp_path):
         cfg.base_model == (tmp_path / ".." / "infra" / "llama.cpp" / "models" / "hf" / "Qwen3.5-4B").resolve()
     )
     assert cfg.train_file == tmp_path / "data" / "train.jsonl" and cfg.out_dir == tmp_path / "runs"
-    assert (cfg.max_seq_len, cfg.lora_r, cfg.lora_alpha, cfg.lora_dropout) == (4096, 16, 32, 0.0)
+    assert (cfg.max_seq_len, cfg.lora_r, cfg.lora_alpha, cfg.lora_dropout) == (0, 16, 32, 0.0)  # 0 = auto
     assert (cfg.lr, cfg.epochs, cfg.batch_size, cfg.grad_accum) == (2e-4, 1.0, 1, 8)
     assert (cfg.warmup_ratio, cfg.weight_decay, cfg.seed, cfg.save_steps) == (0.05, 0.01, 3407, 50)
     assert cfg.max_steps is None and cfg.time_budget_min is None
@@ -36,6 +36,14 @@ def test_train_config_overrides(tmp_path):
     )
     cfg = load_train_config(path, base_dir=tmp_path)
     assert cfg.max_seq_len == 2048 and cfg.max_steps == 20 and cfg.time_budget_min == 90
+
+
+def test_context_length_auto_fits_the_longest_sample_rounded_up():
+    from petru_train.train import context_length
+
+    assert context_length(0, [100, 3000, 8386]) == 8448  # next multiple of 256
+    assert context_length(0, [512]) == 512
+    assert context_length(4096, [100, 9000]) == 4096  # an explicit value wins
 
 
 def test_select_by_length_drops_samples_that_would_be_truncated():
