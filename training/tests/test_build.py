@@ -81,6 +81,19 @@ def test_build_reuses_cache_and_includes_extra_jsonl(tmp_path, monkeypatch):
     assert "t1" in all_ids
 
 
+def test_build_refreshes_tool_schemas_of_cached_commit_samples(tmp_path, monkeypatch):
+    repos = [tiny_repo(tmp_path, "alpha", 3)]
+    cfg = DatasetConfig(
+        local_repos=catalog(tmp_path / "local.toml", repos), github_repos=None, out_dir=tmp_path / "out"
+    )
+    monkeypatch.setattr(build_module, "load_tools", lambda: [{"old": True}])
+    build(cfg)
+    monkeypatch.setattr(build_module, "load_tools", lambda: [{"new": True}])
+    build(cfg)  # served from the cache, which still holds the old schemas
+    samples = read_jsonl(cfg.out_dir / "train.jsonl") + read_jsonl(cfg.out_dir / "eval.jsonl")
+    assert samples and all(s.tools == [{"new": True}] for s in samples)
+
+
 def test_build_skips_missing_repo_with_a_warning(tmp_path, capsys):
     cfg = DatasetConfig(
         local_repos=catalog(tmp_path / "local.toml", [tmp_path / "ghost"]),

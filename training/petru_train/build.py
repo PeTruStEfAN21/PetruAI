@@ -99,6 +99,8 @@ def build(cfg: DatasetConfig) -> dict:
             print(f"skipping {entry.name}: no git repository at {entry.path}")
             continue
         mined = _mine(entry, cfg, tools)
+        for sample in mined:  # the cache may predate a tool change; train on the schemas the agent uses now
+            sample.tools = tools
         sources["commit"] += len(mined)
         samples.extend(mined)
     for extra in cfg.extra_jsonl:
