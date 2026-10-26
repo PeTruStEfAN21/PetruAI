@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import copy
+import json
 from types import SimpleNamespace
 
-from petru.providers.base import ChatResult
+from petru.providers.base import ChatResult, ToolCall
 
 
 def delta(content=None, tool_call=None, finish_reason=None):
@@ -59,3 +60,29 @@ class FakeProvider:
         if on_text and result.content:
             on_text(result.content)
         return result
+
+
+def result(content="", tool_calls=None):
+    return ChatResult(content, list(tool_calls or []))
+
+
+def call(name, args, call_id=None):
+    return ToolCall(call_id or f"call_{name}", name, dict(args), json.dumps(args))
+
+
+def make_agent(provider, ui, root, **kwargs):
+    from petru.agent.loop import Agent
+    from petru.agent.state import Session
+    from petru.tools.registry import default_registry
+
+    session = Session(root, yolo=kwargs.pop("yolo", False))
+    return Agent(
+        provider=provider,
+        registry=default_registry(ctx_online=False),
+        ui=ui,
+        session=session,
+        repo_root=root,
+        ctx_tokens=kwargs.pop("ctx_tokens", 16384),
+        online=False,
+        **kwargs,
+    )

@@ -1,0 +1,163 @@
+"""The agent loop: one user turn = model requests and tool executions until the model answers in text."""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+from petru.agent.context import build_system_prompt, compact_if_needed
+from petru.agent.permissions import DESIGN_ALLOWED, decide
+from petru.agent.state import Phase, Session
+from petru.agent.toolcalls import extract_tool_calls, repair_json, strip_text_tool_calls, validate_arguments
+from petru.providers.base import ChatProvider, ToolCall
+from petru.tools.base import ToolContext, ToolResult
+from petru.tools.registry import ToolRegistry
+from petru.tui.port import UIPort
+
+CANCELLED = "Cancelled by the user."
+
+
+class Agent:
+    def __init__(
+        self,
+        provider: ChatProvider,
+        registry: ToolRegistry,
+        ui: UIPort,
+        session: Session,
+        repo_root: Path,
+        ctx_tokens: int,
+        online: bool,
+        max_iterations: int = 40,
+        max_invalid_retries: int = 3,
+    ) -> None:
+        self.provider = provider
+        self.registry = registry
+        self.ui = ui
+        self.session = session
+        self.repo_root = repo_root
+        self.ctx_tokens = ctx_tokens
+        self.online = online
+        self.max_iterations = max_iterations
+        self.max_invalid_retries = max_invalid_retries
+        self.stop_reason: str | None = None
+
+    # -- transcript helpers -------------------------------------------------
+
+    def _refresh_system_prompt(self) -> None:
+        prompt = build_system_prompt(self.session, self.repo_root, self.online)
+        messages = self.session.messages
+        if messages and messages[0].get("role") == "system":
+            messages[0]["content"] = prompt
+        else:
+            messages.insert(0, {"role": "system", "content": prompt})
+
+    def _allowed_tool_names(self) -> list[str]:
+        phase = self.session.phase
+        if phase is Phase.BUILD:
+            return self.registry.names()
+        if phase is Phase.DESIGN:
+            return [name for name in self.registry.names() if name in DESIGN_ALLOWED]
+        return []  # IDLE: the task is complete, the model only answers in text
+
+    @staticmethod
+    def _assistant_message(content: str, calls: list[ToolCall]) -> dict:
+        return {
+            "role": "assistant",
+            "content": strip_text_tool_calls(content or ""),
+            "tool_calls": [
+                {"id": c.id, "type": "function", "function": {"name": c.name, "arguments": c.raw_arguments}}
+                for c in calls
+            ],
+        }
+
+    @staticmethod
+    def _tool_message(call: ToolCall, content: str) -> dict:
+        return {"role": "tool", "tool_call_id": call.id, "content": content}
+
+    # -- one tool call ------------------------------------------------------
+
+    def _invalid(self, reason: str, allowed: list[str]) -> str:
+        return f"Invalid tool call: {reason}. Available tools: {', '.join(allowed) or '(none)'}"
+
+    def _execute(self, call: ToolCall, allowed: list[str]) -> tuple[str, bool]:
+        """Run one call; returns (tool message content, was_invalid)."""
+        tool = self.registry.get(call.name)
+        if tool is None:
+            return self._invalid(f"unknown tool {call.name!r}", allowed), True
+        args = call.arguments
+        if args is None:
+            args = repair_json(call.raw_arguments)
+        if args is None:
+            return self._invalid(f"arguments of {call.name} are not a JSON object", allowed), True
+        errors = validate_arguments(tool.parameters, args)
+        if errors:
+            return self._invalid(f"{call.name} arguments: " + "; ".join(errors), allowed), True
+
+        if self.session.phase is Phase.IDLE:
+            return "Denied: the task is complete; answer the user in plain text.", False
+        decision = decide(tool, args, self.session)
+        if decision.kind == "deny":
+            return f"Denied: {decision.reason}", False
+        if decision.kind == "ask":
+            answer = self.ui.confirm(f"Run {call.name} {args}?", allow_always=True)
+            if answer == "no":
+                return "User declined.", False
+            if answer == "always":
+                self.session.always_allow.add(call.name)
+
+        ctx = ToolContext(self.session.project_root, self.online, self.ui, self.session)
+        self.ui.tool_started(call.name, args)
+        try:
+            result = tool.run(args, ctx)
+        except Exception as exc:  # a buggy tool must not end the session
+            result = ToolResult(f"{type(exc).__name__}: {exc}", True)
+        self.ui.tool_finished(call.name, result)
+        return (f"ERROR: {result.output}" if result.is_error else result.output), False
+
+    # -- the turn -----------------------------------------------------------
+
+    def run_turn(self, text: str, quick: bool = False) -> str:
+        """Run one user prompt to completion and return the model's final text."""
+        session = self.session
+        session.start_turn(text, quick=quick)
+        self.stop_reason = None
+        invalid_count = 0
+        last_text = ""
+        while True:
+            if session.turn_tool_iterations >= self.max_iterations:
+                return self._stop(
+                    "iteration limit", f"Iteration limit ({self.max_iterations}) reached.", last_text
+                )
+            self._refresh_system_prompt()
+            compact_if_needed(session, self.provider, self.ctx_tokens)
+            allowed = self._allowed_tool_names()
+            result = self.provider.complete(
+                session.messages, self.registry.schemas(allowed), on_text=self.ui.text
+            )
+            calls = extract_tool_calls(result)
+            last_text = strip_text_tool_calls(result.content or "")
+            if not calls:
+                session.messages.append({"role": "assistant", "content": result.content or ""})
+                return last_text
+
+            session.turn_tool_iterations += 1
+            assistant = self._assistant_message(result.content, calls)
+            outputs: list[dict] = []
+            try:
+                for call in calls:
+                    content, was_invalid = self._execute(call, allowed)
+                    invalid_count += was_invalid
+                    outputs.append(self._tool_message(call, content))
+            except KeyboardInterrupt:
+                outputs.extend(self._tool_message(call, CANCELLED) for call in calls[len(outputs) :])
+                session.messages.extend([assistant, *outputs])
+                return self._stop("cancelled", "Turn cancelled.", last_text)
+            session.messages.extend([assistant, *outputs])
+            if invalid_count >= self.max_invalid_retries:
+                return self._stop(
+                    "invalid tool calls", f"Giving up after {invalid_count} invalid tool calls.", last_text
+                )
+
+    def _stop(self, reason: str, message: str, text: str) -> str:
+        self.stop_reason = reason
+        self.ui.notice(message)
+        return text
