@@ -5,12 +5,31 @@ from __future__ import annotations
 
 import re
 import shutil
+import sqlite3
+import tempfile
 import zipfile
 from pathlib import Path, PurePosixPath
 
 from petru.memory.store import INDEX_FILE, MemoryStore, memory_dir, parse_note
 
 _MEMORY_FILE = re.compile(r"^(global|project/memory)/([A-Za-z0-9._-]+\.md)$")
+
+
+def _sqlite_snapshot(path: Path, tmp: Path) -> Path | None:
+    """A consistent copy of a live WAL database through SQLite's backup API; None when it is not a database
+    (then the bytes are exported as they are, rather than failing the whole export)."""
+    snapshot = tmp / path.name
+    source = target = None
+    try:
+        source, target = sqlite3.connect(path), sqlite3.connect(snapshot)
+        source.backup(target)
+        return snapshot
+    except sqlite3.DatabaseError:
+        return None
+    finally:
+        for conn in (target, source):
+            if conn is not None:
+                conn.close()
 
 
 def export_memory(
@@ -30,9 +49,13 @@ def export_memory(
             if path.is_file():
                 entries.append((path, f"project/{name}"))
     zip_path.parent.mkdir(parents=True, exist_ok=True)
-    with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+    with (
+        zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as zf,
+        tempfile.TemporaryDirectory() as tmp,
+    ):
         for path, arcname in entries:
-            zf.write(path, arcname)
+            snapshot = _sqlite_snapshot(path, Path(tmp)) if path.suffix == ".sqlite" else None
+            zf.write(snapshot or path, arcname)
     return len(entries)
 
 

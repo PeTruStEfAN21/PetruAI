@@ -37,6 +37,24 @@ def test_export_layout_and_flags(tmp_path, home):
     assert all(n.startswith("project/") for n in zipfile.ZipFile(tmp_path / "p.zip").namelist())
 
 
+def test_export_takes_a_consistent_copy_of_a_live_journal(tmp_path, home):
+    import sqlite3
+
+    from petru.journal.store import Journal
+
+    project = tmp_path / "p"
+    live = Journal(project / ".petru" / "journal.sqlite")  # petru watch is running and holds the WAL
+    for i in range(3):
+        live.record_change(f"f{i}.py", f"x = {i}\n")
+    export_memory(tmp_path / "all.zip", project, include_global=False)
+    out = tmp_path / "out"
+    zipfile.ZipFile(tmp_path / "all.zip").extract("project/journal.sqlite", out)
+    copy = sqlite3.connect(out / "project" / "journal.sqlite")
+    assert copy.execute("select count(*) from events").fetchone()[0] == 3
+    copy.close()
+    live.close()
+
+
 def test_round_trip_into_an_empty_home_and_project(tmp_path, home, monkeypatch):
     seed(tmp_path / "p")
     export_memory(tmp_path / "all.zip", tmp_path / "p")
