@@ -136,3 +136,11 @@ def test_task_result_round_trips_through_json(tmp_path):
     res.save(path)
     assert TaskResult.load(path) == res
     assert json.loads(path.read_text(encoding="utf-8"))["passed"] is True
+
+
+def test_a_project_without_any_check_does_not_pass(tmp_path):
+    from petru.trajectory import run_checks_for
+
+    (tmp_path / "stats.py").write_text("print(1)\n", encoding="utf-8")  # a script, no tests
+    ok, output = run_checks_for(tmp_path, [])
+    assert not ok and "no checks" in output

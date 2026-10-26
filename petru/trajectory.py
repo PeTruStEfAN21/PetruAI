@@ -109,6 +109,8 @@ def run_checks_for(project: Path, extra: list[str]) -> tuple[bool, str]:
         result = run_shell(cmd, project, timeout_s=CHECK_TIMEOUT_S)
         reports.append(f"[{'FAIL' if result.is_error else 'PASS'}] {cmd}\n{result.output}")
         ok = ok and not result.is_error
+    if not reports:  # nothing verified the work: a task that asked for tests did not get any
+        return False, "no checks found: the project has no tests and the task lists no commands"
     return ok, "\n\n".join(reports)
 
 
