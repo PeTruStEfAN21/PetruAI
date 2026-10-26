@@ -137,6 +137,16 @@ def test_task_pass_runs_the_first_tasks_sorted_by_name(tmp_path):
     assert [d["passed"] for d in details] == [True, False]
 
 
+def test_start_server_creates_the_log_folder(tmp_path, monkeypatch):
+    from petru_train import server
+
+    started = []
+    monkeypatch.setattr(server.subprocess, "Popen", lambda cmd, **kw: started.append(kw) or "proc")
+    log = tmp_path / "runs" / "baseline" / "server.log"
+    assert server.start_server(Path("m.gguf"), log=log) == "proc"
+    assert log.parent.is_dir() and started
+
+
 def test_server_command_uses_the_tier_flags():
     cmd = server_command(Path("C:/m/cand.gguf"), port=8081, ctx=16384)
     assert cmd[0].endswith("llama-server.exe") and "--jinja" in cmd and "-c" in cmd and "16384" in cmd

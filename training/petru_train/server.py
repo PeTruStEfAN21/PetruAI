@@ -39,6 +39,8 @@ def is_healthy(port: int) -> bool:
 
 def start_server(gguf: Path, port: int = 8081, ctx: int = 16384, log: Path | None = None) -> subprocess.Popen:
     flags = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0) | getattr(subprocess, "CREATE_NO_WINDOW", 0)
+    if log is not None:
+        log.parent.mkdir(parents=True, exist_ok=True)
     stderr = open(log, "ab") if log else subprocess.DEVNULL  # noqa: SIM115 - closed with the process
     return subprocess.Popen(
         server_command(gguf, port, ctx), stdout=subprocess.DEVNULL, stderr=stderr, creationflags=flags
