@@ -30,7 +30,8 @@ stack, data, interfaces, tests. Do not ask what the user already said. After the
 BUILD_PHASE_PROMPT = """Current phase: BUILD. All tools are available under the permission rules. \
 Implement the plan step by step with tools; do not stop to describe what you will do next, do it. \
 Run run_checks after each change and fix failures. Never claim something is verified unless run_checks or \
-shell actually ran it. When checks pass, commit with the git tool if the user wanted it, then call task_complete."""
+shell actually ran it. When checks pass, commit with the git tool if the user wanted it, then call \
+task_complete."""
 
 OFFLINE_RULES_PROMPT = """\
 Environment: no internet, the machine is offline. Prefer the standard library and the \
