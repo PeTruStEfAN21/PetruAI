@@ -23,6 +23,15 @@ def test_gate_inputs_take_both_losses_from_the_same_training_run():
     assert gate(b, c)[0]
 
 
+def test_gate_rejects_a_missing_loss():
+    nan = float("nan")
+    good = EvalResult(loss=1.0, tool_validity=0.9, task_pass=0.5, details={})
+    ok, why = gate(EvalResult(nan, 0.9, 0.5, {}), good)
+    assert not ok and "loss" in why
+    ok, why = gate(good, EvalResult(nan, 0.9, 0.5, {}))
+    assert not ok and "loss" in why
+
+
 def test_gate_rejects_regression():
     base = EvalResult(loss=1.0, tool_validity=0.9, task_pass=0.5, details={})
     ok, why = gate(base, EvalResult(1.1, 0.9, 0.5, {}))

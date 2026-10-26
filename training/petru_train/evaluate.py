@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import subprocess
 import sys
 import tempfile
@@ -46,7 +47,9 @@ class EvalResult:
 
 def gate(base: EvalResult, cand: EvalResult) -> tuple[bool, str]:
     reasons = []
-    if cand.loss > base.loss:
+    if math.isnan(base.loss) or math.isnan(cand.loss):  # NaN compares False to everything: it must not pass
+        reasons.append(f"loss missing: base={base.loss} candidate={cand.loss}")
+    elif cand.loss > base.loss:
         reasons.append(f"loss regressed: {cand.loss:.4f} > {base.loss:.4f}")
     if cand.tool_validity < base.tool_validity - TOOL_TOLERANCE:
         reasons.append(f"tool validity regressed: {cand.tool_validity:.2f} < {base.tool_validity:.2f} - 0.05")
