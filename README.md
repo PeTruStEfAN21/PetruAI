@@ -65,10 +65,21 @@ An autonomous, resumable nightly pipeline (Python 3.12, Unsloth + TRL):
 
 Each heavy step runs in its own process so the GPU is fully released between steps. See `docs/training.md`.
 
-## Quick start (Windows)
+## Install (Windows, NVIDIA GPU)
 
-Requirements: an NVIDIA GPU, Python 3.14 with `uv`, Git, the llama.cpp CUDA binaries in `infra/llama.cpp/bin/` and
-the GGUF models in `infra/llama.cpp/models/` (not stored in git).
+```powershell
+git clone https://github.com/PeTruStEfAN21/PetruAI.git
+cd PetruAI
+powershell -ExecutionPolicy Bypass -File infra/setup.ps1 -DryRun   # shows what it would do
+powershell -ExecutionPolicy Bypass -File infra/setup.ps1           # installs what is missing
+```
+
+The script reads the GPU and RAM, installs `uv`, creates the environment, downloads the llama.cpp `b11877` CUDA
+binaries and the models that fit the card (4B always, 9B from ~6 GB VRAM, the 35B MoE with `-IncludeQuality` and
+24 GB RAM), puts `petru` on PATH and runs `petru doctor`, which checks every dependency and the offline caches and
+prints the fix for anything missing. Details: `docs/setup.md`.
+
+## Quick start
 
 ```powershell
 py -3.14 -m uv sync
@@ -107,5 +118,5 @@ tests/        unit tests and live end-to-end demos
 ## Status and roadmap
 
 Done: the agent (phases, tools, permissions, TUI, model tiers), the training pipeline, project and global memory
-with export/import, the hybrid code index, the offline docs index and the change journal. Next: a one-script setup
-with `petru doctor` for other machines, and the first promoted fine-tuned model.
+with export/import, the hybrid code index, the offline docs index, the change journal, a one-script setup and
+`petru doctor`. Next: the first promoted fine-tuned model.

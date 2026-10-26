@@ -33,7 +33,8 @@ function Download-Model {
         return
     }
     Write-Host "[DOWNLOAD] $Label from $RepoId ..." -ForegroundColor Cyan
-    python -c "from huggingface_hub import hf_hub_download; hf_hub_download(repo_id='$RepoId', filename='$Filename', local_dir=r'$modelsDir')"
+    # uv brings huggingface_hub along for this one command, whatever Python is on PATH
+    py -3.14 -m uv run --no-project --with huggingface_hub python -c "from huggingface_hub import hf_hub_download; hf_hub_download(repo_id='$RepoId', filename='$Filename', local_dir=r'$modelsDir')"
     if ($LASTEXITCODE -ne 0) {
         Write-Error "Failed to download $Label"
         exit 1
