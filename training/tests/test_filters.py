@@ -44,6 +44,36 @@ def test_language_of():
     assert language_of("image.png") is None
 
 
+@pytest.mark.parametrize(
+    "message,expected",
+    [
+        ("build(deps): Bump actions/checkout from 4 to 7 (#3)", True),
+        ("chore(deps-dev): bump vitest to 2.1.9", True),
+        ("Bump the npm-minor-patch group with 2 updates", True),
+        ("Update httpcore requirement from <0.17.0 to <0.18.0", True),
+        ("chore(release): 3.2.0", True),
+        ("v1.4.2", True),
+        ("Version Packages", True),
+        ("Add JSON storage for todos", False),
+        ("Fix version parsing in the CLI", False),
+    ],
+)
+def test_is_bump_message(message, expected):
+    from petru_train.filters import is_bump_message
+
+    assert is_bump_message(message) is expected
+
+
+def test_assistant_tool_config_paths_are_excluded():
+    for path in [
+        ".assistant/settings.json",
+        ".cursor/rules.md",
+        "docs/plans/x.md",
+        ".plans/a",
+    ]:
+        assert is_generated_path(path), path
+
+
 def test_is_trivial_message():
     assert is_trivial_message("wip")
     assert is_trivial_message("  Update  ")

@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 from petru_train import build as build_module
-from petru_train.build import DatasetConfig, build, load_dataset_config
+from petru_train.build import DatasetConfig, build, cache_dir, load_dataset_config
 from petru_train.samples import read_jsonl, write_jsonl
 from tests.test_commits import commit_file, git
 from tests.test_dedup import sample_with_content
@@ -51,8 +51,8 @@ def test_build_writes_split_cache_and_stats(tmp_path):
     train = read_jsonl(cfg.out_dir / "train.jsonl")
     eval_ = read_jsonl(cfg.out_dir / "eval.jsonl")
     assert len(train) + len(eval_) == 30 and len(eval_) >= 1
-    assert (cfg.out_dir / "cache" / "alpha.jsonl").exists() and (
-        cfg.out_dir / "cache" / "beta.jsonl"
+    assert (cache_dir(cfg.out_dir) / "alpha.jsonl").exists() and (
+        cache_dir(cfg.out_dir) / "beta.jsonl"
     ).exists()
     saved = json.loads((cfg.out_dir / "stats.json").read_text(encoding="utf-8"))
     assert saved == stats

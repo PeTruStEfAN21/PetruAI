@@ -11,7 +11,14 @@ from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
 
-from petru_train.filters import has_secret, is_env_file, is_generated_path, is_trivial_message, language_of
+from petru_train.filters import (
+    has_secret,
+    is_bump_message,
+    is_env_file,
+    is_generated_path,
+    is_trivial_message,
+    language_of,
+)
 from petru_train.samples import Sample, load_tools
 
 TRAJECTORY_SYSTEM = (
@@ -66,7 +73,7 @@ def iter_commits(
         if line.count("\x00") != 2:
             continue
         sha, message, date = line.split("\x00")
-        if is_trivial_message(message):
+        if is_trivial_message(message) or is_bump_message(message):
             continue
         _, status = _git(repo, "show", "--name-status", "--format=", sha)
         commit = _collect(

@@ -34,7 +34,16 @@ GENERATED_PATTERNS: list[str] = [
     ".venv/",
     ".idea/",
     ".vscode/",
+    ".assistant/",  # assistant/editor tool configuration, not the project's code
+    ".cursor/",
+    ".plans/",
+    "plans/",
 ]
+BUMP_MESSAGE = re.compile(
+    r"\bbump(?:ed|s)?\b|\(deps(?:-dev)?\)|dependabot|renovate|\bupdate \S+ requirement\b"
+    r"|^chore\(release\)|^v?\d+\.\d+\.\d+\S*$|^version packages$",
+    re.IGNORECASE,
+)
 BINARY_EXTENSIONS = {
     ".png", ".jpg", ".jpeg", ".gif", ".ico", ".webp", ".svg", ".pdf", ".zip", ".gz", ".tar", ".7z",
     ".woff", ".woff2", ".ttf", ".otf", ".eot", ".mp3", ".mp4", ".wav", ".exe", ".dll", ".so", ".dylib",
@@ -122,6 +131,11 @@ def has_secret(text: str) -> bool:
 
 def language_of(path: str) -> str | None:
     return LANGUAGES.get(PurePosixPath(path.replace("\\", "/")).suffix.lower())
+
+
+def is_bump_message(message: str) -> bool:
+    """Dependency bumps and release commits: they teach version-number edits, not programming."""
+    return bool(BUMP_MESSAGE.search(" ".join(message.split())))
 
 
 def is_trivial_message(message: str) -> bool:

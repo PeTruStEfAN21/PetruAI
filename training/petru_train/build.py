@@ -16,6 +16,11 @@ from petru_train.samples import Sample, load_tools, read_jsonl, split, write_jso
 
 TRAINING_DIR = Path(__file__).resolve().parents[1]
 DEFAULT_CONFIG = TRAINING_DIR / "config" / "dataset.toml"
+CACHE_VERSION = 2  # bump when the mining filters change, so every repo is mined again
+
+
+def cache_dir(out_dir: Path) -> Path:
+    return out_dir / f"cache-v{CACHE_VERSION}"
 
 
 @dataclass
@@ -78,7 +83,7 @@ def _cache_is_fresh(cache: Path, repo: Path) -> bool:
 
 
 def _mine(entry: RepoEntry, cfg: DatasetConfig, tools: list[dict]) -> list[Sample]:
-    cache = cfg.out_dir / "cache" / f"{entry.name}.jsonl"
+    cache = cache_dir(cfg.out_dir) / f"{entry.name}.jsonl"
     if _cache_is_fresh(cache, entry.path):
         return read_jsonl(cache)
     samples = [

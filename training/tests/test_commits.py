@@ -41,6 +41,12 @@ def test_iter_commits_keeps_only_clean_nontrivial_commits(tmp_path):
     assert len(second.sha) == 40 and second.date
 
 
+def test_dependency_bump_commits_are_dropped(tmp_path):
+    repo = make_repo(tmp_path)
+    commit_file(repo, "app.py", "print('v3')\n", "build(deps): bump requests from 2.31 to 2.32")
+    assert "build(deps): bump requests from 2.31 to 2.32" not in [c.message for c in iter_commits(repo)]
+
+
 def test_secret_commits_are_dropped(tmp_path):
     repo = make_repo(tmp_path)
     commit_file(repo, "config.py", "KEY = 'sk-abcdefghijklmnopqrstuvwxyz1234'\n", "Add API configuration")
