@@ -45,3 +45,5 @@ training/runs/
 infra/llama.cpp/models/hf/
 infra/llama.cpp/convert/
 training/unsloth_compiled_cache/
+.petru/index.sqlite*
+.petru/journal.sqlite*

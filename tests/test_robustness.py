@@ -106,6 +106,7 @@ def test_git_commit_writes_a_default_gitignore_first(tmp_path):
     (tmp_path / "a.js").write_text("1", encoding="utf-8")
     r = git.run({"action": "commit", "message": "init"}, ToolContext(tmp_path, False))
     assert not r.is_error and "node_modules/" in DEFAULT_GITIGNORE
+    assert ".petru/index.sqlite*" in DEFAULT_GITIGNORE and ".petru/journal.sqlite*" in DEFAULT_GITIGNORE
     assert (tmp_path / ".gitignore").read_text(encoding="utf-8") == DEFAULT_GITIGNORE
     assert sorted(tracked(tmp_path)) == [".gitignore", "a.js"]
 

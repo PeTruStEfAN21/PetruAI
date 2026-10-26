@@ -125,6 +125,13 @@ def test_embedder_client_prefixes_batches_and_reports_failure():
     embedder.embed(["q"], "query")
     assert calls[-1][1]["input"] == ["task: search result | query: q"]
 
+    def picky(url, payload, timeout):  # a batch with one oversized text fails as a whole
+        if any("BIG" in text for text in payload["input"]) and len(payload["input"]) > 1:
+            raise RuntimeError("500: input too large")
+        return {"data": [{"index": i, "embedding": [1.0]} for i in range(len(payload["input"]))]}
+
+    assert Embedder(http_post=picky, batch=4).embed(["a", "BIG", "c"], "document") == [[1.0], [1.0], [1.0]]
+
     def down(url, payload, timeout):
         raise OSError("refused")
 

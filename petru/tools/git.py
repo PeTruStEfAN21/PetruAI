@@ -13,6 +13,7 @@ DEFAULT_GITIGNORE = (
     "# Added by PetruAI before the first commit; edit freely.\n"
     "node_modules/\n.venv/\nvenv/\n__pycache__/\n*.pyc\n.pytest_cache/\n.ruff_cache/\n"
     ".dart_tool/\nbuild/\ndist/\n.env\n.env.*\n*.log\n"
+    ".petru/index.sqlite*\n.petru/journal.sqlite*\n"
 )
 
 
