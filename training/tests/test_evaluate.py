@@ -236,3 +236,23 @@ def test_held_out_loss_is_finite(tmp_path):
     write_jsonl(tmp_path / "eval.jsonl", tiny_samples(4))
     loss = held_out_loss(MODEL_DIR, None, tmp_path / "eval.jsonl", max_seq_len=512)
     assert 0 < loss < 20
+
+
+def test_task_details_keep_the_tail_of_the_check_output(tmp_path, monkeypatch):
+    from petru_train import evaluate
+
+    def fake_run(cmd, **kw):
+        out = Path(cmd[cmd.index("--out") + 1])
+        result = {
+            "name": "t",
+            "passed": False,
+            "messages": [{}] * 50,
+            "tools": [{}],
+            "check_output": "x" * 5000 + "END",
+        }
+        out.write_text(json.dumps(result), encoding="utf-8")
+
+    monkeypatch.setattr(evaluate.subprocess, "run", fake_run)
+    data = evaluate.run_task_cli(tmp_path / "t.toml", "http://x/v1", 16384)
+    assert "messages" not in data and "tools" not in data and data["turns"] == 50
+    assert data["check_output"].endswith("END") and len(data["check_output"]) <= 2000

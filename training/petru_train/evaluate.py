@@ -154,8 +154,9 @@ def run_task_cli(task_path: Path, base_url: str, ctx_tokens: int) -> dict:
         if not out.exists():
             return {"name": task_path.stem, "passed": False, "seconds": 0.0, "stop_reason": "runner error"}
         data = json.loads(out.read_text(encoding="utf-8"))
-        data.pop("messages", None)
+        data["turns"] = len(data.pop("messages", []))  # the transcript itself is too large for the report
         data.pop("tools", None)
+        data["check_output"] = str(data.get("check_output") or "")[-2000:]  # the tail says why a check failed
         return data
 
 
