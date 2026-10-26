@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 import sys
 import time
 import traceback
@@ -19,6 +20,7 @@ from pathlib import Path
 TRAINING_DIR = Path(__file__).resolve().parents[1]
 RUNS_DIR = TRAINING_DIR / "runs"
 STEPS = ["build", "trajectories", "train", "export", "eval_base", "eval_cand", "promote"]
+OPTIONAL_STEPS = {"trajectories"}  # a failure is noted and the night goes on
 EVAL_RESERVE_MIN = 75  # minutes kept free after training for export + the two evaluations
 
 
@@ -99,9 +101,15 @@ def step_trajectories(ctx: RunContext) -> None:
     step_build(ctx)  # the new trajectories join the dataset
 
 
+def stop_llama_servers() -> None:
+    """A leftover llama-server (from trajectories) would hold VRAM and push training into shared memory."""
+    subprocess.run(["taskkill", "/IM", "llama-server.exe", "/F"], capture_output=True)
+
+
 def step_train(ctx: RunContext) -> None:
     from petru_train.train import load_train_config, train
 
+    stop_llama_servers()
     cfg = load_train_config()
     budget = int(ctx.remaining_minutes()) - EVAL_RESERVE_MIN
     cfg.time_budget_min = max(10, budget)
@@ -197,6 +205,12 @@ def run_nightly(
         except SkipStep as exc:
             state.notes[name] = str(exc)
         except Exception as exc:
+            if name in OPTIONAL_STEPS:  # extra data is a bonus; the night still trains on what exists
+                state.notes[name] = f"failed (optional, continuing): {type(exc).__name__}: {exc}"
+                state.done.append(name)
+                state.save(ctx.run_dir)
+                print(f"[{_now()}] {name}: FAILED (optional) {exc}", flush=True)
+                continue
             state.error = f"{name}: {type(exc).__name__}: {exc}"
             state.notes[name] = traceback.format_exc()[-2000:]
             state.save(ctx.run_dir)

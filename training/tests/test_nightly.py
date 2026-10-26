@@ -47,6 +47,17 @@ def test_failing_step_records_the_error_and_stops(tmp_path):
     assert load_state(tmp_path / "r1").error == state.error
 
 
+def test_a_failing_optional_step_does_not_stop_the_night(tmp_path):
+    order: list[str] = []
+    state = run_nightly(
+        "r1", hours=1.0, steps=recording_steps(order, fail_at="trajectories"), runs_dir=tmp_path
+    )
+    assert order == STEPS and state.error is None and state.done == STEPS
+    assert (
+        "trajectories exploded" in state.notes["trajectories"] and "optional" in state.notes["trajectories"]
+    )
+
+
 def test_skipped_promotion_is_not_a_failure(tmp_path):
     order: list[str] = []
     state = run_nightly("r1", hours=1.0, steps=recording_steps(order, skip_at="promote"), runs_dir=tmp_path)

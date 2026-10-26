@@ -37,6 +37,7 @@ class TrajConfig:
     attempts_per_task: int = 4
     max_tokens: int = 12000
     base_url: str | None = None
+    attempt_timeout_s: int = 1200
 
 
 def load_traj_config(path: Path = DEFAULT_CONFIG, base_dir: Path | None = None) -> TrajConfig:
@@ -51,6 +52,7 @@ def load_traj_config(path: Path = DEFAULT_CONFIG, base_dir: Path | None = None) 
         attempts_per_task=int(data.get("attempts_per_task", 4)),
         max_tokens=int(data.get("max_tokens", 12000)),
         base_url=data.get("base_url"),
+        attempt_timeout_s=int(data.get("attempt_timeout_s", 1200)),
     )
 
 
@@ -79,19 +81,36 @@ def result_to_sample(result: dict, task_name: str, max_tokens: int) -> Sample | 
     )
 
 
+def kill_tree(pid: int) -> None:
+    """Kill a process and everything it started (uv -> python -> llama-server, npm, flutter)."""
+    subprocess.run(["taskkill", "/PID", str(pid), "/T", "/F"], capture_output=True)
+
+
 def run_petru_task(task_path: Path, cfg: TrajConfig, attempt: int) -> dict:
-    """One attempt through `python -m petru.trajectory` in the agent's environment, in a temporary project."""
+    """One attempt through `python -m petru.trajectory` in the agent's environment, in a temporary project.
+    A run past `attempt_timeout_s` is killed with its whole process tree and counts as failed."""
     with tempfile.TemporaryDirectory(prefix="petru-traj-", ignore_cleanup_errors=True) as tmp:
         out = Path(tmp) / "result.json"
+        log = Path(tmp) / "runner.log"
         cmd = [
             "py", "-3.14", "-m", "uv", "run", "python", "-m", "petru.trajectory", str(task_path),
             "--out", str(out), "--tier", cfg.tier, "--project", str(Path(tmp) / "project"),
         ]  # fmt: skip
         if cfg.base_url:
             cmd += ["--base-url", cfg.base_url]
-        proc = subprocess.run(cmd, cwd=str(REPO_ROOT), capture_output=True, text=True, encoding="utf-8")
+        with log.open("w", encoding="utf-8") as sink:
+            proc = subprocess.Popen(cmd, cwd=str(REPO_ROOT), stdout=sink, stderr=subprocess.STDOUT)
+            try:
+                proc.wait(timeout=cfg.attempt_timeout_s)
+            except subprocess.TimeoutExpired:
+                kill_tree(proc.pid)
+                return {
+                    "name": task_path.stem,
+                    "passed": False,
+                    "stop_reason": f"timeout after {cfg.attempt_timeout_s}s",
+                }
         if not out.exists():
-            tail = (proc.stderr or proc.stdout or "").strip().splitlines()[-5:]
+            tail = log.read_text(encoding="utf-8", errors="replace").strip().splitlines()[-5:]
             return {
                 "name": task_path.stem,
                 "passed": False,

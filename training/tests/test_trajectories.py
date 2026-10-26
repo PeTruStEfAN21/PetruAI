@@ -96,6 +96,26 @@ def test_generate_gives_up_after_the_attempt_budget(tmp_path):
     assert calls == [1, 2] and stats["kept"] == {"python_a": 0} and not cfg.out.exists()
 
 
+def test_a_hung_attempt_is_killed_and_counted_as_failed(tmp_path, monkeypatch):
+    import subprocess
+
+    from petru_train import trajectories
+
+    killed = []
+
+    class Hung:
+        pid = 4242
+
+        def wait(self, timeout=None):
+            raise subprocess.TimeoutExpired("petru", timeout)
+
+    monkeypatch.setattr(trajectories.subprocess, "Popen", lambda *a, **k: Hung())
+    monkeypatch.setattr(trajectories, "kill_tree", lambda pid: killed.append(pid))
+    cfg = TrajConfig(tasks_dir=tmp_path, out=tmp_path / "t.jsonl", attempt_timeout_s=1)
+    result = trajectories.run_petru_task(tmp_path / "python_a.toml", cfg, 1)
+    assert result["passed"] is False and "timeout" in result["stop_reason"] and killed == [4242]
+
+
 def test_load_traj_config(tmp_path):
     cfg_file = tmp_path / "trajectories.toml"
     cfg_file.write_text(
