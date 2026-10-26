@@ -70,6 +70,14 @@ def test_plan_reject_stays_in_design(tmp_path):
     assert s.phase is Phase.DESIGN and s.plan is None
 
 
+def test_a_rejected_plan_reopens_the_questions(tmp_path):
+    ui = ScriptedUI(plan_action="reject")
+    s, ctx = make(tmp_path, ui)
+    s.turned_away_questions = 2  # the model had been looping before it proposed this plan
+    PlanTool().run({"title": "T", "steps": ["a"]}, ctx)
+    assert s.turned_away_questions == 0  # the user wants changes: asking about them must be possible again
+
+
 def test_plan_without_ui_is_error(tmp_path):
     s = Session(tmp_path)
     s.start_turn("x")

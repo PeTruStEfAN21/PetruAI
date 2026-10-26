@@ -100,6 +100,7 @@ class PlanTool(Tool):
             edited = True
             action = "confirm"
         if action != "confirm":
+            session.turned_away_questions = 0  # the user wants changes: asking about them is open again
             return ToolResult("Plan rejected by the user; ask what to change and propose a new plan.", True)
         session.plan = plan
         session.confirm_plan()
