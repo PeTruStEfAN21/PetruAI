@@ -254,3 +254,40 @@ def test_harness_markers_match_the_agent_harness():
 
     source = (Path(__file__).resolve().parents[2] / "petru" / "trajectory.py").read_text(encoding="utf-8")
     assert DESIGN_HINT.strip() in source and CONTINUE_PREFIX in source
+    from petru_train.trajectories import QUESTION_GUARDS
+
+    tools_source = (Path(__file__).resolve().parents[2] / "petru" / "tools" / "interaction.py").read_text(
+        "utf-8"
+    )
+    assert all(guard in tools_source for guard in QUESTION_GUARDS)
+
+
+def test_repeated_or_excess_questions_are_dropped_from_the_transcript():
+    from petru_train.trajectories import normalize_messages
+
+    def ask(call_id, question):
+        function = {"name": "ask_user", "arguments": json.dumps({"question": question})}
+        return {
+            "role": "assistant",
+            "content": "",
+            "tool_calls": [{"id": call_id, "type": "function", "function": function}],
+        }
+
+    messages = [
+        {"role": "user", "content": "build it"},
+        ask("c1", "Which runner?"),
+        {"role": "tool", "tool_call_id": "c1", "content": "pytest"},
+        ask("c2", "Which runner?"),
+        {
+            "role": "tool",
+            "tool_call_id": "c2",
+            "content": "You already asked this question. The user answered: pytest.",
+        },
+        ask("c3", "One more?"),
+        {
+            "role": "tool",
+            "tool_call_id": "c3",
+            "content": "That is enough design questions (8 answered). Call plan.",
+        },
+    ]
+    assert normalize_messages(messages) == messages[:3]
