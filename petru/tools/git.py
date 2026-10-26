@@ -17,6 +17,9 @@ DEFAULT_GITIGNORE = (
 )
 
 
+IGNORE_NOTE = "Created a default .gitignore (node_modules, .venv, build...)."
+
+
 def ensure_gitignore(root: Path) -> bool:
     """Write a default .gitignore when the project has none; True when written."""
     path = root / ".gitignore"
@@ -41,6 +44,44 @@ def _run_git(args: list[str], cwd: Path, timeout_s: int = 120) -> ToolResult:
         return ToolResult(f"git {' '.join(args)} timed out after {timeout_s}s", True)
     out = (proc.stdout + proc.stderr).decode("utf-8", errors="replace").replace("\r\n", "\n").strip()
     return ToolResult(out, proc.returncode != 0)
+
+
+def _git_paths(args: list[str], root: Path) -> list[str]:
+    """The NUL-separated paths a git command prints; empty when it fails (HEAD before the first commit)."""
+    proc = subprocess.run(
+        ["git", *args],
+        cwd=str(root),
+        capture_output=True,
+        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+    )
+    if proc.returncode != 0:
+        return []
+    return [p for p in proc.stdout.decode("utf-8", errors="replace").split("\0") if p]
+
+
+def unstage_ignored(root: Path) -> int:
+    """Drop from the index the files .gitignore excludes that no commit contains yet (staged before the ignore
+    file existed, e.g. node_modules); files committed earlier stay tracked. Returns how many were dropped."""
+    ignored = _git_paths(["ls-files", "-z", "--cached", "--ignored", "--exclude-standard"], root)
+    committed = set(_git_paths(["ls-tree", "-r", "-z", "--name-only", "HEAD"], root)) if ignored else set()
+    fresh = [p for p in ignored if p not in committed]
+    if fresh:
+        subprocess.run(
+            [
+                "git",
+                "--literal-pathspecs",
+                "rm",
+                "--cached",
+                "-q",
+                "--pathspec-from-file=-",
+                "--pathspec-file-nul",
+            ],
+            cwd=str(root),
+            input="\0".join(fresh).encode("utf-8"),
+            capture_output=True,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+        )
+    return len(fresh)
 
 
 def ensure_repo(root: Path) -> None:
@@ -90,22 +131,30 @@ class GitTool(Tool):
                 return ToolResult("(no commits yet)")
             return r
         if action == "add":
+            wrote_ignore = ensure_gitignore(root)  # before staging, or node_modules lands in the index
+            if wrote_ignore:
+                unstage_ignored(root)
             r = _run_git(["add", *(extra or ["-A"])], root)
-            return r if r.is_error else ToolResult("Staged.")
+            if r.is_error:
+                return r
+            return ToolResult((IGNORE_NOTE + "\n" if wrote_ignore else "") + "Staged.")
         if action == "commit":
             message = args.get("message")
             if not message:
                 return ToolResult("commit requires a non-empty message", True)
             ensure_repo(root)
             wrote_ignore = ensure_gitignore(root)
+            if wrote_ignore:
+                unstage_ignored(
+                    root
+                )  # staged earlier (e.g. by a shell command) before the ignore file existed
             staged = _run_git(["add", "-A"], root)
             if staged.is_error:
                 return staged
             committed = _run_git(["commit", "-m", str(message), *extra], root)
+            committed.output = truncate_output(committed.output, 3000)  # one line per new file otherwise
             if wrote_ignore and not committed.is_error:
-                committed.output = (
-                    "Created a default .gitignore (node_modules, .venv, build...).\n" + committed.output
-                )
+                committed.output = IGNORE_NOTE + "\n" + committed.output
             return committed
         return ToolResult(f"Unknown git action {action!r}. Allowed: {', '.join(ACTIONS)}.", True)
 

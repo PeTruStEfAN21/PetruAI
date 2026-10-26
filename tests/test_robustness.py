@@ -117,3 +117,42 @@ def test_git_commit_keeps_an_existing_gitignore(tmp_path):
     (tmp_path / "a.js").write_text("1", encoding="utf-8")
     git.run({"action": "commit", "message": "init"}, ToolContext(tmp_path, False))
     assert (tmp_path / ".gitignore").read_text(encoding="utf-8") == "custom\n"
+
+
+def node_project(root):
+    ensure_repo(root)
+    (root / "node_modules" / "x").mkdir(parents=True)
+    (root / "node_modules" / "x" / "i.js").write_text("1", encoding="utf-8")
+    (root / "a.js").write_text("1", encoding="utf-8")
+
+
+def test_git_add_writes_the_default_gitignore_before_staging(tmp_path):
+    node_project(tmp_path)
+    ctx = ToolContext(tmp_path, False)
+    git.run({"action": "add"}, ctx)
+    git.run({"action": "commit", "message": "init"}, ctx)
+    assert sorted(tracked(tmp_path)) == [".gitignore", "a.js"]
+
+
+def test_git_commit_unstages_what_the_new_gitignore_excludes(tmp_path):
+    node_project(tmp_path)
+    subprocess.run(["git", "add", "-A"], cwd=str(tmp_path), capture_output=True)  # staged by a shell command
+    r = git.run({"action": "commit", "message": "init"}, ToolContext(tmp_path, False))
+    assert not r.is_error and sorted(tracked(tmp_path)) == [".gitignore", "a.js"]
+
+
+def test_git_commit_never_untracks_files_committed_before(tmp_path):
+    node_project(tmp_path)
+    subprocess.run(["git", "add", "-A"], cwd=str(tmp_path), capture_output=True)
+    subprocess.run(["git", "commit", "-qm", "old"], cwd=str(tmp_path), capture_output=True)
+    (tmp_path / "b.js").write_text("2", encoding="utf-8")
+    git.run({"action": "commit", "message": "next"}, ToolContext(tmp_path, False))
+    assert "node_modules/x/i.js" in tracked(tmp_path) and "b.js" in tracked(tmp_path)
+
+
+def test_git_commit_output_stays_small(tmp_path):
+    ensure_repo(tmp_path)
+    for i in range(400):
+        (tmp_path / f"file_{i:03}.txt").write_text("x", encoding="utf-8")
+    r = git.run({"action": "commit", "message": "many files"}, ToolContext(tmp_path, False))
+    assert not r.is_error and len(r.output) < 5000 and "many files" in r.output
