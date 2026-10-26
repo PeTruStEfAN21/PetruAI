@@ -123,3 +123,25 @@ def test_scripted_ui_defaults_and_records():
     assert ui.texts == ["t"] and ui.notices == ["n"]
     assert ui.confirms == [("run it?", False), ("again?", True)]
     assert ScriptedUI(confirm="no").confirm("x") == "no"
+
+
+def test_a_repeated_question_gets_the_earlier_answer_without_asking_again(tmp_path):
+    ui = ScriptedUI(answers=["SQLite", "unused"])
+    s, ctx = make(tmp_path, ui)
+    tool = AskUserTool()
+    tool.run({"question": "Which database?"}, ctx)
+    r = tool.run({"question": "Which database?"}, ctx)
+    assert not r.is_error and "already" in r.output and "SQLite" in r.output and "plan" in r.output
+    assert len(ui.questions) == 1 and s.pending_decisions == ["Which database? -> SQLite"]
+
+
+def test_questions_stop_at_the_limit_and_point_to_the_plan(tmp_path):
+    from petru.tools.interaction import MAX_DESIGN_QUESTIONS
+
+    ui = ScriptedUI(answers=[f"a{i}" for i in range(MAX_DESIGN_QUESTIONS + 1)])
+    s, ctx = make(tmp_path, ui)
+    tool = AskUserTool()
+    for i in range(MAX_DESIGN_QUESTIONS):
+        tool.run({"question": f"q{i}?"}, ctx)
+    r = tool.run({"question": "one more?"}, ctx)
+    assert not r.is_error and "plan" in r.output and len(ui.questions) == MAX_DESIGN_QUESTIONS

@@ -11,6 +11,11 @@ def _no_ui() -> ToolResult:
     return ToolResult("No interactive user is available for this tool right now.", True)
 
 
+MAX_DESIGN_QUESTIONS = 8  # the DESIGN prompt asks for 2-5; past this a small model is looping
+REPEATED_QUESTION = "You already asked this question."
+ENOUGH_QUESTIONS = "That is enough design questions"
+
+
 class AskUserTool(Tool):
     name = "ask_user"
     description = (
@@ -36,6 +41,19 @@ class AskUserTool(Tool):
             return _no_ui()
         question = str(args["question"])
         options = [str(o) for o in (args.get("options") or [])] or None
+        if ctx.session is not None and ctx.session.phase is Phase.DESIGN:
+            answered = ctx.session.pending_decisions
+            earlier = next((e for e in answered if e.startswith(f"{question} -> ")), None)
+            if earlier is not None:  # small models re-ask the same question in a loop; never bother the user
+                answer = earlier[len(question) + 4 :]
+                return ToolResult(
+                    f"{REPEATED_QUESTION} The user answered: {answer}. Ask something else or call plan."
+                )
+            if len(answered) >= MAX_DESIGN_QUESTIONS:
+                return ToolResult(
+                    f"{ENOUGH_QUESTIONS} ({len(answered)} answered). "
+                    "Call plan now with the steps and the decisions taken."
+                )
         answer = ctx.ui.ask(question, options)
         entry = f"{question} -> {answer}"
         if ctx.session is not None:
