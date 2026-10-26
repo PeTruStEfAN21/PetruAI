@@ -12,7 +12,7 @@ from collections.abc import Callable
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
-from petru_train.samples import load_tools, read_jsonl, render_chat
+from petru_train.samples import load_tools, read_jsonl, render_chat, text_tokenizer
 from petru_train.server import start_server, stop, wait_healthy
 
 TRAINING_DIR = Path(__file__).resolve().parents[1]
@@ -170,6 +170,7 @@ def held_out_loss(
     model, tokenizer = FastLanguageModel.from_pretrained(
         str(model_dir), max_seq_length=max_seq_len, load_in_4bit=True, dtype=None
     )
+    tokenizer = text_tokenizer(tokenizer)
     if adapter_dir is not None:
         from peft import PeftModel
 

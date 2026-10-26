@@ -86,8 +86,13 @@ def _template_messages(messages: list[dict]) -> list[dict]:
     return out
 
 
+def text_tokenizer(tokenizer: Any) -> Any:
+    """The text tokenizer behind a multimodal processor (Unsloth returns a Qwen3VLProcessor for Qwen3.5)."""
+    return getattr(tokenizer, "tokenizer", tokenizer)
+
+
 def render_chat(sample: Sample, tokenizer: Any) -> str:
-    return tokenizer.apply_chat_template(
+    return text_tokenizer(tokenizer).apply_chat_template(
         _template_messages(sample.messages),
         tools=sample.tools or None,
         tokenize=False,
@@ -96,4 +101,5 @@ def render_chat(sample: Sample, tokenizer: Any) -> str:
 
 
 def count_tokens(sample: Sample, tokenizer: Any) -> int:
-    return len(tokenizer(render_chat(sample, tokenizer), add_special_tokens=False)["input_ids"])
+    encoded = text_tokenizer(tokenizer)(render_chat(sample, tokenizer), add_special_tokens=False)
+    return len(encoded["input_ids"])

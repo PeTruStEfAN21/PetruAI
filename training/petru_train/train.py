@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import re
 import sys
 import time
@@ -106,7 +107,7 @@ def train(cfg: TrainConfig, run_dir: Path) -> TrainReport:
     from unsloth import FastLanguageModel
     from unsloth.chat_templates import train_on_responses_only
 
-    from petru_train.samples import read_jsonl, render_chat
+    from petru_train.samples import read_jsonl, render_chat, text_tokenizer
 
     class _Budget(TrainerCallback):
         def __init__(self, inner: TimeBudgetCallback) -> None:
@@ -119,6 +120,7 @@ def train(cfg: TrainConfig, run_dir: Path) -> TrainReport:
     model, tokenizer = FastLanguageModel.from_pretrained(
         str(cfg.base_model), max_seq_length=cfg.max_seq_len, load_in_4bit=True, dtype=None
     )
+    tokenizer = text_tokenizer(tokenizer)  # the processor's text tokenizer; the model is trained on text only
     model = FastLanguageModel.get_peft_model(
         model,
         r=cfg.lora_r,
@@ -131,6 +133,11 @@ def train(cfg: TrainConfig, run_dir: Path) -> TrainReport:
     train_ds = Dataset.from_dict({"text": [render_chat(s, tokenizer) for s in read_jsonl(cfg.train_file)]})
     eval_ds = Dataset.from_dict({"text": [render_chat(s, tokenizer) for s in read_jsonl(cfg.eval_file)]})
     bf16 = bool(torch.cuda.is_bf16_supported())
+    if cfg.max_steps is not None:
+        total_steps = cfg.max_steps
+    else:
+        total_steps = math.ceil(len(train_ds) / (cfg.batch_size * cfg.grad_accum) * cfg.epochs)
+    warmup_steps = max(0, int(cfg.warmup_ratio * total_steps))  # TRL >= 1.x only takes warmup_steps
     args = SFTConfig(
         output_dir=str(run_dir),
         per_device_train_batch_size=cfg.batch_size,
@@ -139,7 +146,7 @@ def train(cfg: TrainConfig, run_dir: Path) -> TrainReport:
         learning_rate=cfg.lr,
         num_train_epochs=cfg.epochs,
         max_steps=cfg.max_steps if cfg.max_steps is not None else -1,
-        warmup_ratio=cfg.warmup_ratio,
+        warmup_steps=warmup_steps,
         weight_decay=cfg.weight_decay,
         lr_scheduler_type="linear",
         optim="adamw_8bit",
