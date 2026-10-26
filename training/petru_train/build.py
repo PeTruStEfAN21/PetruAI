@@ -16,7 +16,7 @@ from petru_train.samples import Sample, load_tools, read_jsonl, split, write_jso
 
 TRAINING_DIR = Path(__file__).resolve().parents[1]
 DEFAULT_CONFIG = TRAINING_DIR / "config" / "dataset.toml"
-CACHE_VERSION = 2  # bump when the mining filters change, so every repo is mined again
+CACHE_VERSION = 3  # bump when the mining filters change, so every repo is mined again
 
 
 def cache_dir(out_dir: Path) -> Path:

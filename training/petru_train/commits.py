@@ -26,6 +26,8 @@ TRAJECTORY_SYSTEM = (
     "need, make the change with edit_file or write_file, then call task_complete with a short summary."
 )
 MAX_EDIT_LINES = 40
+MAX_EDIT_BLOCKS = 6
+MAX_CONTEXT_LINES = 3
 
 
 @dataclass
@@ -114,22 +116,46 @@ def _collect(
     return Commit(sha, message, changes, date)
 
 
-def derive_edit(before: str, after: str) -> tuple[str, str] | None:
-    """A single contiguous replaced block (<= MAX_EDIT_LINES, unique in `before`) as (old, new); else None."""
-    before_lines = before.splitlines(keepends=True)
-    after_lines = after.splitlines(keepends=True)
-    blocks = [
-        op
-        for op in difflib.SequenceMatcher(None, before_lines, after_lines).get_opcodes()
-        if op[0] != "equal"
-    ]
-    if len(blocks) != 1:
+def derive_edits(before: str, after: str) -> list[tuple[str, str]] | None:
+    """One (old, new) pair per changed block, in order, each `old` unique in the file as it is when that edit
+    applies (context lines are added until it is), exactly how the agent's edit_file works. None when the
+    change has too many or too large blocks, or a block cannot be made unique: then write_file is used."""
+    b_lines = before.splitlines(keepends=True)
+    a_lines = after.splitlines(keepends=True)
+    ops = [op for op in difflib.SequenceMatcher(None, b_lines, a_lines, autojunk=False).get_opcodes()
+           if op[0] != "equal"]  # fmt: skip
+    if not ops or len(ops) > MAX_EDIT_BLOCKS:
         return None
-    _, i1, i2, j1, j2 = blocks[0]
-    old, new = "".join(before_lines[i1:i2]), "".join(after_lines[j1:j2])
-    if not old or i2 - i1 > MAX_EDIT_LINES or before.count(old) != 1:
-        return None
-    return old, new
+    current, edits = before, []
+    for _, i1, i2, j1, j2 in ops:
+        if i2 - i1 > MAX_EDIT_LINES:
+            return None
+        chosen = None
+        for context in range(0, MAX_CONTEXT_LINES + 1):
+            lo, hi = max(0, i1 - context), min(len(b_lines), i2 + context)
+            old = "".join(b_lines[lo:hi])
+            if not old.strip():
+                continue  # an insertion needs a neighbouring line as its anchor
+            new = "".join(b_lines[lo:i1]) + "".join(a_lines[j1:j2]) + "".join(b_lines[i2:hi])
+            if current.count(old) == 1:
+                chosen = (old, new)
+                break
+        if chosen is None:
+            return None
+        current = current.replace(chosen[0], chosen[1], 1)
+        edits.append(chosen)
+    return edits if current == after else None
+
+
+def read_result(text: str, limit: int = 400) -> str:
+    """What the agent's read_file returns: numbered lines, 400 by default, then a continuation note."""
+    lines = text.splitlines()
+    out = [f"{i}\t{line}" for i, line in enumerate(lines[:limit], start=1)]
+    if limit < len(lines):
+        out.append(
+            f"... {len(lines) - limit} more lines ({len(lines)} total). Use offset={limit + 1} to continue."
+        )
+    return "\n".join(out) if out else "(empty file)"
 
 
 def _call(call_id: str, name: str, args: dict) -> dict:
@@ -151,20 +177,33 @@ def commit_to_sample(commit: Commit, repo_name: str, license: str, tools: list[d
                 "tool_calls": [_call(call_id, "read_file", {"path": change.path})],
             }
         )
-        content = change.before if change.before is not None else f"ERROR: File not found: {change.path}"
+        content = (
+            read_result(change.before)
+            if change.before is not None
+            else f"ERROR: File not found: {change.path}"
+        )
         messages.append({"role": "tool", "tool_call_id": call_id, "content": content})
     for i, change in enumerate(commit.files, start=1):
-        call_id = f"call_w{i}"
         after = change.after or ""
-        edit = derive_edit(change.before, after) if change.before else None
-        if edit is not None:
-            call = _call(call_id, "edit_file", {"path": change.path, "old": edit[0], "new": edit[1]})
-            result = f"Edited {change.path}: replaced 1 occurrence"
+        edits = derive_edits(change.before, after) if change.before else None
+        if edits:
+            for k, (old, new) in enumerate(edits, start=1):
+                call_id = f"call_w{i}_{k}"
+                call = _call(call_id, "edit_file", {"path": change.path, "old": old, "new": new})
+                messages.append({"role": "assistant", "content": "", "tool_calls": [call]})
+                messages.append(
+                    {
+                        "role": "tool",
+                        "tool_call_id": call_id,
+                        "content": f"Edited {change.path}: replaced 1 occurrence",
+                    }
+                )
         else:
+            call_id = f"call_w{i}"
             call = _call(call_id, "write_file", {"path": change.path, "content": after})
             result = f"Wrote {len(after.encode('utf-8'))} bytes to {change.path}"
-        messages.append({"role": "assistant", "content": "", "tool_calls": [call]})
-        messages.append({"role": "tool", "tool_call_id": call_id, "content": result})
+            messages.append({"role": "assistant", "content": "", "tool_calls": [call]})
+            messages.append({"role": "tool", "tool_call_id": call_id, "content": result})
     messages.append(
         {
             "role": "assistant",

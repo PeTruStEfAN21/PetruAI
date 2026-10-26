@@ -83,8 +83,63 @@ def test_commit_to_sample_has_read_then_write_then_complete():
     ids = [c["id"] for m in sample.messages if m.get("tool_calls") for c in m["tool_calls"]]
     tool_ids = [m["tool_call_id"] for m in sample.messages if m["role"] == "tool"]
     assert ids == tool_ids
-    read_result = next(m for m in sample.messages if m["role"] == "tool")
-    assert read_result["content"] == "print('v1')\n"
+    read_message = next(m for m in sample.messages if m["role"] == "tool")
+    assert read_message["content"] == "1\tprint('v1')"  # numbered, exactly like the agent's read_file
+
+
+def test_read_result_matches_the_agent_read_file_tool():
+    from petru_train.commits import read_result
+
+    assert read_result("a\nb\n") == "1\ta\n2\tb"
+    assert read_result("") == "(empty file)"
+    long = "".join(f"l{i}\n" for i in range(1, 451))
+    out = read_result(long).splitlines()
+    assert out[0] == "1\tl1" and out[399] == "400\tl400"
+    assert out[400] == "... 50 more lines (450 total). Use offset=401 to continue."
+
+
+def apply(text, edits):
+    for old, new in edits:
+        assert text.count(old) == 1, old
+        text = text.replace(old, new, 1)
+    return text
+
+
+def test_derive_edits_one_call_per_block_and_reproduces_the_file():
+    from petru_train.commits import derive_edits
+
+    before = "".join(f"line {i}\n" for i in range(1, 31))
+    after = before.replace("line 3\n", "line three\n").replace("line 25\n", "line 25\nline 25b\n")
+    edits = derive_edits(before, after)
+    assert len(edits) == 2 and apply(before, edits) == after
+
+
+def test_derive_edits_anchors_pure_insertions_and_expands_repeated_lines():
+    from petru_train.commits import derive_edits
+
+    before = "x = 1\nreturn x\n\nx = 1\nreturn y\n"
+    after = "x = 1\nreturn x\n\nx = 1\nlog()\nreturn y\n"
+    edits = derive_edits(before, after)
+    assert edits and all(old for old, _ in edits) and apply(before, edits) == after
+
+
+def test_derive_edits_gives_up_on_many_blocks():
+    from petru_train.commits import derive_edits
+
+    before = "".join(f"line {i}\n" for i in range(80))
+    after = "".join(f"line {i}\n" if i % 2 else f"changed {i}\n" for i in range(80))
+    assert derive_edits(before, after) is None
+
+
+def test_commit_to_sample_emits_several_edits_for_several_blocks():
+    before = "".join(f"line {i}\n" for i in range(1, 31))
+    after = before.replace("line 3\n", "line three\n").replace("line 25\n", "line twenty-five\n")
+    commit = Commit("d" * 40, "Rename two lines", [FileChange("a.txt", before, after, None)], "2026-01-01")
+    sample = commit_to_sample(commit, "demo", "MIT", load_tools())
+    calls = [c["function"]["name"] for m in sample.messages if m.get("tool_calls") for c in m["tool_calls"]]
+    assert calls == ["read_file", "edit_file", "edit_file", "task_complete"]
+    read = next(m for m in sample.messages if m["role"] == "tool")["content"]
+    assert read.startswith("1\tline 1\n2\tline 2")
 
 
 def test_commit_to_sample_uses_write_file_for_new_and_rewritten_files():
