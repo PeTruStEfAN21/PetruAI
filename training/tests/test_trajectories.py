@@ -33,10 +33,12 @@ def test_failed_or_truncated_trajectories_are_rejected():
     assert result_to_sample(good(tokens=20000), "python_x", max_tokens=12000) is None
 
 
-def test_good_trajectory_becomes_a_sample_without_the_system_prompt():
+def test_good_trajectory_keeps_the_recorded_system_prompt():
     sample = result_to_sample(good(), "python_x", max_tokens=12000)
     assert sample is not None and sample.source == "trajectory" and sample.language == "python"
-    assert sample.messages[0] == {"role": "user", "content": "build it"} and sample.tools == TOOLS
+    assert sample.messages[0] == {"role": "system", "content": "system prompt"} and sample.tools == TOOLS
+    assert sample.messages[1] == {"role": "user", "content": "build it"}
+    assert result_to_sample(good(messages=[{"role": "user", "content": "x"}]), "python_x", 12000) is None
     assert sample.repo == "python_x" and sample.id.startswith("traj:python_x:")
     assert result_to_sample(good("ts_api"), "ts_api", max_tokens=12000).language == "typescript"
     assert result_to_sample(good("flutter_app"), "flutter_app", max_tokens=12000).language == "dart"
@@ -61,7 +63,10 @@ def test_generate_keeps_three_per_task_and_resumes(tmp_path):
         return good(
             task_path.stem,
             passed=passed,
-            messages=[{"role": "user", "content": f"{task_path.stem} {attempt}"}],
+            messages=[
+                {"role": "user", "content": f"{task_path.stem} {attempt}"},
+                {"role": "assistant", "content": "done"},
+            ],
         )
 
     stats = generate(cfg, runner=runner)

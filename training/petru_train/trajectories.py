@@ -62,10 +62,9 @@ def result_to_sample(result: dict, task_name: str, max_tokens: int) -> Sample | 
     """None unless the checks passed, the turn ended normally and the transcript fits the token budget."""
     if not result.get("passed") or result.get("stop_reason") or int(result.get("tokens") or 0) > max_tokens:
         return None
-    messages = [
-        m for m in result.get("messages", []) if m.get("role") != "system"
-    ]  # the live prompt is added at use
-    if not messages:
+    # The recorded system prompt stays: it is what the agent sees at run time (rules, phase, packages).
+    messages = list(result.get("messages", []))
+    if not any(m.get("role") == "assistant" for m in messages):
         return None
     digest = hashlib.sha1(json.dumps(messages, ensure_ascii=False).encode("utf-8")).hexdigest()[:10]
     return Sample(
