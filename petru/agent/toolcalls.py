@@ -24,7 +24,7 @@ def _try_load(text: str) -> dict | None:
 
 
 def repair_json(raw: str) -> dict | None:
-    """Parse a JSON object, tolerating code fences, trailing commas and single quotes."""
+    """Parse a JSON object, tolerating code fences, trailing commas, single quotes and leaked markup."""
     text = raw.strip()
     match = _WHOLE_FENCE_RE.match(text)
     if match:
@@ -34,6 +34,14 @@ def repair_json(raw: str) -> dict | None:
         parsed = _try_load(candidate)
         if parsed is not None:
             return parsed
+    # The model ran on into the markup of further tool calls: keep the first object, closed where it broke.
+    cut = min([len(text), *[i for i in (text.find(m) for m in LEAK_MARKERS) if i != -1]])
+    if cut < len(text):
+        head = text[:cut].rstrip()
+        for suffix in ("", '"}', "}", '"]}', "]}"):
+            parsed = _try_load(head + suffix)
+            if parsed is not None:
+                return parsed
     return None
 
 
@@ -114,3 +122,14 @@ def sanitize_arguments(args: dict) -> dict:
         return value
 
     return clean(args)
+
+
+def canonical_call(call: ToolCall) -> ToolCall:
+    """The call as it should have been written: repaired, sanitized arguments re-serialized as JSON, so the
+    transcript (the model's own context, and later training data) never repeats malformed output.
+    Unparseable arguments stay raw; the loop reports them as invalid."""
+    args = call.arguments if call.arguments is not None else repair_json(call.raw_arguments)
+    if args is None:
+        return call
+    args = sanitize_arguments(args)
+    return ToolCall(call.id, call.name, args, json.dumps(args, ensure_ascii=False))

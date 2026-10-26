@@ -83,3 +83,18 @@ def test_sanitize_arguments_strips_leaked_markup():
         "nested": {"path": "a"},
     }
     assert sanitize_arguments({"content": "x = 1 < 2\n"}) == {"content": "x = 1 < 2\n"}
+
+
+def test_repair_json_cuts_leaked_markup_of_the_next_calls():
+    from petru.agent.toolcalls import repair_json
+
+    raw = """{"question":"SQLite or PostgreSQL?</parameter>
+</function>
+</tool_call>
+<tool_call>
+<function=ask_user>
+<parameter=question>"""
+    assert repair_json(raw) == {"question": "SQLite or PostgreSQL?"}
+    nested = """{"path": "a.ts", "content": "x</parameter>
+</function>"""
+    assert repair_json(nested) == {"path": "a.ts", "content": "x"}

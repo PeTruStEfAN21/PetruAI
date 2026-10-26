@@ -275,3 +275,18 @@ def test_provider_retry_raises_temperature(tmp_path):
     provider.temperatures = []
     make_agent(provider, ScriptedUI(), tmp_path).run_turn("x")
     assert provider.temperatures == [0.2, 0.5, 0.8]
+
+
+def test_repaired_tool_calls_are_recorded_in_canonical_form(tmp_path):
+    import json
+
+    raw = """{"question": "SQLite or Postgres?</parameter>
+</function>
+<tool_call>"""
+    broken = ToolCall("c1", "ask_user", None, raw)
+    fake = FakeProvider([result(tool_calls=[broken]), result(content="ok")])
+    agent = make_agent(fake, ScriptedUI(answers=["SQLite"]), tmp_path)
+    agent.run_turn("make a todo app")
+    recorded = agent.session.messages[-3]["tool_calls"][0]["function"]["arguments"]
+    assert json.loads(recorded) == {"question": "SQLite or Postgres?"} and "<" not in recorded
+    assert agent.session.messages[-2]["content"] == "SQLite"

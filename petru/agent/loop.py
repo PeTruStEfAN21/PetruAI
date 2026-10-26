@@ -8,6 +8,7 @@ from petru.agent.context import build_system_prompt, compact_if_needed
 from petru.agent.permissions import DESIGN_ALLOWED, decide
 from petru.agent.state import Phase, Session
 from petru.agent.toolcalls import (
+    canonical_call,
     extract_tool_calls,
     repair_json,
     sanitize_arguments,
@@ -161,7 +162,7 @@ class Agent:
                 if _is_context_overflow(exc):
                     compact_if_needed(session, self.provider, self.ctx_tokens, force=True)
                 continue
-            calls = extract_tool_calls(result)
+            calls = [canonical_call(c) for c in extract_tool_calls(result)]
             last_text = strip_text_tool_calls(result.content or "")
             if not calls:
                 session.messages.append({"role": "assistant", "content": result.content or ""})
