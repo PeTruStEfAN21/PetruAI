@@ -68,13 +68,14 @@ DESIGN_HINT = " (Use the ask_user tool for further questions, then call plan.)"
 CONTINUE_PREFIX = "Continue with the confirmed plan using tools."
 # What the agent answers a looping ask_user with (kept in sync with petru/tools/interaction.py).
 QUESTION_GUARDS = ("You already asked this question.", "That is enough design questions")
+INVALID_CALL = "Invalid tool call:"  # petru/agent/loop.py, Agent._invalid
 
 
 def normalize_messages(messages: list[dict]) -> list[dict]:
     """Rewrite the harness's corrections into the behaviour the agent should learn. A design question the
     model wrote as plain text, answered by the scripted user, becomes an ask_user call whose result is the
     answer; a BUILD-phase stop followed by the harness's 'continue' is dropped, and so is a question the
-    agent turned away as repeated or excess. Idempotent."""
+    agent turned away as repeated or excess, and a single call the agent rejected as invalid. Idempotent."""
     out: list[dict] = []
     i, asked = 0, 0
     while i < len(messages):
@@ -104,6 +105,9 @@ def normalize_messages(messages: list[dict]) -> list[dict]:
         guarded = reply.startswith(QUESTION_GUARDS) and following.get("role") == "tool"
         if len(calls) == 1 and calls[0]["function"]["name"] == "ask_user" and guarded:
             i += 2  # a repeated or excess question: the model should have called plan instead
+            continue
+        if len(calls) == 1 and following.get("role") == "tool" and reply.startswith(INVALID_CALL):
+            i += 2  # a malformed call; the corrected one that follows is what the model should learn
             continue
         out.append(message)
         i += 1

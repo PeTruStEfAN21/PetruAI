@@ -260,6 +260,10 @@ def test_harness_markers_match_the_agent_harness():
         "utf-8"
     )
     assert all(guard in tools_source for guard in QUESTION_GUARDS)
+    from petru_train.trajectories import INVALID_CALL
+
+    loop_source = (Path(__file__).resolve().parents[2] / "petru" / "agent" / "loop.py").read_text("utf-8")
+    assert f'f"{INVALID_CALL} {{reason}}' in loop_source
 
 
 def test_repeated_or_excess_questions_are_dropped_from_the_transcript():
@@ -291,3 +295,28 @@ def test_repeated_or_excess_questions_are_dropped_from_the_transcript():
         },
     ]
     assert normalize_messages(messages) == messages[:3]
+
+
+def test_invalid_calls_are_dropped_and_the_corrected_one_stays():
+    from petru_train.trajectories import normalize_messages
+
+    def single(call_id, name, args):
+        function = {"name": name, "arguments": json.dumps(args)}
+        return {
+            "role": "assistant",
+            "content": "",
+            "tool_calls": [{"id": call_id, "type": "function", "function": function}],
+        }
+
+    messages = [
+        {"role": "user", "content": "build it"},
+        single("c1", "ask_user", {}),
+        {
+            "role": "tool",
+            "tool_call_id": "c1",
+            "content": "Invalid tool call: arguments of ask_user are not a JSON object.",
+        },
+        single("c2", "ask_user", {"question": "Which runner?"}),
+        {"role": "tool", "tool_call_id": "c2", "content": "pytest"},
+    ]
+    assert normalize_messages(messages) == [messages[0], *messages[3:]]
