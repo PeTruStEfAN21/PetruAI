@@ -4,6 +4,26 @@ A local, offline-first coding agent for the terminal, with its own fine-tuning p
 It runs open-weight models through llama.cpp on a 6 GB laptop GPU, asks design questions before writing code,
 follows the user's decisions, verifies its work with the project's own tests and commits when they pass.
 
+```mermaid
+flowchart LR
+    U[User in the terminal] --> R[REPL / petru -p]
+    R --> A[Agent loop<br/>DESIGN → plan → BUILD]
+    A -->|chat + tool schemas| S[llama-server :8080<br/>Qwen 4B / 9B / 35B / tuned]
+    A --> T[Tools: files, shell, git,<br/>run_checks, ask_user, plan]
+    A --> M[Memory<br/>.petru/memory, ~/.petru/memory]
+    A --> I[search_code / search_docs<br/>FTS5 + sqlite-vec]
+    I --> E[llama-server :8082<br/>EmbeddingGemma on CPU]
+    W[petru watch + post-commit hook] --> J[Journal<br/>diffs + commit summaries]
+    J --> A
+    subgraph Nightly training
+        D[Your repos + permissive GitHub repos<br/>+ verified agent trajectories] --> Q[QLoRA on Qwen3.5-4B]
+        Q --> X[Merge → GGUF → Q4_K_M]
+        X --> G{Gate: loss, tool validity,<br/>task pass vs base}
+        G -->|no regression| P[Promote as tier tuned]
+    end
+    P --> S
+```
+
 ## Why
 
 Cloud coding agents need an internet connection and a subscription. PetruAI is built for working fully offline on a
