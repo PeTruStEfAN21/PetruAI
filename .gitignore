@@ -39,3 +39,9 @@ Desktop.ini
 .ruff_cache/
 .petru/journal.sqlite
 infra/offline/*.log
+tests/e2e/logs/
+training/data/
+training/runs/
+infra/llama.cpp/models/hf/
+infra/llama.cpp/convert/
+training/unsloth_compiled_cache/

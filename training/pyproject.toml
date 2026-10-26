@@ -1,0 +1,46 @@
+[project]
+name = "petru-train"
+version = "0.1.0"
+description = "PetruAI training pipeline: dataset building, QLoRA fine-tuning, evaluation gate, GGUF export"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "torch",
+  "unsloth",
+  "unsloth_zoo",
+  "trl",
+  "peft",
+  "transformers",
+  "datasets",
+  "accelerate",
+  "bitsandbytes",
+  "triton-windows",
+  "datasketch",
+  "gguf",
+  "huggingface_hub",
+  "sentencepiece",
+  "protobuf",
+  "tomli-w",
+]
+
+[dependency-groups]
+dev = ["pytest>=8", "pytest-timeout", "ruff"]
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu126" }
+
+[[tool.uv.index]]
+name = "pytorch-cu126"
+url = "https://download.pytorch.org/whl/cu126"
+explicit = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["gpu: needs the GPU and the base model weights"]
+addopts = "-m 'not gpu'"
+
+[tool.ruff]
+line-length = 110
+extend-exclude = ["unsloth_compiled_cache"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
