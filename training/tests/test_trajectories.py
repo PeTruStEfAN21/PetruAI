@@ -96,6 +96,23 @@ def test_generate_gives_up_after_the_attempt_budget(tmp_path):
     assert calls == [1, 2] and stats["kept"] == {"python_a": 0} and not cfg.out.exists()
 
 
+def test_generate_goes_round_robin_and_stops_at_the_time_budget(tmp_path):
+    write_tasks(tmp_path / "tasks", ["flutter_a", "python_b", "ts_c"])
+    clock = [0.0]
+    order = []
+
+    def runner(task_path, cfg, attempt):
+        order.append((task_path.stem, attempt))
+        clock[0] += 10 * 60  # every attempt takes 10 minutes
+        return good(task_path.stem, passed=False)
+
+    cfg = TrajConfig(
+        tasks_dir=tmp_path / "tasks", out=tmp_path / "t.jsonl", attempts_per_task=4, max_minutes=45
+    )
+    generate(cfg, runner=runner, clock=lambda: clock[0])
+    assert order == [("flutter_a", 1), ("python_b", 1), ("ts_c", 1), ("flutter_a", 2), ("python_b", 2)]
+
+
 def test_a_hung_attempt_is_killed_and_counted_as_failed(tmp_path, monkeypatch):
     import subprocess
 

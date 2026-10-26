@@ -8,6 +8,7 @@ import json
 import subprocess
 import sys
 import tempfile
+import time
 import tomllib
 from collections.abc import Callable
 from dataclasses import asdict, dataclass
@@ -37,7 +38,8 @@ class TrajConfig:
     attempts_per_task: int = 4
     max_tokens: int = 12000
     base_url: str | None = None
-    attempt_timeout_s: int = 1200
+    attempt_timeout_s: int = 900
+    max_minutes: int | None = None
 
 
 def load_traj_config(path: Path = DEFAULT_CONFIG, base_dir: Path | None = None) -> TrajConfig:
@@ -52,7 +54,8 @@ def load_traj_config(path: Path = DEFAULT_CONFIG, base_dir: Path | None = None) 
         attempts_per_task=int(data.get("attempts_per_task", 4)),
         max_tokens=int(data.get("max_tokens", 12000)),
         base_url=data.get("base_url"),
-        attempt_timeout_s=int(data.get("attempt_timeout_s", 1200)),
+        attempt_timeout_s=int(data.get("attempt_timeout_s", 900)),
+        max_minutes=data.get("max_minutes"),
     )
 
 
@@ -135,31 +138,47 @@ def _load_state(path: Path) -> dict:
     return {"kept": {}, "attempts": {}}
 
 
-def generate(cfg: TrajConfig, runner: Runner = run_petru_task) -> dict:
-    """Per task: attempt until `samples_per_task` kept or `attempts_per_task` spent. Resumable."""
+def generate(
+    cfg: TrajConfig, runner: Runner = run_petru_task, clock: Callable[[], float] = time.monotonic
+) -> dict:
+    """Round-robin over the tasks, one attempt each per round, until every task has `samples_per_task` kept
+    or `attempts_per_task` spent, or `max_minutes` is used up (no stack is starved). Resumable."""
     tasks = sorted(cfg.tasks_dir.glob("*.toml"))
     state_path = _state_path(cfg)
     state = _load_state(state_path)
     for task in tasks:
-        name = task.stem
-        kept = int(state["kept"].get(name, 0))
-        attempts = int(state["attempts"].get(name, 0))
-        while kept < cfg.samples_per_task and attempts < cfg.attempts_per_task:
+        state["kept"].setdefault(task.stem, 0)
+        state["attempts"].setdefault(task.stem, 0)
+    started = clock()
+
+    def out_of_time() -> bool:
+        return cfg.max_minutes is not None and (clock() - started) / 60 >= cfg.max_minutes
+
+    def save() -> None:
+        state_path.parent.mkdir(parents=True, exist_ok=True)
+        state_path.write_text(json.dumps(state, indent=1), encoding="utf-8")
+
+    progress = True
+    while progress and not out_of_time():
+        progress = False
+        for task in tasks:
+            if out_of_time():
+                break
+            name = task.stem
+            kept, attempts = int(state["kept"][name]), int(state["attempts"][name])
+            if kept >= cfg.samples_per_task or attempts >= cfg.attempts_per_task:
+                continue
+            progress = True
             attempts += 1
-            result = runner(task, cfg, attempts)
-            sample = result_to_sample(result, name, cfg.max_tokens)
+            sample = result_to_sample(runner(task, cfg, attempts), name, cfg.max_tokens)
             if sample is not None:
                 _append_jsonl(cfg.out, sample)
                 kept += 1
             verdict = "kept" if sample else "rejected"
-            print(f"{name} attempt {attempts}: {verdict} ({kept}/{cfg.samples_per_task})")
+            print(f"{name} attempt {attempts}: {verdict} ({kept}/{cfg.samples_per_task})", flush=True)
             state["kept"][name], state["attempts"][name] = kept, attempts
-            state_path.parent.mkdir(parents=True, exist_ok=True)
-            state_path.write_text(json.dumps(state, indent=1), encoding="utf-8")
-        state["kept"].setdefault(name, kept)
-        state["attempts"].setdefault(name, attempts)
-    state_path.parent.mkdir(parents=True, exist_ok=True)
-    state_path.write_text(json.dumps(state, indent=1), encoding="utf-8")
+            save()
+    save()
     return {"tasks": len(tasks), "kept": dict(state["kept"]), "attempts": dict(state["attempts"])}
 
 
