@@ -48,7 +48,7 @@ class Commit:
 
 def _git(repo: Path, *args: str) -> tuple[int, bytes]:
     proc = subprocess.run(
-        ["git", *args],
+        ["git", "-c", "core.quotepath=off", *args],  # raw UTF-8 paths: "notițe.py", not "noti\310\233e.py"
         cwd=str(repo),
         capture_output=True,
         creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),

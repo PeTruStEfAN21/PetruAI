@@ -41,6 +41,14 @@ def test_iter_commits_keeps_only_clean_nontrivial_commits(tmp_path):
     assert len(second.sha) == 40 and second.date
 
 
+def test_commits_touching_files_with_diacritics_are_mined(tmp_path):
+    repo = make_repo(tmp_path)
+    commit_file(repo, "notițe.py", "x = 1\n", "Add the notes module")
+    mined = {c.message: c for c in iter_commits(repo)}
+    assert "Add the notes module" in mined
+    assert mined["Add the notes module"].files[0].path == "notițe.py"
+
+
 def test_dependency_bump_commits_are_dropped(tmp_path):
     repo = make_repo(tmp_path)
     commit_file(repo, "app.py", "print('v3')\n", "build(deps): bump requests from 2.31 to 2.32")
