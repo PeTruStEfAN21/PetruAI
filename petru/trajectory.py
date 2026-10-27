@@ -49,6 +49,9 @@ class TaskSpec:
     seed: Path | None = None  # files copied into the project and committed before the agent starts
     protect: list[str] = field(default_factory=list)  # seed files put back before the final checks
     setup: list[str] = field(default_factory=list)  # commands run once the seed is in place (dependencies)
+    forbid: list[str] = field(
+        default_factory=list
+    )  # globs of test config the agent may not add (conftest.py)
 
 
 def load_task(path: Path) -> TaskSpec:
@@ -63,6 +66,7 @@ def load_task(path: Path) -> TaskSpec:
         seed=path.parent / data["seed"] if data.get("seed") else None,
         protect=[str(p) for p in data.get("protect", [])],
         setup=[str(c) for c in data.get("setup", [])],
+        forbid=[str(g) for g in data.get("forbid", [])],
     )
 
 
@@ -85,11 +89,17 @@ def run_setup(spec: TaskSpec, project: Path) -> tuple[bool, str]:
 
 
 def restore_protected(spec: TaskSpec, project: Path) -> None:
-    """Put the original tests back: a task passes on its own tests, not on ones the agent rewrote."""
+    """Put the original tests and their configuration back, and drop test configuration the agent added: a
+    task passes on its own tests, not on ones the agent rewrote, skipped or deselected."""
     for rel in spec.protect:
         target = project / rel
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(spec.seed / rel, target)
+    for pattern in spec.forbid:
+        for path in project.glob(pattern):
+            rel = path.relative_to(project)
+            if path.is_file() and ".git" not in rel.parts and not (spec.seed / rel).exists():
+                path.unlink()
 
 
 @dataclass

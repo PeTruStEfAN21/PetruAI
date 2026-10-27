@@ -243,3 +243,16 @@ def test_setup_commands_run_once_the_seed_is_in_place(tmp_path):
     spec.setup = ['python -c "raise SystemExit(3)"']
     ok, output = verify_task(spec, tmp_path / "q", solution)
     assert not ok and "setup failed" in output
+
+
+def test_test_config_the_agent_adds_is_removed_before_the_final_check(tmp_path):
+    spec = seeded_task(tmp_path)
+    spec.forbid = ["conftest.py", "**/conftest.py"]
+    spec.checks = ["python check_two.py", "python -c \"import os; assert not os.path.exists('conftest.py')\""]
+    solve = call("write_file", {"path": "two.py", "content": "def two():\n    return 2\n"})
+    game = call("write_file", {"path": "conftest.py", "content": "collect_ignore_glob = ['*']\n"})
+    res = run_task(
+        spec, provider=finishing(solve, game), repo_root=tmp_path, project=tmp_path / "p", ctx_tokens=8192
+    )
+    assert res.passed, res.check_output
+    assert not (tmp_path / "p" / "conftest.py").exists()
