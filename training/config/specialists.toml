@@ -1,0 +1,69 @@
+# Language specialists: one LoRA fine-tune of the base model each, trained every night in rotation.
+# languages: the dataset labels it learns (petru_train/filters.py); docs and configuration of repositories
+# written in them come along. tasks: prefixes of its harness tasks in training/tasks/. A language belongs to
+# one specialist. Optional repos = [...] restricts a specialist to some repositories (e.g. Python web vs data).
+
+[[specialist]]
+name = "python"
+languages = ["python"]
+tasks = ["python"]
+
+[[specialist]]
+name = "web"
+languages = ["typescript", "javascript", "html", "css"]
+tasks = ["ts", "js"]
+
+[[specialist]]
+name = "flutter"
+languages = ["dart"]
+tasks = ["flutter"]
+
+[[specialist]]
+name = "jvm"
+languages = ["java", "kotlin", "scala"]
+tasks = ["java", "kotlin"]
+
+[[specialist]]
+name = "dotnet"
+languages = ["csharp"]
+tasks = ["csharp"]
+
+[[specialist]]
+name = "systems"
+languages = ["c", "cpp"]
+tasks = ["c", "cpp"]
+
+[[specialist]]
+name = "go"
+languages = ["go"]
+tasks = ["go"]
+
+[[specialist]]
+name = "rust"
+languages = ["rust"]
+tasks = ["rust"]
+
+[[specialist]]
+name = "php"
+languages = ["php"]
+tasks = ["php"]
+
+[[specialist]]
+name = "ruby"
+languages = ["ruby"]
+tasks = ["ruby"]
+
+[[specialist]]
+name = "swift"
+languages = ["swift"]
+tasks = ["swift"]
+
+[[specialist]]
+name = "data-r"
+languages = ["r"]
+tasks = ["r"]
+
+[[specialist]]
+name = "scripting"
+languages = ["shell", "powershell", "sql", "lua", "elixir"]
+tasks = ["shell", "sql"]
