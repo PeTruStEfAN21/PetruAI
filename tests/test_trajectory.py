@@ -256,3 +256,24 @@ def test_test_config_the_agent_adds_is_removed_before_the_final_check(tmp_path):
     )
     assert res.passed, res.check_output
     assert not (tmp_path / "p" / "conftest.py").exists()
+
+
+def test_only_the_solution_files_leave_the_agents_project_for_the_final_check(tmp_path):
+    spec = seeded_task(tmp_path)
+    spec.solution, spec.protect = ["two.py"], []  # no protected file: the fresh copy alone must hold
+    spec.checks = ["python check_two.py"]
+    game = call("write_file", {"path": "check_two.py", "content": "pass\n"})  # rewrite the test itself
+    sitecustom = call("write_file", {"path": "helper.py", "content": "raise SystemExit(0)\n"})
+    cheat = run_task(
+        spec,
+        provider=finishing(game, sitecustom),
+        repo_root=tmp_path,
+        project=tmp_path / "a",
+        ctx_tokens=8192,
+    )
+    assert not cheat.passed and "NotImplementedError" in cheat.check_output
+    solve = call("write_file", {"path": "two.py", "content": "def two():\n    return 2\n"})
+    honest = run_task(
+        spec, provider=finishing(solve), repo_root=tmp_path, project=tmp_path / "b", ctx_tokens=8192
+    )
+    assert honest.passed, honest.check_output

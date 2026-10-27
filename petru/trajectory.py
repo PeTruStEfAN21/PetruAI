@@ -49,9 +49,8 @@ class TaskSpec:
     seed: Path | None = None  # files copied into the project and committed before the agent starts
     protect: list[str] = field(default_factory=list)  # seed files put back before the final checks
     setup: list[str] = field(default_factory=list)  # commands run once the seed is in place (dependencies)
-    forbid: list[str] = field(
-        default_factory=list
-    )  # globs of test config the agent may not add (conftest.py)
+    forbid: list[str] = field(default_factory=list)  # globs of test config the agent may not add
+    solution: list[str] = field(default_factory=list)  # set: only these files reach a fresh final check
 
 
 def load_task(path: Path) -> TaskSpec:
@@ -67,6 +66,7 @@ def load_task(path: Path) -> TaskSpec:
         protect=[str(p) for p in data.get("protect", [])],
         setup=[str(c) for c in data.get("setup", [])],
         forbid=[str(g) for g in data.get("forbid", [])],
+        solution=[str(f) for f in data.get("solution", [])],
     )
 
 
@@ -186,6 +186,19 @@ def verify_task(spec: TaskSpec, project: Path, solution: Path | None) -> tuple[b
     return run_checks_for(project, spec.checks)
 
 
+def check_solution(spec: TaskSpec, project: Path) -> tuple[bool, str]:
+    """Exercism's rule: only the solution files leave the agent's project. The final check runs on a fresh
+    copy of the seed with them on top, so no test, test configuration or extra file of the agent counts."""
+    with tempfile.TemporaryDirectory(prefix="petru-final-", ignore_cleanup_errors=True) as tmp:
+        solution = Path(tmp) / "solution"
+        solution.mkdir()
+        for rel in spec.solution:
+            if (project / rel).is_file():
+                (solution / rel).parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(project / rel, solution / rel)
+        return verify_task(spec, Path(tmp) / "project", solution)
+
+
 def run_task(
     spec: TaskSpec,
     *,
@@ -227,7 +240,9 @@ def run_task(
             extra += 1
             agent.run_turn(message)
     completed = session.phase is Phase.IDLE and agent.stop_reason is None
-    if completed:
+    if completed and spec.seed is not None and spec.solution:
+        ok, output = check_solution(spec, project)
+    elif completed:
         if spec.seed is not None:
             restore_protected(spec, project)
         ok, output = run_checks_for(project, spec.checks)
