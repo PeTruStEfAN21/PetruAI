@@ -8,7 +8,7 @@ stars = 104237
 pushed_at = "2026-10-26T20:54:19Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "79cab5bed28b24d92c185d236feb33f5783dfeb3"
 
 [[repo]]
 url = "https://github.com/encode/httpx"
@@ -18,7 +18,7 @@ stars = 15818
 pushed_at = "2026-10-02T12:53:43Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "b5addb64f0161ff6bfe94c124ef76f6a1fba5254"
 
 [[repo]]
 url = "https://github.com/pydantic/pydantic"
@@ -28,7 +28,7 @@ stars = 29207
 pushed_at = "2026-10-26T20:45:18Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "8459f597aac7f86bf44338b7a140010f9471368f"
 
 [[repo]]
 url = "https://github.com/Textualize/rich"
@@ -38,7 +38,7 @@ stars = 57653
 pushed_at = "2026-06-23T03:10:19Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "9d8f9a372cc5916fd4781fec207ced7ddac2f08f"
 
 [[repo]]
 url = "https://github.com/fastapi/typer"
@@ -48,7 +48,7 @@ stars = 20224
 pushed_at = "2026-10-15T15:22:01Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "a5882dedf0bc7a46cd861fdfca020f88519e0f21"
 
 [[repo]]
 url = "https://github.com/sqlalchemy/sqlalchemy"
@@ -58,7 +58,7 @@ stars = 12266
 pushed_at = "2026-10-26T21:20:06Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "7663f5c48a2b2bbad70d3d79a86ae098605bb315"
 
 [[repo]]
 url = "https://github.com/pallets/flask"
@@ -68,7 +68,7 @@ stars = 75102
 pushed_at = "2026-10-07T14:02:59Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "d086db856be187255b8ec61ef409357393020f32"
 
 [[repo]]
 url = "https://github.com/django/django"
@@ -78,7 +78,7 @@ stars = 91677
 pushed_at = "2026-10-26T19:58:25Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "5c13b5a19864807cae7266339554c14e151e5961"
 
 [[repo]]
 url = "https://github.com/psf/requests"
@@ -88,7 +88,7 @@ stars = 54728
 pushed_at = "2026-10-26T17:14:44Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "611c6162cbc4ac2020a2f91c7cfa4f3abf9bbb60"
 
 [[repo]]
 url = "https://github.com/python-poetry/poetry"
@@ -98,7 +98,7 @@ stars = 34325
 pushed_at = "2026-10-26T22:08:25Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "1fe5e0a57928572eb1d08f83b0cf0179043280dd"
 
 [[repo]]
 url = "https://github.com/expressjs/express"
@@ -108,7 +108,7 @@ stars = 69581
 pushed_at = "2026-10-26T09:28:27Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "1c6f1b0fe4000977b9a7b4f34097e4d527dd9824"
 
 [[repo]]
 url = "https://github.com/colinhacks/zod"
@@ -118,7 +118,7 @@ stars = 44202
 pushed_at = "2026-10-19T22:46:10Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "afdac65e0f80c0ccf9e8909da97c411567908b57"
 
 [[repo]]
 url = "https://github.com/vitejs/vite"
@@ -128,7 +128,7 @@ stars = 83587
 pushed_at = "2026-10-26T20:40:46Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "e954a9cda0b5254be495a937333a0be1b8503d8f"
 
 [[repo]]
 url = "https://github.com/honojs/hono"
@@ -138,7 +138,7 @@ stars = 32706
 pushed_at = "2026-10-26T06:05:22Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "bac5c4a8bcd76b165428ce757e1185753c7935bd"
 
 [[repo]]
 url = "https://github.com/trpc/trpc"
@@ -148,7 +148,7 @@ stars = 40731
 pushed_at = "2026-10-26T17:21:41Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "9282601f6e9c2edfc285cac72aff816f0d5ed4f7"
 
 [[repo]]
 url = "https://github.com/drizzle-team/drizzle-orm"
@@ -158,7 +158,7 @@ stars = 36150
 pushed_at = "2026-10-26T23:44:37Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "eab8bedbb65d5429c54e612ddbd88aa23091d398"
 
 [[repo]]
 url = "https://github.com/prisma/orm"
@@ -168,7 +168,7 @@ stars = 47671
 pushed_at = "2026-10-26T06:59:27Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "f543fb4173e64e45f87fdcfa85d6cfbd3ea034a5"
 
 [[repo]]
 url = "https://github.com/TanStack/query"
@@ -178,7 +178,7 @@ stars = 50486
 pushed_at = "2026-10-27T00:13:12Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "6f8a48d543b499b6d9b0e95050c28183c8c18ae0"
 
 [[repo]]
 url = "https://github.com/vitest-dev/vitest"
@@ -188,7 +188,7 @@ stars = 17288
 pushed_at = "2026-10-26T16:14:34Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "1a77c6cbcb30fb7abf3a16bdbd5396c19c6cef46"
 
 [[repo]]
 url = "https://github.com/vercel/next.js"
@@ -198,7 +198,7 @@ stars = 143307
 pushed_at = "2026-10-27T00:12:48Z"
 default_branch = "canary"
 verified_at = "2026-10-27"
-commit = ""
+commit = "7748e532a1abeb4387a722b0f1665bd53218f51a"
 
 [[repo]]
 url = "https://github.com/nestjs/nest"
@@ -208,7 +208,7 @@ stars = 76916
 pushed_at = "2026-10-26T21:43:54Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "6aafca1fd833ff04852ecd6607ceb969faa0c9de"
 
 [[repo]]
 url = "https://github.com/fastify/fastify"
@@ -218,7 +218,7 @@ stars = 37306
 pushed_at = "2026-10-25T15:52:43Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "5df959f3af698823dd582f1c3661f3e80df0b5da"
 
 [[repo]]
 url = "https://github.com/shadcn-ui/ui"
@@ -228,7 +228,7 @@ stars = 126621
 pushed_at = "2026-10-26T09:04:12Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "8f04138777c1b6996e709993362a7b0a12888ecf"
 
 [[repo]]
 url = "https://github.com/excalidraw/excalidraw"
@@ -238,7 +238,7 @@ stars = 134613
 pushed_at = "2026-10-26T22:29:13Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "b7de45e88111f5680ae4bb3c3f3541c7d3b279fe"
 
 [[repo]]
 url = "https://github.com/flutter/packages"
@@ -248,7 +248,7 @@ stars = 5328
 pushed_at = "2026-10-26T21:53:50Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "ae20ca6bc95abcc6e97814b948e5157887ec76d1"
 
 [[repo]]
 url = "https://github.com/rrousselGit/riverpod"
@@ -258,7 +258,7 @@ stars = 7411
 pushed_at = "2026-10-25T22:26:03Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "33af1e81224f18a6ade77bf71c34776cf7af2c12"
 
 [[repo]]
 url = "https://github.com/felangel/bloc"
@@ -268,7 +268,7 @@ stars = 12484
 pushed_at = "2026-10-25T01:14:54Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "b9be1e252ee24ffbe9f2fb629edc7624b2cfbf05"
 
 [[repo]]
 url = "https://github.com/cfug/dio"
@@ -278,7 +278,7 @@ stars = 12841
 pushed_at = "2026-10-25T14:55:53Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "f1bef462289b40992d625d4eb2a2f42321217573"
 
 [[repo]]
 url = "https://github.com/jonataslaw/getx"
@@ -288,7 +288,7 @@ stars = 11195
 pushed_at = "2026-06-12T14:17:03Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "e3c8fa04ae65ebf7ff0128dbeb2dc91d4dafa429"
 
 [[repo]]
 url = "https://github.com/gin-gonic/gin"
@@ -298,7 +298,7 @@ stars = 89435
 pushed_at = "2026-10-10T04:20:35Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "0f09c3a9b4626d9fe9979cf4d0521d6ae32ab646"
 
 [[repo]]
 url = "https://github.com/spf13/cobra"
@@ -308,7 +308,7 @@ stars = 44726
 pushed_at = "2026-07-11T00:43:07Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "adbc8813901bba65827259daa8e22ff94ec1f30e"
 
 [[repo]]
 url = "https://github.com/gohugoio/hugo"
@@ -318,7 +318,7 @@ stars = 90247
 pushed_at = "2026-10-26T17:58:26Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "3e67572c5df68ec9e369b59d8e689a04a35ceb9d"
 
 [[repo]]
 url = "https://github.com/BurntSushi/ripgrep"
@@ -328,7 +328,7 @@ stars = 69476
 pushed_at = "2026-10-23T20:00:21Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "6892bc2b7efe5909cbbeec8f757ed2c4c76b1d30"
 
 [[repo]]
 url = "https://github.com/tokio-rs/tokio"
@@ -338,7 +338,7 @@ stars = 33524
 pushed_at = "2026-10-26T08:56:12Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "b980c95d4755697ee376f5e19b95c328e173e304"
 
 [[repo]]
 url = "https://github.com/clap-rs/clap"
@@ -348,7 +348,7 @@ stars = 16802
 pushed_at = "2026-10-06T16:19:09Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "ccc89b83875474399e9d9d70841163f6319d1a41"
 
 [[repo]]
 url = "https://github.com/spring-projects/spring-boot"
@@ -358,7 +358,7 @@ stars = 81777
 pushed_at = "2026-10-26T23:54:31Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "e0a8055ec12a74073598f24e516627dcd78cdde2"
 
 [[repo]]
 url = "https://github.com/google/guava"
@@ -368,7 +368,7 @@ stars = 51916
 pushed_at = "2026-10-26T21:41:37Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "37535d73f0416f30e0301efe61a8eb8ede44c1b7"
 
 [[repo]]
 url = "https://github.com/dotnet/aspnetcore"
@@ -378,7 +378,7 @@ stars = 38497
 pushed_at = "2026-10-26T21:50:09Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "766e22542bd300a802a35955b7a6e535ca33f1a4"
 
 [[repo]]
 url = "https://github.com/fmtlib/fmt"
@@ -388,7 +388,7 @@ stars = 25896
 pushed_at = "2026-10-25T16:49:29Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "f87a75e15262614ce8aa0e6a0664df9d0823fb92"
 
 [[repo]]
 url = "https://github.com/nlohmann/json"
@@ -398,7 +398,7 @@ stars = 50807
 pushed_at = "2026-10-26T21:24:38Z"
 default_branch = "develop"
 verified_at = "2026-10-27"
-commit = ""
+commit = "81d66291c5569a5ebc92f6e163e44b22f1f97499"
 
 [[repo]]
 url = "https://github.com/ggml-org/llama.cpp"
@@ -408,7 +408,7 @@ stars = 132460
 pushed_at = "2026-10-26T23:57:03Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "caa8191df159f764fb0160e3d2fc6be008948aee"
 
 [[repo]]
 url = "https://github.com/sqlfluff/sqlfluff"
@@ -418,7 +418,7 @@ stars = 9994
 pushed_at = "2026-10-26T13:26:29Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "692629bba783560619e0c041817efbd1d62af809"
 
 [[repo]]
 url = "https://github.com/Kludex/starlette"
@@ -428,7 +428,7 @@ stars = 12686
 pushed_at = "2026-10-24T17:17:21Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "8aa828ceaff764a2e57932fb42fdf105a47c4c83"
 
 [[repo]]
 url = "https://github.com/Kludex/uvicorn"
@@ -438,7 +438,7 @@ stars = 11042
 pushed_at = "2026-10-25T13:37:00Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "9d81c12a2c411d3bf104368472b708a3218d9b4e"
 
 [[repo]]
 url = "https://github.com/fastapi/sqlmodel"
@@ -448,7 +448,7 @@ stars = 18498
 pushed_at = "2026-10-15T15:47:18Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "462b59d9cd1cc3d9072735435330ef9ab6d15cbf"
 
 [[repo]]
 url = "https://github.com/pallets/werkzeug"
@@ -458,7 +458,7 @@ stars = 6880
 pushed_at = "2026-10-26T03:13:52Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "b73dce5a2ce14f7c7fd645699d1d878de48d2948"
 
 [[repo]]
 url = "https://github.com/pallets/quart"
@@ -468,7 +468,7 @@ stars = 3678
 pushed_at = "2026-09-12T09:07:36Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "29d339c87f9efd1ba5268666e2404530fe078911"
 
 [[repo]]
 url = "https://github.com/django/channels"
@@ -478,7 +478,7 @@ stars = 6366
 pushed_at = "2026-08-06T05:09:41Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "531894e5b2a825168e16fd82f1766f748f71faf4"
 
 [[repo]]
 url = "https://github.com/django-commons/django-debug-toolbar"
@@ -488,7 +488,7 @@ stars = 8379
 pushed_at = "2026-10-26T23:39:12Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "317dec0b110ef68a40967be642ab27694ae77fc7"
 
 [[repo]]
 url = "https://github.com/aio-libs/aiohttp"
@@ -498,7 +498,7 @@ stars = 16594
 pushed_at = "2026-10-26T23:03:52Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "79675d55fbc5899acdeb2cb4480ca24180e97720"
 
 [[repo]]
 url = "https://github.com/litestar-org/litestar"
@@ -508,7 +508,7 @@ stars = 8532
 pushed_at = "2026-10-26T15:30:00Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "9d752aaee04d53c0d845cbd9749257bd3b7a8842"
 
 [[repo]]
 url = "https://github.com/pandas-dev/pandas"
@@ -518,7 +518,7 @@ stars = 50305
 pushed_at = "2026-10-26T22:41:18Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "cd83fbf6fdb9a3318222d36df167c9f42de57970"
 
 [[repo]]
 url = "https://github.com/scikit-learn/scikit-learn"
@@ -528,7 +528,7 @@ stars = 67938
 pushed_at = "2026-10-26T14:13:29Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "aa87406398f8ec56095ce94d1473c2d6aedc453f"
 
 [[repo]]
 url = "https://github.com/mwaskom/seaborn"
@@ -538,7 +538,7 @@ stars = 14087
 pushed_at = "2026-10-08T01:29:20Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "c1cb287835852406691aed60ea0c62710f2c6b18"
 
 [[repo]]
 url = "https://github.com/vega/altair"
@@ -548,7 +548,7 @@ stars = 10503
 pushed_at = "2026-10-26T00:52:13Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "e0a40339bc8a819367d223cce85adef3691e9bb8"
 
 [[repo]]
 url = "https://github.com/pydata/xarray"
@@ -558,7 +558,7 @@ stars = 4217
 pushed_at = "2026-10-26T21:23:32Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "c02f600a553b5994b685a63070f7c1b4001f7ec7"
 
 [[repo]]
 url = "https://github.com/dask/dask"
@@ -568,7 +568,7 @@ stars = 13939
 pushed_at = "2026-09-29T10:11:03Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "6ce3740fa79bfa051ecc74c3641f8c6a46dfdc30"
 
 [[repo]]
 url = "https://github.com/statsmodels/statsmodels"
@@ -578,7 +578,7 @@ stars = 11717
 pushed_at = "2026-10-26T23:51:59Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "d04ce4d36726adf6c9dbdf9fbc27f6bf64fe0482"
 
 [[repo]]
 url = "https://github.com/unionai-oss/pandera"
@@ -588,7 +588,7 @@ stars = 4499
 pushed_at = "2026-10-26T16:10:06Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "d9474e1b1e4f9bf371c9d1df867b260774780b0e"
 
 [[repo]]
 url = "https://github.com/eslint/eslint"
@@ -598,7 +598,7 @@ stars = 27603
 pushed_at = "2026-10-26T20:08:25Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "161558ae1391a8649a8d69a8b2c2e555b40121b9"
 
 [[repo]]
 url = "https://github.com/webpack/webpack"
@@ -608,7 +608,7 @@ stars = 65971
 pushed_at = "2026-10-26T20:18:52Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "9831760792d03f8124c329d4af4292ce8083aa58"
 
 [[repo]]
 url = "https://github.com/axios/axios"
@@ -618,7 +618,7 @@ stars = 109309
 pushed_at = "2026-10-26T14:49:25Z"
 default_branch = "v1.x"
 verified_at = "2026-10-27"
-commit = ""
+commit = "790b5ba1d95a95e93d59b76995595c37f2b90a66"
 
 [[repo]]
 url = "https://github.com/preactjs/preact"
@@ -628,7 +628,7 @@ stars = 38958
 pushed_at = "2026-10-25T09:37:46Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "1c0f1f82340f096e5850386d617d6a3885693001"
 
 [[repo]]
 url = "https://github.com/sveltejs/svelte"
@@ -638,7 +638,7 @@ stars = 88489
 pushed_at = "2026-10-26T20:16:25Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "23bb146306ff02cc5041bca0c5de9f8bd086e4a3"
 
 [[repo]]
 url = "https://github.com/nodejs/undici"
@@ -648,7 +648,7 @@ stars = 7724
 pushed_at = "2026-10-27T00:04:08Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "1a81548abf576c1932b3a6f35a1ea38486ffa069"
 
 [[repo]]
 url = "https://github.com/pinojs/pino"
@@ -658,7 +658,7 @@ stars = 18266
 pushed_at = "2026-10-06T15:34:15Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "b29dbe97820630e7128e464c50263b427965ec99"
 
 [[repo]]
 url = "https://github.com/Leaflet/Leaflet"
@@ -668,7 +668,7 @@ stars = 45784
 pushed_at = "2026-10-26T21:22:37Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "95874808720543c8ed75881516c68d1cad7869b1"
 
 [[repo]]
 url = "https://github.com/vuejs/core"
@@ -678,7 +678,7 @@ stars = 54905
 pushed_at = "2026-10-27T00:10:08Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "ca034820b8288ab6da3a033626a7857401ee64a5"
 
 [[repo]]
 url = "https://github.com/remix-run/react-router"
@@ -688,7 +688,7 @@ stars = 56628
 pushed_at = "2026-10-26T21:23:47Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "a7db7973092e727c89366f5c2b7cbedbd9c9f16e"
 
 [[repo]]
 url = "https://github.com/reduxjs/redux-toolkit"
@@ -698,7 +698,7 @@ stars = 11232
 pushed_at = "2026-10-06T22:42:40Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "0fd611cc79d44990ac9a040dec4d5cb446233440"
 
 [[repo]]
 url = "https://github.com/pmndrs/zustand"
@@ -708,7 +708,7 @@ stars = 58872
 pushed_at = "2026-10-22T04:23:23Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "382d29c485e67018c06e75ec7235130d0968522c"
 
 [[repo]]
 url = "https://github.com/react-hook-form/react-hook-form"
@@ -718,7 +718,7 @@ stars = 44882
 pushed_at = "2026-10-26T20:51:56Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "0333413f10203b610bdbf1754acdf762007e0552"
 
 [[repo]]
 url = "https://github.com/kysely-org/kysely"
@@ -728,7 +728,7 @@ stars = 14306
 pushed_at = "2026-10-26T07:44:59Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "b506b6390a06f47410d359bf0f640a13251b28df"
 
 [[repo]]
 url = "https://github.com/sindresorhus/ky"
@@ -738,7 +738,7 @@ stars = 17139
 pushed_at = "2026-10-09T06:29:49Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "3541888878c4d303a8bc2ad61815f4e048f55a5d"
 
 [[repo]]
 url = "https://github.com/typeorm/typeorm"
@@ -748,7 +748,7 @@ stars = 36663
 pushed_at = "2026-10-25T18:37:08Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "5bdc67882dee5a02d975d5ed140c9c3f91661116"
 
 [[repo]]
 url = "https://github.com/google/gson"
@@ -758,7 +758,7 @@ stars = 24235
 pushed_at = "2026-10-24T12:10:16Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "57731049da3e415be3d5d34db1ca3b80f3c73810"
 
 [[repo]]
 url = "https://github.com/FasterXML/jackson-databind"
@@ -768,7 +768,7 @@ stars = 3756
 pushed_at = "2026-10-25T03:04:41Z"
 default_branch = "3.x"
 verified_at = "2026-10-27"
-commit = ""
+commit = "4f153f09eb5b3970384678068ea2d97c3087755a"
 
 [[repo]]
 url = "https://github.com/mockito/mockito"
@@ -778,7 +778,7 @@ stars = 15453
 pushed_at = "2026-10-24T13:36:18Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "b3df1d50ccba9a84ea244f448b46d8f08b87f5cb"
 
 [[repo]]
 url = "https://github.com/apache/commons-lang"
@@ -788,7 +788,7 @@ stars = 3015
 pushed_at = "2026-10-26T15:03:11Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "a8e08aef142048a88be63d3a60848f822af406fd"
 
 [[repo]]
 url = "https://github.com/netty/netty"
@@ -798,7 +798,7 @@ stars = 35065
 pushed_at = "2026-10-26T23:59:02Z"
 default_branch = "4.2"
 verified_at = "2026-10-27"
-commit = ""
+commit = "b6fad79c6a672517bf22114093f8012430ac4e37"
 
 [[repo]]
 url = "https://github.com/resilience4j/resilience4j"
@@ -808,7 +808,7 @@ stars = 10796
 pushed_at = "2026-10-23T16:42:48Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "b7c0069802e373ed72dff0b817c270fbb6e966ba"
 
 [[repo]]
 url = "https://github.com/jhy/jsoup"
@@ -818,7 +818,7 @@ stars = 11415
 pushed_at = "2026-10-23T04:14:23Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "0c508f17a52d294aa846f4cbca312b2e65e9f94f"
 
 [[repo]]
 url = "https://github.com/assertj/assertj"
@@ -828,7 +828,7 @@ stars = 2853
 pushed_at = "2026-10-26T21:43:05Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "0540b11ac85b35317c0eb2e393287d569c02985e"
 
 [[repo]]
 url = "https://github.com/Kotlin/kotlinx.coroutines"
@@ -838,7 +838,7 @@ stars = 13823
 pushed_at = "2026-10-26T20:02:39Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "7e0d1b3e9ca83652427ae00dda7d1673f058a743"
 
 [[repo]]
 url = "https://github.com/Kotlin/kotlinx.serialization"
@@ -848,7 +848,7 @@ stars = 5949
 pushed_at = "2026-10-23T21:10:06Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "6f6a2e66c3dbf4a34e86a030368ecb0f7a734d22"
 
 [[repo]]
 url = "https://github.com/Kotlin/kotlinx-datetime"
@@ -858,7 +858,7 @@ stars = 2823
 pushed_at = "2026-10-26T08:37:21Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "d79ac8adb112ba1bf67711f3ad77b928cb7528ea"
 
 [[repo]]
 url = "https://github.com/ktorio/ktor"
@@ -868,7 +868,7 @@ stars = 14554
 pushed_at = "2026-10-26T15:54:00Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "d96280165fc9890217196ed0dffd45228e35987d"
 
 [[repo]]
 url = "https://github.com/square/moshi"
@@ -878,7 +878,7 @@ stars = 10166
 pushed_at = "2026-10-20T09:05:34Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "889013ec2edb8d8034902662a1dc8c4f3b3f8111"
 
 [[repo]]
 url = "https://github.com/InsertKoinIO/koin"
@@ -888,7 +888,7 @@ stars = 10023
 pushed_at = "2026-10-22T09:09:21Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "d39a4f8ecfc82920e5ff4ee1555d73af7db3b1ef"
 
 [[repo]]
 url = "https://github.com/JetBrains/Exposed"
@@ -898,7 +898,7 @@ stars = 9301
 pushed_at = "2026-10-26T23:56:33Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "09f814c61c22851b76840ccb65c1ac2c4db97452"
 
 [[repo]]
 url = "https://github.com/coil-kt/coil"
@@ -908,7 +908,7 @@ stars = 11951
 pushed_at = "2026-10-25T01:53:41Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "5c9c78af943e0e1cf5ca67f3d48928c1f5074d7d"
 
 [[repo]]
 url = "https://github.com/JamesNK/Newtonsoft.Json"
@@ -918,7 +918,7 @@ stars = 11314
 pushed_at = "2026-09-21T09:58:07Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "52fa3aef1f2cadcd3a3f874251eddc98d3efbbaa"
 
 [[repo]]
 url = "https://github.com/serilog/serilog"
@@ -928,7 +928,7 @@ stars = 8055
 pushed_at = "2026-10-23T22:33:20Z"
 default_branch = "dev"
 verified_at = "2026-10-27"
-commit = ""
+commit = "43105b35095337d77f022561a8f2d3db2f9a7937"
 
 [[repo]]
 url = "https://github.com/App-vNext/Polly"
@@ -938,7 +938,7 @@ stars = 14257
 pushed_at = "2026-10-26T16:55:11Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "f55d6185213cb79d3a64945110cac20ffe38eba7"
 
 [[repo]]
 url = "https://github.com/FluentValidation/FluentValidation"
@@ -948,7 +948,7 @@ stars = 9769
 pushed_at = "2026-10-23T15:21:50Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "f95dbd5c8166a10e38f7a8bca4d752abd641a453"
 
 [[repo]]
 url = "https://github.com/spectreconsole/spectre.console"
@@ -958,7 +958,7 @@ stars = 11677
 pushed_at = "2026-10-26T10:51:23Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "e8045f7c53c3c217a7f93f362f5256f1fadc0020"
 
 [[repo]]
 url = "https://github.com/dotnet/command-line-api"
@@ -968,7 +968,7 @@ stars = 3679
 pushed_at = "2026-10-26T02:07:54Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "eef106df3e5e74fae30236e1449cc3f4e955207a"
 
 [[repo]]
 url = "https://github.com/autofac/Autofac"
@@ -978,7 +978,7 @@ stars = 4660
 pushed_at = "2026-09-18T16:02:03Z"
 default_branch = "develop"
 verified_at = "2026-10-27"
-commit = ""
+commit = "ae9e1e1129b9c22e7ab111381308dcb02f80a8d2"
 
 [[repo]]
 url = "https://github.com/dotnet/efcore"
@@ -988,7 +988,7 @@ stars = 14811
 pushed_at = "2026-10-26T23:49:20Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "bf50db4f490e1bcb686ada2b3fe011c66b3fceeb"
 
 [[repo]]
 url = "https://github.com/valkey-io/valkey"
@@ -998,7 +998,7 @@ stars = 27527
 pushed_at = "2026-10-27T00:04:11Z"
 default_branch = "unstable"
 verified_at = "2026-10-27"
-commit = ""
+commit = "b4c125082ad285e10df7a87ef90528ed55802b89"
 
 [[repo]]
 url = "https://github.com/libuv/libuv"
@@ -1008,7 +1008,7 @@ stars = 27285
 pushed_at = "2026-10-26T11:29:34Z"
 default_branch = "v1.x"
 verified_at = "2026-10-27"
-commit = ""
+commit = "338ac6ac0714e6d8043a2826c9b3bc78e85bb961"
 
 [[repo]]
 url = "https://github.com/nginx/nginx"
@@ -1018,7 +1018,7 @@ stars = 31978
 pushed_at = "2026-10-23T14:54:14Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "9a7439fd79076de03c408de136ba1772347030c2"
 
 [[repo]]
 url = "https://github.com/tmux/tmux"
@@ -1028,7 +1028,7 @@ stars = 50014
 pushed_at = "2026-10-26T17:43:16Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "f7ef88a1004684f763325ce00bf41657e9c251dd"
 
 [[repo]]
 url = "https://github.com/DaveGamble/cJSON"
@@ -1038,7 +1038,7 @@ stars = 13053
 pushed_at = "2026-09-16T01:55:35Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "6d9f2443ab071f86e5d9b43025a40929ec41c46c"
 
 [[repo]]
 url = "https://github.com/memcached/memcached"
@@ -1048,7 +1048,7 @@ stars = 14300
 pushed_at = "2026-09-11T03:07:33Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "2d51e364799bc9698bd4b11728ea978cea12da6e"
 
 [[repo]]
 url = "https://github.com/FreeRTOS/FreeRTOS-Kernel"
@@ -1058,7 +1058,7 @@ stars = 4611
 pushed_at = "2026-10-16T17:03:47Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "640d0c43705e64cd53f46b31d882de6cd8433933"
 
 [[repo]]
 url = "https://github.com/h2o/h2o"
@@ -1068,7 +1068,7 @@ stars = 11558
 pushed_at = "2026-10-24T22:36:20Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "8c95f0682c3ff573c8ab6451ed3587b82eb15a4d"
 
 [[repo]]
 url = "https://github.com/google/googletest"
@@ -1078,7 +1078,7 @@ stars = 39665
 pushed_at = "2026-10-21T21:01:17Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "cd8e73f067129f8489e35c7b51c7a68552b289d2"
 
 [[repo]]
 url = "https://github.com/abseil/abseil-cpp"
@@ -1088,7 +1088,7 @@ stars = 18170
 pushed_at = "2026-10-26T22:44:48Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "76a21a99b8c4a316cb3dc80619df73d24994e76a"
 
 [[repo]]
 url = "https://github.com/ocornut/imgui"
@@ -1098,7 +1098,7 @@ stars = 76835
 pushed_at = "2026-10-26T12:59:47Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "4e99c0ab1a28c2b3d1f250ec0266dbf1e455ef58"
 
 [[repo]]
 url = "https://github.com/google/benchmark"
@@ -1108,7 +1108,7 @@ stars = 10482
 pushed_at = "2026-10-26T20:05:41Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "0a78b5d203283b54f65590ecef23e0b835b4787c"
 
 [[repo]]
 url = "https://github.com/simdjson/simdjson"
@@ -1118,7 +1118,7 @@ stars = 24465
 pushed_at = "2026-10-26T23:08:37Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "9846497219e5acf4dccaa20bb99b027a477340a3"
 
 [[repo]]
 url = "https://github.com/yhirose/cpp-httplib"
@@ -1128,7 +1128,7 @@ stars = 16942
 pushed_at = "2026-10-26T02:56:32Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "252dbaa505dd19d2e42c7b3bd2a07a8e702c8d09"
 
 [[repo]]
 url = "https://github.com/skypjack/entt"
@@ -1138,7 +1138,7 @@ stars = 13224
 pushed_at = "2026-10-26T11:19:16Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "1dcd7aab6548786f7672ff578639188bd2f0d837"
 
 [[repo]]
 url = "https://github.com/duckdb/duckdb"
@@ -1148,7 +1148,7 @@ stars = 42598
 pushed_at = "2026-10-26T19:48:20Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "c1606652f2a0ff1fd2ce9bf90373575abaf85767"
 
 [[repo]]
 url = "https://github.com/go-chi/chi"
@@ -1158,7 +1158,7 @@ stars = 23005
 pushed_at = "2026-10-18T13:50:22Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "9f8adb1aabaa8a91180a821111d3f8e668d1c0bf"
 
 [[repo]]
 url = "https://github.com/labstack/echo"
@@ -1168,7 +1168,7 @@ stars = 32780
 pushed_at = "2026-10-23T01:54:51Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "7c312e09d96ac13bdb6d32748dacbfcc689a2480"
 
 [[repo]]
 url = "https://github.com/stretchr/testify"
@@ -1178,7 +1178,7 @@ stars = 26234
 pushed_at = "2026-10-19T11:52:30Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "87a7b9d57689f6579db2da795ab8deeab29cb724"
 
 [[repo]]
 url = "https://github.com/uber-go/zap"
@@ -1188,7 +1188,7 @@ stars = 24682
 pushed_at = "2026-09-16T19:17:34Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "4892335e05f14bce8a98a69a577fcf3844a42623"
 
 [[repo]]
 url = "https://github.com/charmbracelet/bubbletea"
@@ -1198,7 +1198,7 @@ stars = 45521
 pushed_at = "2026-10-26T13:59:19Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "9c6c325f83348ee7215fb7a7aca3bc6316217056"
 
 [[repo]]
 url = "https://github.com/go-gorm/gorm"
@@ -1208,7 +1208,7 @@ stars = 39986
 pushed_at = "2026-10-24T07:00:16Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "ead4e04ba7c6a49654649131e587133b1d9f3eca"
 
 [[repo]]
 url = "https://github.com/serde-rs/serde"
@@ -1218,7 +1218,7 @@ stars = 10918
 pushed_at = "2026-10-16T03:31:38Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "0db9b3b504bcb0a7fa9cf001429869519afd3e9a"
 
 [[repo]]
 url = "https://github.com/tokio-rs/axum"
@@ -1228,7 +1228,7 @@ stars = 27623
 pushed_at = "2026-10-20T02:23:42Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "86aa6153e47b7862737acdcfe3a0eb3a162b939a"
 
 [[repo]]
 url = "https://github.com/hyperium/hyper"
@@ -1238,7 +1238,7 @@ stars = 16379
 pushed_at = "2026-10-13T17:51:07Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "b07337878fe57b34b2065335ae8cae9ce5a780a0"
 
 [[repo]]
 url = "https://github.com/seanmonstar/reqwest"
@@ -1248,7 +1248,7 @@ stars = 11889
 pushed_at = "2026-10-19T21:47:54Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "8e1c8061e5dd936762dcef08a64ef2cff584b295"
 
 [[repo]]
 url = "https://github.com/tokio-rs/tracing"
@@ -1258,7 +1258,7 @@ stars = 6941
 pushed_at = "2026-10-09T17:40:26Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "9d0e557728ecb91e467fc29dfe738b9f28cf6684"
 
 [[repo]]
 url = "https://github.com/astral-sh/ruff"
@@ -1268,7 +1268,7 @@ stars = 50317
 pushed_at = "2026-10-27T00:14:30Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "ba65abf8ba7bfbcc059f7fb9712be5ba9cab6abc"
 
 [[repo]]
 url = "https://github.com/laravel/framework"
@@ -1278,7 +1278,7 @@ stars = 34983
 pushed_at = "2026-10-26T14:23:42Z"
 default_branch = "13.x"
 verified_at = "2026-10-27"
-commit = ""
+commit = "f3adacd43137e2f6771ec4686d97ea05d437c410"
 
 [[repo]]
 url = "https://github.com/symfony/symfony"
@@ -1288,7 +1288,7 @@ stars = 31209
 pushed_at = "2026-10-26T22:06:55Z"
 default_branch = "8.2"
 verified_at = "2026-10-27"
-commit = ""
+commit = "d0e3dc4291bc9b2df9e7ac24fda7a58df2f28fdc"
 
 [[repo]]
 url = "https://github.com/guzzle/guzzle"
@@ -1298,7 +1298,7 @@ stars = 23445
 pushed_at = "2026-10-25T21:37:36Z"
 default_branch = "8.3"
 verified_at = "2026-10-27"
-commit = ""
+commit = "7d9b1f430bb65ac664e120af227bf9a795ad6333"
 
 [[repo]]
 url = "https://github.com/composer/composer"
@@ -1308,7 +1308,7 @@ stars = 29565
 pushed_at = "2026-10-26T14:37:47Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "b56a3f558a53e37497612dfad3ef0070c2bafc82"
 
 [[repo]]
 url = "https://github.com/Seldaek/monolog"
@@ -1318,7 +1318,7 @@ stars = 21403
 pushed_at = "2026-10-05T21:03:46Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "3bed304b1905fed5c30d172872f4d890cbb03c6a"
 
 [[repo]]
 url = "https://github.com/doctrine/orm"
@@ -1328,7 +1328,7 @@ stars = 10168
 pushed_at = "2026-10-26T18:17:08Z"
 default_branch = "3.7.x"
 verified_at = "2026-10-27"
-commit = ""
+commit = "b44f3dff45573191f7a447c2149a27f172853fb8"
 
 [[repo]]
 url = "https://github.com/nikic/PHP-Parser"
@@ -1338,7 +1338,7 @@ stars = 17461
 pushed_at = "2026-10-05T07:07:23Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "8d2b672aff65a1a4dbf7936cec27d19f51989412"
 
 [[repo]]
 url = "https://github.com/briannesbitt/Carbon"
@@ -1348,7 +1348,7 @@ stars = 16589
 pushed_at = "2026-10-25T16:56:47Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "846eb46cedced42069b021bc8712a9ba56762007"
 
 [[repo]]
 url = "https://github.com/rails/rails"
@@ -1358,7 +1358,7 @@ stars = 58857
 pushed_at = "2026-10-26T21:43:00Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "3c363b0f264886b2e01d4196e11c52a264aba971"
 
 [[repo]]
 url = "https://github.com/sinatra/sinatra"
@@ -1368,7 +1368,7 @@ stars = 12457
 pushed_at = "2026-07-20T09:59:21Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "cb22afd7902b566b6eaba6c4ea89739494a65d12"
 
 [[repo]]
 url = "https://github.com/heartcombo/devise"
@@ -1378,7 +1378,7 @@ stars = 24356
 pushed_at = "2026-10-06T12:03:09Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "05811fb8366edd08874111d0f6fb44543e1c91ef"
 
 [[repo]]
 url = "https://github.com/rubocop/rubocop"
@@ -1388,7 +1388,7 @@ stars = 12919
 pushed_at = "2026-10-26T21:37:58Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "a4efb7250cd3beae416ed53bd70ee372f5e51444"
 
 [[repo]]
 url = "https://github.com/puma/puma"
@@ -1398,7 +1398,7 @@ stars = 7921
 pushed_at = "2026-10-25T02:54:20Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "bbffd8dfb78bc37b557c8a78c04582498f8da38f"
 
 [[repo]]
 url = "https://github.com/Shopify/liquid"
@@ -1408,7 +1408,7 @@ stars = 11911
 pushed_at = "2026-09-24T14:10:32Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "4e39ae4cc3da73921923c0669e0fc84a66b2f696"
 
 [[repo]]
 url = "https://github.com/ruby-grape/grape"
@@ -1418,7 +1418,7 @@ stars = 10013
 pushed_at = "2026-10-25T19:10:57Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "9aea9b2ff24ac76539170b05c9fe7d3658d9d333"
 
 [[repo]]
 url = "https://github.com/thoughtbot/factory_bot"
@@ -1428,7 +1428,7 @@ stars = 8166
 pushed_at = "2026-10-13T14:54:54Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "3bf288eb11a4a5aa79cc85a1dfa64825cec0f4d9"
 
 [[repo]]
 url = "https://github.com/Alamofire/Alamofire"
@@ -1438,7 +1438,7 @@ stars = 42395
 pushed_at = "2026-10-10T07:58:42Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "bda9ed57d72988a3a2ada33d824583541f86eac6"
 
 [[repo]]
 url = "https://github.com/apple/swift-argument-parser"
@@ -1448,7 +1448,7 @@ stars = 3798
 pushed_at = "2026-10-24T16:11:36Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "38ca4eceb349155836701b88da3e0986eb9d1e1c"
 
 [[repo]]
 url = "https://github.com/apple/swift-nio"
@@ -1458,7 +1458,7 @@ stars = 8541
 pushed_at = "2026-10-19T12:23:20Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "108daca35da6a1b4ed8da29c1dfbd19668b9b8fc"
 
 [[repo]]
 url = "https://github.com/vapor/vapor"
@@ -1468,7 +1468,7 @@ stars = 26242
 pushed_at = "2026-10-26T18:32:37Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "c7c0fe976c68292d44ee157e62f0366c9da78dcd"
 
 [[repo]]
 url = "https://github.com/pointfreeco/swift-composable-architecture"
@@ -1478,7 +1478,7 @@ stars = 14991
 pushed_at = "2026-10-06T22:13:50Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "bc2db5ba8ad3a47deba5db32fa340637ba6c9a76"
 
 [[repo]]
 url = "https://github.com/onevcat/Kingfisher"
@@ -1488,7 +1488,7 @@ stars = 24405
 pushed_at = "2026-10-26T14:34:36Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "7406a99571034568b6ca4ba875c01842607e03d9"
 
 [[repo]]
 url = "https://github.com/apple/swift-collections"
@@ -1498,7 +1498,7 @@ stars = 4526
 pushed_at = "2026-10-26T19:40:35Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "d45bd52372a8541213281713e51f1c6ee0ec27df"
 
 [[repo]]
 url = "https://github.com/swiftlang/swift-format"
@@ -1508,7 +1508,7 @@ stars = 2961
 pushed_at = "2026-10-26T20:14:24Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "691ba1e25be4ee634f6a4e00c4d0283c601d2f20"
 
 [[repo]]
 url = "https://github.com/simolus3/drift"
@@ -1518,7 +1518,7 @@ stars = 3297
 pushed_at = "2026-10-26T22:47:25Z"
 default_branch = "develop"
 verified_at = "2026-10-27"
-commit = ""
+commit = "eef454f79ad09cbc4ac381974ccf5f08f74836b8"
 
 [[repo]]
 url = "https://github.com/flame-engine/flame"
@@ -1528,7 +1528,7 @@ stars = 10802
 pushed_at = "2026-10-26T16:30:03Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "1385181ff608e661457bee1346632219b7b300ff"
 
 [[repo]]
 url = "https://github.com/google/json_serializable.dart"
@@ -1538,7 +1538,7 @@ stars = 1619
 pushed_at = "2026-10-20T19:44:35Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "c2c5c92f8f1b42e019e2f93a39399a8f9fa3dfba"
 
 [[repo]]
 url = "https://github.com/dart-lang/shelf"
@@ -1548,7 +1548,7 @@ stars = 1012
 pushed_at = "2026-10-23T20:18:58Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "e023ed6e62163103f89e0893b555ffa09a39bb06"
 
 [[repo]]
 url = "https://github.com/dart-lang/http"
@@ -1558,7 +1558,7 @@ stars = 1115
 pushed_at = "2026-10-26T22:17:28Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "23495b011f09de6ac50b568bd266b65d963b5200"
 
 [[repo]]
 url = "https://github.com/fluttercommunity/plus_plugins"
@@ -1568,7 +1568,7 @@ stars = 1877
 pushed_at = "2026-10-14T06:07:51Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "907994b0e52c2c11ae2f2ccc08d0658e1c73dbaf"
 
 [[repo]]
 url = "https://github.com/localsend/localsend"
@@ -1578,7 +1578,7 @@ stars = 95788
 pushed_at = "2026-10-25T12:11:01Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "cfd699125f2aa4c69f48fd274cf4bb1876a5e08d"
 
 [[repo]]
 url = "https://github.com/typelevel/cats-effect"
@@ -1588,7 +1588,7 @@ stars = 2249
 pushed_at = "2026-10-17T20:16:26Z"
 default_branch = "series/3.x"
 verified_at = "2026-10-27"
-commit = ""
+commit = "de84c01f76b2f42fcee9d43aba66c82992add103"
 
 [[repo]]
 url = "https://github.com/http4s/http4s"
@@ -1598,7 +1598,7 @@ stars = 2628
 pushed_at = "2026-10-26T21:55:53Z"
 default_branch = "series/0.23"
 verified_at = "2026-10-27"
-commit = ""
+commit = "31728046601753dfe20f1ee9d29ce7cd2beaae8b"
 
 [[repo]]
 url = "https://github.com/circe/circe"
@@ -1608,7 +1608,7 @@ stars = 2541
 pushed_at = "2026-10-26T14:13:40Z"
 default_branch = "series/0.14.x"
 verified_at = "2026-10-27"
-commit = ""
+commit = "66e1e406400d865a176dafeccb7b684f1d679627"
 
 [[repo]]
 url = "https://github.com/scalameta/scalafmt"
@@ -1618,7 +1618,7 @@ stars = 1491
 pushed_at = "2026-10-15T01:57:19Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "e1f0c2dcdcc5649c424264ca5b88b6b0322ae30a"
 
 [[repo]]
 url = "https://github.com/playframework/playframework"
@@ -1628,7 +1628,7 @@ stars = 12622
 pushed_at = "2026-10-26T21:23:30Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "1c384f1be240c3a8834ccdb74cd7507d9fe5527b"
 
 [[repo]]
 url = "https://github.com/apache/pekko"
@@ -1638,7 +1638,7 @@ stars = 1655
 pushed_at = "2026-10-26T16:32:23Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "91d6a8aac145b2b2e8ecb1e3c6b8da60958956c1"
 
 [[repo]]
 url = "https://github.com/rstudio/renv"
@@ -1648,7 +1648,7 @@ stars = 1165
 pushed_at = "2026-10-23T17:10:13Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "67b23faa797128904c5522cf56ea0ad16a02b91f"
 
 [[repo]]
 url = "https://github.com/rstudio/reticulate"
@@ -1658,7 +1658,7 @@ stars = 1765
 pushed_at = "2026-10-16T14:11:28Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "980815b7ba144ba62d77cc873f901885ba5878e1"
 
 [[repo]]
 url = "https://github.com/rstudio/tensorflow"
@@ -1668,7 +1668,7 @@ stars = 1340
 pushed_at = "2026-05-08T15:49:04Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "fed1fe79742d9a979884b07f69c126b91a93050b"
 
 [[repo]]
 url = "https://github.com/sparklyr/sparklyr"
@@ -1678,7 +1678,7 @@ stars = 972
 pushed_at = "2026-10-06T13:51:30Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "0c879bf82dc566b1e3a5dbb8c5d3a050cd7a2aee"
 
 [[repo]]
 url = "https://github.com/pharmaverse/admiral"
@@ -1688,7 +1688,7 @@ stars = 324
 pushed_at = "2026-10-26T23:05:21Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "00948776af4d5c51c0695c8fba3d2df612f53738"
 
 [[repo]]
 url = "https://github.com/nvm-sh/nvm"
@@ -1698,7 +1698,7 @@ stars = 95672
 pushed_at = "2026-10-26T15:39:06Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "139ed9ccc6d3710e09c6c5865c8d071f5445d658"
 
 [[repo]]
 url = "https://github.com/ohmyzsh/ohmyzsh"
@@ -1708,7 +1708,7 @@ stars = 190180
 pushed_at = "2026-10-25T14:39:33Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "d2b7f557cceaddb16ba89bbf8200d8a8df35c4d8"
 
 [[repo]]
 url = "https://github.com/bats-core/bats-core"
@@ -1718,7 +1718,7 @@ stars = 6332
 pushed_at = "2026-10-20T12:07:34Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "5b61d8f22b46abf001e218cdd63f2938c356fa93"
 
 [[repo]]
 url = "https://github.com/pyenv/pyenv"
@@ -1728,7 +1728,7 @@ stars = 45171
 pushed_at = "2026-10-26T19:57:00Z"
 default_branch = "master"
 verified_at = "2026-10-27"
-commit = ""
+commit = "9b9caf040a539fc7030820d9f19d79ad5861f8d4"
 
 [[repo]]
 url = "https://github.com/ChrisTitusTech/winutil"
@@ -1738,7 +1738,7 @@ stars = 65082
 pushed_at = "2026-10-26T08:43:24Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "2f0bdc8fca52e1ebe31a8d98216428061d3f8956"
 
 [[repo]]
 url = "https://github.com/nightroman/Invoke-Build"
@@ -1748,7 +1748,7 @@ stars = 725
 pushed_at = "2026-01-28T12:52:07Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "16e0279db6dcc3845d0a550373e1f9f137f2f51b"
 
 [[repo]]
 url = "https://github.com/dataplat/dbatools"
@@ -1758,7 +1758,7 @@ stars = 2855
 pushed_at = "2026-10-26T12:05:19Z"
 default_branch = "development"
 verified_at = "2026-10-27"
-commit = ""
+commit = "ec216821c28495d7e9d9e1540b263241630c953c"
 
 [[repo]]
 url = "https://github.com/dbt-labs/dbt-utils"
@@ -1768,7 +1768,7 @@ stars = 1829
 pushed_at = "2026-10-01T15:01:25Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "2a8f07bcbd02fb7a8c011298a1bdaf3e92759c14"
 
 [[repo]]
 url = "https://github.com/dbt-labs/dbt-codegen"
@@ -1778,7 +1778,7 @@ stars = 677
 pushed_at = "2026-10-01T14:13:36Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "ec19358e76edf09db8ab1a11d69fa3140c6c08d4"
 
 [[repo]]
 url = "https://github.com/dbt-labs/dbt-audit-helper"
@@ -1788,7 +1788,7 @@ stars = 425
 pushed_at = "2026-05-19T12:18:10Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "71817f0a7fa3df9f63adb90db0cf28f7423f720b"
 
 [[repo]]
 url = "https://github.com/dbt-labs/dbt-project-evaluator"
@@ -1798,7 +1798,7 @@ stars = 583
 pushed_at = "2026-10-26T18:13:33Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "8b505558ed3865debb5cf0fe12ba6b313425e8f0"
 
 [[repo]]
 url = "https://github.com/metaplane/dbt-expectations"
@@ -1808,7 +1808,7 @@ stars = 166
 pushed_at = "2026-05-17T17:00:00Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "991651f0afa725e32834d0ee51bb0c08f385e418"
 
 [[repo]]
 url = "https://github.com/tobymao/sqlglot"
@@ -1818,4 +1818,4 @@ stars = 9725
 pushed_at = "2026-10-26T22:03:14Z"
 default_branch = "main"
 verified_at = "2026-10-27"
-commit = ""
+commit = "feb0e08aba28a29590596bb3f5761fbaeb0e98b9"
