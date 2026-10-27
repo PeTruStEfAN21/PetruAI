@@ -1,0 +1,11 @@
+name = "go_stack"
+prompt = "Write a small generic stack and queue package in Go, with tests. Ask me your design questions first."
+answers = [
+  "Operations: Push, Pop, Peek, Len and IsEmpty for both, generic over the item type, Pop on empty returns an error.",
+  "Tests: go test.",
+  "Layout: a go.mod module named collections.",
+  "Everything else: your choice, keep it simple.",
+]
+checks = []
+tier = "default"
+eval = false  # not validated with a model yet: trajectories and its specialist only

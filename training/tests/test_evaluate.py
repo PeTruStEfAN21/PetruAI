@@ -303,3 +303,11 @@ def test_the_gate_judges_a_specialist_without_tasks_on_loss_and_tools():
     ok, why = gate(EvalResult(1.0, 0.9, nan, {}), EvalResult(0.9, 0.9, nan, {}))
     assert ok, why
     assert not gate(EvalResult(1.0, 0.9, 0.5, {}), EvalResult(0.9, 0.9, nan, {}))[0]
+
+
+def test_tasks_marked_eval_false_stay_out_of_the_balanced_set(tmp_path):
+    from petru_train.evaluate import select_eval_tasks
+
+    (tmp_path / "python_a.toml").write_text('prompt = "p"\n', encoding="utf-8")
+    (tmp_path / "go_a.toml").write_text('prompt = "p"\neval = false\n', encoding="utf-8")
+    assert [p.stem for p in select_eval_tasks(tmp_path, 6)] == ["python_a"]

@@ -1,0 +1,11 @@
+name = "cpp_matrix"
+prompt = "Write a small C++ matrix class with addition, multiplication and transpose, with tests. Ask me your design questions first."
+answers = [
+  "Types: a Matrix class of doubles with rows and columns; mismatched sizes throw std::invalid_argument.",
+  "Build: CMake with C++17, built with GCC.",
+  "Tests: a test executable using assert, registered with add_test and run by ctest.",
+  "Everything else: your choice, keep it simple.",
+]
+checks = []
+tier = "default"
+eval = false  # not validated with a model yet: trajectories and its specialist only

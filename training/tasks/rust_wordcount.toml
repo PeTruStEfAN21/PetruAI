@@ -1,0 +1,11 @@
+name = "rust_wordcount"
+prompt = "Write a small Rust library and binary that counts lines, words and characters of a text, with tests. Ask me your design questions first."
+answers = [
+  "Behaviour: a count function returning a struct with lines, words and chars; the binary reads a file path argument.",
+  "Libraries: the standard library only, no crates.",
+  "Tests: cargo test with unit tests in the library.",
+  "Everything else: your choice, keep it simple.",
+]
+checks = []
+tier = "default"
+eval = false  # not validated with a model yet: trajectories and its specialist only

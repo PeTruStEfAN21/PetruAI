@@ -1,0 +1,11 @@
+name = "c_strings"
+prompt = "Write a small C library of string helpers (trim, reverse, count words), with tests. Ask me your design questions first."
+answers = [
+  "Functions: trim in place, reverse in place, count_words returning size_t; NULL inputs are handled safely.",
+  "Build: CMake with C11, built with GCC.",
+  "Tests: a test executable using assert, registered with add_test and run by ctest.",
+  "Everything else: your choice, keep it simple.",
+]
+checks = []
+tier = "default"
+eval = false  # not validated with a model yet: trajectories and its specialist only

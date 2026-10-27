@@ -1,0 +1,11 @@
+name = "java_bank"
+prompt = "Write a small Java bank account class with deposit, withdraw and balance, with tests. Ask me your design questions first."
+answers = [
+  "Behaviour: amounts are long cents; withdrawing more than the balance throws IllegalStateException; negative amounts throw IllegalArgumentException.",
+  "Build: Maven with Java 21, junit-jupiter 5.11.4 and maven-surefire-plugin 3.5.2.",
+  "Tests: JUnit 5.",
+  "Everything else: your choice, keep it simple.",
+]
+checks = []
+tier = "default"
+eval = false  # not validated with a model yet: trajectories and its specialist only

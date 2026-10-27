@@ -1,0 +1,11 @@
+name = "csharp_calculator"
+prompt = "Write a small C# class library for a calculator with add, subtract, multiply and divide, with tests. Ask me your design questions first."
+answers = [
+  "Behaviour: divide by zero throws DivideByZeroException; all operations use decimal.",
+  "Tests: xUnit, created with dotnet new xunit, referencing the library project.",
+  "Layout: a solution with the library and the test project.",
+  "Everything else: your choice, keep it simple.",
+]
+checks = []
+tier = "default"
+eval = false  # not validated with a model yet: trajectories and its specialist only

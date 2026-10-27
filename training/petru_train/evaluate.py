@@ -9,6 +9,7 @@ import math
 import subprocess
 import sys
 import tempfile
+import tomllib
 import urllib.request
 from collections.abc import Callable
 from dataclasses import asdict, dataclass, replace
@@ -55,6 +56,8 @@ def select_eval_tasks(tasks_dir: Path, limit: int = TASK_LIMIT) -> list[Path]:
     each language counts the same; sorted by name."""
     stacks: dict[str, list[Path]] = {}
     for task in sorted(tasks_dir.glob("*.toml")):
+        if tomllib.loads(task.read_text(encoding="utf-8")).get("eval", True) is False:
+            continue  # not validated yet: used for trajectories and by its specialist only
         stacks.setdefault(task.stem.split("_")[0], []).append(task)
     picked: list[Path] = []
     for round_ in range(max((len(group) for group in stacks.values()), default=0)):

@@ -1,0 +1,11 @@
+name = "go_wordfreq"
+prompt = "Write a small Go command-line tool that prints the 5 most frequent words of a text file, with tests. Ask me your design questions first."
+answers = [
+  "Behaviour: the file path is the first argument; words are lower-cased, punctuation is ignored, ties are sorted alphabetically.",
+  "Libraries: the standard library only.",
+  "Tests: go test with table-driven tests.",
+  "Layout: a go.mod module named wordfreq.",
+]
+checks = []
+tier = "default"
+eval = false  # not validated with a model yet: trajectories and its specialist only

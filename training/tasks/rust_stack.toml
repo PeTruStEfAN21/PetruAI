@@ -1,0 +1,11 @@
+name = "rust_stack"
+prompt = "Write a small generic stack in Rust with a fixed capacity, with tests. Ask me your design questions first."
+answers = [
+  "Operations: push returns Err when full, pop and peek return Option, len and is_empty.",
+  "Libraries: the standard library only, no crates.",
+  "Tests: cargo test.",
+  "Everything else: your choice, keep it simple.",
+]
+checks = []
+tier = "default"
+eval = false  # not validated with a model yet: trajectories and its specialist only
