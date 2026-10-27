@@ -311,3 +311,27 @@ def test_tasks_marked_eval_false_stay_out_of_the_balanced_set(tmp_path):
     (tmp_path / "python_a.toml").write_text('prompt = "p"\n', encoding="utf-8")
     (tmp_path / "go_a.toml").write_text('prompt = "p"\neval = false\n', encoding="utf-8")
     assert [p.stem for p in select_eval_tasks(tmp_path, 6)] == ["python_a"]
+
+
+def test_held_out_exercism_tasks_join_the_evaluation_one_per_language(tmp_path, monkeypatch):
+    import json as _json
+
+    from petru_train import evaluate as ev
+
+    pool = tmp_path / "pool"
+    manifest = {}
+    for name, split, passed in [
+        ("go_ex_b", "eval", True), ("go_ex_a", "eval", True), ("rust_ex_c", "eval", True),
+        ("rust_ex_d", "train", True), ("c_ex_e", "eval", False),
+    ]:  # fmt: skip
+        (pool / name).mkdir(parents=True)
+        (pool / name / "task.toml").write_text('prompt = "p"\n', encoding="utf-8")
+        manifest[name] = {"track": name.split("_")[0], "commit": "", "split": split, "passed": passed}
+    (pool / "validated.json").write_text(_json.dumps(manifest), encoding="utf-8")
+    assert [p.parent.name for p in ev.held_out_tasks(pool)] == ["go_ex_a", "rust_ex_c"]
+    harness = tmp_path / "tasks"
+    harness.mkdir()
+    (harness / "python_x.toml").write_text('prompt = "p"\n', encoding="utf-8")
+    monkeypatch.setattr(ev, "EVAL_POOL", pool)
+    chosen = ev.select_eval_tasks(harness)
+    assert [p.name for p in chosen] == ["python_x.toml", "task.toml", "task.toml"]

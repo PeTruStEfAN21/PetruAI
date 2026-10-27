@@ -15,6 +15,8 @@ from collections.abc import Callable
 from dataclasses import asdict, dataclass, replace
 from pathlib import Path
 
+from petru_train.exercism import TASKS_DIR as EXERCISM_TASKS
+from petru_train.exercism import validated_tasks
 from petru_train.samples import load_tools, read_jsonl, render_chat, text_tokenizer
 from petru_train.server import start_server, stop, wait_healthy
 
@@ -23,6 +25,8 @@ REPO_ROOT = TRAINING_DIR.parent
 REQUESTS_FILE = TRAINING_DIR / "eval" / "tool_requests.json"
 TASKS_DIR = TRAINING_DIR / "tasks"
 TASK_LIMIT = 6  # evaluated harness tasks, taken in turn from every stack
+EVAL_POOL: Path | None = EXERCISM_TASKS  # held-out Exercism tasks evaluated next to them (None: harness only)
+HELD_OUT_PER_LANGUAGE = 1
 HARNESS_VERSION = 3  # bump when the harness changes what counts as a pass
 # 2 (2026-10-27): no checks = fail, plus that night's agent fixes (git log --since 2026-10-27 -- petru)
 # 3 (2026-10-27): test-first prompts; task_complete waits for green checks after the last change
@@ -65,7 +69,18 @@ def select_eval_tasks(tasks_dir: Path, limit: int = TASK_LIMIT) -> list[Path]:
         for stack in sorted(stacks):
             if round_ < len(stacks[stack]) and len(picked) < limit:
                 picked.append(stacks[stack][round_])
-    return sorted(picked)
+    return sorted(picked) + held_out_tasks(EVAL_POOL)
+
+
+def held_out_tasks(pool: Path | None, per_language: int = HELD_OUT_PER_LANGUAGE) -> list[Path]:
+    """Validated Exercism exercises of the held-out split (never trained on), `per_language` of each language,
+    so every language with tasks weighs in the gate."""
+    if pool is None:
+        return []
+    by_language: dict[str, list[Path]] = {}
+    for task in validated_tasks(pool, split="eval"):
+        by_language.setdefault(task.parent.name.split("_")[0], []).append(task)
+    return [task for language in sorted(by_language) for task in sorted(by_language[language])[:per_language]]
 
 
 def tasks_signature(tasks_dir: Path, requests_file: Path, limit: int, tasks: list[Path] | None = None) -> str:
