@@ -69,5 +69,6 @@ def test_the_committed_config_covers_the_three_stacks():
     tasks = Path(__file__).resolve().parents[1] / "tasks"
     for name in ("python", "web", "flutter"):  # the stacks that already have harness tasks
         assert any(tasks.glob(f"{prefix}_*.toml") for prefix in names[name].tasks), name
-    claimed = [language for s in names.values() for language in s.languages]
-    assert len(claimed) == len(set(claimed))  # a language belongs to one specialist
+    claimed = [language for s in names.values() if not s.repos for language in s.languages]
+    assert len(claimed) == len(set(claimed))  # one general specialist per language
+    assert names["python-data"].repos and "pandas-dev__pandas" in names["python-data"].repos

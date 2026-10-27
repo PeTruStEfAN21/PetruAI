@@ -9,6 +9,25 @@ languages = ["python"]
 tasks = ["python"]
 
 [[specialist]]
+name = "python-web"
+languages = ["python"]
+tasks = ["python"]
+repos = [
+  "fastapi__fastapi", "encode__httpx", "pallets__flask", "django__django", "psf__requests", "sqlalchemy__sqlalchemy",
+  "Kludex__starlette", "Kludex__uvicorn", "fastapi__sqlmodel", "pallets__werkzeug", "pallets__quart",
+  "django__channels", "django-commons__django-debug-toolbar", "aio-libs__aiohttp", "litestar-org__litestar",
+]
+
+[[specialist]]
+name = "python-data"
+languages = ["python"]
+tasks = ["python"]
+repos = [
+  "pandas-dev__pandas", "scikit-learn__scikit-learn", "mwaskom__seaborn", "vega__altair", "pydata__xarray",
+  "dask__dask", "statsmodels__statsmodels", "unionai-oss__pandera",
+]
+
+[[specialist]]
 name = "web"
 languages = ["typescript", "javascript", "html", "css"]
 tasks = ["ts", "js"]
