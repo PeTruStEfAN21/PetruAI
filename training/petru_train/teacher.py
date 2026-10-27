@@ -30,6 +30,8 @@ SLOT_CTX = 32768  # the quality tier's context, per agent
 PORT = 8082
 OUT = DATA_DIR / "trajectories-exercism.jsonl"
 STATE = DATA_DIR / "trajectories-exercism.state.json"
+SAMPLES_PER_TASK, ATTEMPTS_PER_TASK = 1, 2  # breadth: one verified trajectory per exercise
+NOTHING_LEFT = 3  # exit code: every validated exercise has its trajectory or used its attempts
 
 
 def _difficulty(task: Path) -> int:
@@ -63,8 +65,17 @@ def run(
     if not tasks:
         print("no validated tasks: run `python -m petru_train.exercism validate` first", flush=True)
         return {}
+    state = _load_state(state_file)
+    open_tasks = [
+        t for t in tasks
+        if int(state["kept"].get(task_name(t), 0)) < SAMPLES_PER_TASK
+        and int(state["attempts"].get(task_name(t), 0)) < ATTEMPTS_PER_TASK
+    ]  # fmt: skip
+    if not open_tasks:
+        print("nothing left to teach: every validated exercise is done", flush=True)
+        return {"open": 0}
     kept = Counter()
-    for name, count in _load_state(state_file)["kept"].items():
+    for name, count in state["kept"].items():
         kept[language_for(name)] += int(count)
     ordered = interleave(tasks, kept)
     minutes = int((until - clock()).total_seconds() // 60)
@@ -79,8 +90,8 @@ def run(
             tasks_dir=TASKS_DIR,
             out=out,
             tier="quality",
-            samples_per_task=1,
-            attempts_per_task=2,
+            samples_per_task=SAMPLES_PER_TASK,
+            attempts_per_task=ATTEMPTS_PER_TASK,
             max_tokens=0,
             base_url=f"http://127.0.0.1:{PORT}/v1",
             attempt_timeout_s=3600,
@@ -88,7 +99,7 @@ def run(
             state_file=state_file,
             parallel=parallel,
         )
-        return gen(cfg, tasks=ordered)
+        return {**gen(cfg, tasks=ordered), "open": len(open_tasks)}
     finally:
         stop(proc)
 
@@ -103,7 +114,11 @@ def main(argv: list[str] | None = None) -> int:
     stats = run(datetime.fromisoformat(args.until), parallel=args.parallel)
     kept = sum(stats.get("kept", {}).values())
     print(json.dumps({"tasks": stats.get("tasks", 0), "kept_total": kept}), flush=True)
-    return 0
+    return main_exit(stats)
+
+
+def main_exit(stats: dict) -> int:
+    return NOTHING_LEFT if stats.get("open") == 0 else 0
 
 
 if __name__ == "__main__":

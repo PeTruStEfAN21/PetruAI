@@ -45,3 +45,17 @@ def test_run_serves_the_teacher_with_a_slot_per_parallel_attempt(tmp_path, monke
         cfg.parallel == 3 and cfg.tier == "quality" and cfg.max_minutes == 600 and cfg.samples_per_task == 1
     )
     assert cfg.base_url == f"http://127.0.0.1:{teacher.PORT}/v1"
+
+
+def test_nothing_left_to_teach_starts_no_server(tmp_path, monkeypatch):
+    import json
+
+    monkeypatch.setattr(teacher, "validated_tasks", lambda split: [task(tmp_path, "go_ex_a", 1)])
+    monkeypatch.setattr(
+        teacher, "start_server", lambda *a, **k: (_ for _ in ()).throw(AssertionError("started"))
+    )
+    state = tmp_path / "s.json"
+    state.write_text(json.dumps({"kept": {"go_ex_a": 1}, "attempts": {"go_ex_a": 1}}), encoding="utf-8")
+    now = datetime(2026, 10, 27, 14, 0)
+    assert teacher.run(now + timedelta(hours=1), clock=lambda: now, state_file=state) == {"open": 0}
+    assert teacher.main_exit({"open": 0}) == teacher.NOTHING_LEFT
