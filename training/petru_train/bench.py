@@ -83,8 +83,8 @@ def run_mode(
     keep: Path | None = None,
     assistant: str | None = None,
 ) -> dict:
-    """One attempt through petru.trajectory (agent env); past the timeout, its tree is killed. A team row names
-    its `assistant` model, so a report resumed after a promotion shows which runs had which."""
+    """One attempt through petru.trajectory (agent env); past the timeout, its tree is killed. A team row
+    names its `assistant` model, so a report resumed after a promotion shows which runs had which."""
     row = _attempt(task, mode, lead_url, worker_url, keep)
     return {**row, "assistant": assistant} if mode == "team" and assistant else row
 
