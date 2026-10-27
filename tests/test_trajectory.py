@@ -202,3 +202,28 @@ def test_changing_the_protected_tests_does_not_pass(tmp_path):
         ctx_tokens=8192,
     )
     assert not res.passed and "NotImplementedError" in res.check_output
+
+
+def test_verify_runs_the_checks_on_the_seed_with_a_solution_on_top(tmp_path):
+    from petru.trajectory import verify_task
+
+    spec = seeded_task(tmp_path)
+    solution = tmp_path / "solution"
+    solution.mkdir()
+    (solution / "two.py").write_text("def two():\n    return 2\n", encoding="utf-8")
+    assert verify_task(spec, tmp_path / "solved", solution)[0]
+    ok, output = verify_task(spec, tmp_path / "stub", None)
+    assert not ok and "NotImplementedError" in output
+
+
+def test_cli_verify_needs_no_model_server(tmp_path, monkeypatch):
+    from petru import trajectory
+
+    spec = seeded_task(tmp_path)
+    monkeypatch.setattr(trajectory, "ServerManager", None)  # would fail if a server were started
+    out = tmp_path / "r.json"
+    code = trajectory.main(
+        [str(tmp_path / "tasks" / "py_two" / "task.toml"), "--verify-with", str(spec.seed), "--out", str(out)]
+    )
+    data = json.loads(out.read_text(encoding="utf-8"))
+    assert code == 1 and data["passed"] is False and data["name"] == "py_two" and "check_output" in data

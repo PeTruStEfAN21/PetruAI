@@ -149,6 +149,17 @@ def isolated_home() -> Iterator[Path]:
                 os.environ["PETRU_HOME"] = previous
 
 
+def verify_task(spec: TaskSpec, project: Path, solution: Path | None) -> tuple[bool, str]:
+    """The task's checks on its seed with `solution` copied on top, no model involved: validates a task."""
+    project.mkdir(parents=True, exist_ok=True)
+    ensure_repo(project)
+    if spec.seed is not None:
+        plant_seed(spec.seed, project)
+    if solution is not None:
+        shutil.copytree(solution, project, dirs_exist_ok=True)
+    return run_checks_for(project, spec.checks)
+
+
 def run_task(
     spec: TaskSpec,
     *,
@@ -218,8 +229,16 @@ def main(argv: list[str] | None = None) -> int:
         "--project", type=Path, default=None, help="project folder (default: a fresh temp dir)"
     )
     parser.add_argument("--max-extra-turns", type=int, default=10)
+    parser.add_argument(
+        "--verify-with",
+        type=Path,
+        default=None,
+        help="no model: run the checks on the seed plus this solution",
+    )
     args = parser.parse_args(argv)
     spec = load_task(args.task)
+    if args.verify_with is not None:
+        return _verify_cli(spec, args)
     tier = args.tier or spec.tier
     repo_root = find_repo_root(Path(__file__))
     cfg = load_config(repo_root)
@@ -249,6 +268,22 @@ def main(argv: list[str] | None = None) -> int:
     status = "PASS" if result.passed else "FAIL"
     print(f"{spec.name}: {status} in {result.seconds}s, {result.tokens} tokens -> {args.out}")
     return 0 if result.passed else 1
+
+
+def _verify_cli(spec: TaskSpec, args: argparse.Namespace) -> int:
+    started = time.monotonic()
+    project = args.project or Path(tempfile.mkdtemp(prefix=f"petru-verify-{spec.name}-"))
+    ok, output = verify_task(spec, project, args.verify_with)
+    data = {
+        "name": spec.name,
+        "passed": ok,
+        "seconds": round(time.monotonic() - started, 1),
+        "check_output": output,
+    }
+    args.out.parent.mkdir(parents=True, exist_ok=True)
+    args.out.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
+    print(f"{spec.name}: {'PASS' if ok else 'FAIL'} in {data['seconds']}s (verify)")
+    return 0 if ok else 1
 
 
 if __name__ == "__main__":
