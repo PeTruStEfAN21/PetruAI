@@ -64,8 +64,7 @@ class CalcTest { @Test void adds() { assertEquals(3, Calc.add(1, 2)); } }
 
 $rscript = Find-Tool "Rscript" (Get-ChildItem "C:\Program Files\R" -Directory -ErrorAction SilentlyContinue | Select-Object -Last 1 | ForEach-Object { Join-Path $_.FullName "bin\Rscript.exe" })
 if ($rscript) {
-    $lib = Join-Path $env:LOCALAPPDATA "R\win-library"
-    New-Item -ItemType Directory -Force $lib | Out-Null
-    & $rscript -e "install.packages('testthat', lib='$($lib -replace '\\','/')', repos='https://cloud.r-project.org')"
+    # R_LIBS_USER (win-library\<version>) is where R looks by default; a folder of our own would go unseen.
+    & $rscript -e "lib <- Sys.getenv('R_LIBS_USER'); dir.create(lib, recursive = TRUE, showWarnings = FALSE); install.packages('testthat', lib = lib, repos = 'https://cloud.r-project.org')"
     "R testthat: exit $LASTEXITCODE"
 } else { "R: missing" }
