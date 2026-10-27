@@ -349,3 +349,9 @@ def test_the_signature_names_the_list_whether_chosen_now_or_frozen_earlier(tmp_p
     requests.write_text("[]", encoding="utf-8")
     frozen = select_eval_tasks(tmp_path, 6)
     assert tasks_signature(tmp_path, requests, 6) == tasks_signature(tmp_path, requests, 6, tasks=frozen)
+
+
+def test_server_command_caps_the_host_prompt_cache():
+    # two servers with the default 8 GB caches filled the 32 GB laptop during the team bench
+    cmd = server_command(Path("C:/m/cand.gguf"))
+    assert cmd[cmd.index("--cache-ram") + 1] == "1024"

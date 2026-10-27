@@ -10,6 +10,8 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SERVER_EXE = REPO_ROOT / "infra" / "llama.cpp" / "bin" / "llama-server.exe"
 COMMON_ARGS = [
+    "--cache-ram",  # MiB of host prompt cache; the 8 GB default per server exhausts the RAM
+    "1024",
     "-ngl",
     "99",
     "--flash-attn",
