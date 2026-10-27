@@ -16,6 +16,8 @@ COMMON_SERVER_ARGS: list[str] = [
     "--cache-type-v",
     "q8_0",
     "--jinja",
+    "--cache-ram",  # the host prompt cache: 8 GB by default per server, too much for two next to the 35B
+    "1024",
 ]
 
 

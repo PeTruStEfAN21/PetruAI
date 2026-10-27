@@ -115,3 +115,9 @@ def test_startup_timeout_raises_with_stderr(cfg):
     )
     with pytest.raises(ServerStartError, match="model not found"):
         mgr.ensure_running("default")
+
+
+def test_every_server_caps_its_host_prompt_cache(cfg):
+    # the 8 GB default per server, twice over in team mode, fills the 32 GB laptop next to the 35B's experts
+    cmd = build_server_command(cfg, cfg.tiers["quality"])
+    assert cmd[cmd.index("--cache-ram") + 1] == "1024"
