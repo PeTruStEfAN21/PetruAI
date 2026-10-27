@@ -42,6 +42,10 @@ JS_TEST_DEPS = {
 }  # fmt: skip
 JS_LEFTOVERS = ("yarn.lock", ".yarnrc.yml", "pnpm-lock.yaml", "test-runner.mjs", "eslint.config.mjs")
 NPM_INSTALL = "npm install --no-audit --no-fund --prefer-offline --loglevel=error"
+BUILD_FILES = {
+    "java": ("pom.xml",), "c": ("CMakeLists.txt",), "cpp": ("CMakeLists.txt",),
+    "javascript": ("package.json",), "typescript": ("package.json",),
+}  # fmt: skip
 SETUP = {"javascript": [NPM_INSTALL], "typescript": [NPM_INSTALL], "dart": ["dart pub get --offline"]}
 
 
@@ -286,17 +290,22 @@ def _adapt_build(ex: Exercise, seed: Path) -> list[str]:
     return []
 
 
-def write_task(ex: Exercise, out_root: Path, commit: str = "") -> Path:
-    """`<out_root>/<task>/task.toml` and `seed/`; an existing task folder is rebuilt from scratch."""
+def write_task(ex: Exercise, out_root: Path, commit: str = "", reseed: bool = True) -> Path:
+    """`<out_root>/<task>/task.toml` and `seed/`; an existing task folder is rebuilt from scratch, or only its
+    task.toml is rewritten with `reseed=False` (safe while a validation reads the seed)."""
     task_dir = out_root / ex.task_name
-    shutil.rmtree(task_dir, ignore_errors=True)
     seed = task_dir / "seed"
-    shutil.copytree(ex.dir, seed, ignore=_ignore(ex))
-    for rel in ex.test:
-        test_file = seed / rel
-        if test_file.is_file():
-            test_file.write_text(unskip(ex.track, test_file.read_text(encoding="utf-8")), encoding="utf-8")
-    build_files = _adapt_build(ex, seed)
+    if reseed or not seed.is_dir():
+        shutil.rmtree(task_dir, ignore_errors=True)
+        shutil.copytree(ex.dir, seed, ignore=_ignore(ex))
+        for rel in ex.test:
+            test_file = seed / rel
+            if test_file.is_file():
+                test_file.write_text(
+                    unskip(ex.track, test_file.read_text(encoding="utf-8")), encoding="utf-8"
+                )
+        _adapt_build(ex, seed)
+    build_files = [name for name in BUILD_FILES.get(ex.track, ()) if (seed / name).is_file()]
     fields = {
         "name": ex.task_name,
         "prompt": prompt_for(ex),
@@ -455,7 +464,7 @@ def validated_tasks(out_dir: Path = TASKS_DIR, split: str | None = None) -> list
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Exercism exercises as seeded, validated agent tasks.")
-    parser.add_argument("command", choices=["build", "validate"])
+    parser.add_argument("command", choices=["build", "toml", "validate"], help="toml: rewrite task.toml only")
     parser.add_argument("--tracks", default=",".join(TRACKS), help="comma-separated Exercism track names")
     parser.add_argument("--force", action="store_true", help="validate again what the manifest already has")
     args = parser.parse_args(argv)
@@ -466,6 +475,15 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     if args.command == "build":
         print(f"{len(build(tracks))} tasks written to {TASKS_DIR}")
+        return 0
+    if args.command == "toml":
+        count = 0
+        for track in tracks:
+            commit = _commit(TRACKS_DIR / track)
+            for ex in load_exercises(TRACKS_DIR / track):
+                write_task(ex, TASKS_DIR, commit, reseed=False)
+                count += 1
+        print(f"{count} task.toml rewritten in {TASKS_DIR}")
         return 0
     manifest = validate(tracks, force=args.force)
     for track in tracks:

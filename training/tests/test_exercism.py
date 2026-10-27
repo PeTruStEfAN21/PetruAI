@@ -267,3 +267,16 @@ def test_the_split_follows_the_exercise_not_the_manifest(tmp_path):
     assert [p.parent.name for p in exercism.validated_tasks(tmp_path, split="eval")] == [
         f"go_ex_{held.replace('-', '_')}"
     ]
+
+
+def test_rewriting_the_toml_leaves_the_seed_alone(tmp_path):
+    track = rust_track(tmp_path)
+    [ex] = exercism.load_exercises(track)
+    task_toml = exercism.write_task(ex, tmp_path / "tasks")
+    marker = task_toml.parent / "seed" / "marker.txt"
+    marker.write_text("in use by a validation", encoding="utf-8")
+    task_toml.write_text('name = "old"\nprompt = "p"\n', encoding="utf-8")
+    exercism.write_task(ex, tmp_path / "tasks", reseed=False)
+    assert (
+        marker.is_file() and tomllib.loads(task_toml.read_text(encoding="utf-8"))["name"] == "rust_ex_isogram"
+    )
