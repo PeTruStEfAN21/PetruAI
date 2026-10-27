@@ -241,3 +241,28 @@ def test_js_and_ts_projects_run_jest_through_npm_after_an_install(tmp_path):
     assert set(rewritten["devDependencies"]) == {"jest", "babel-jest", "typescript"}
     assert not any((seed / name).exists() for name in ("yarn.lock", ".yarnrc.yml", "test-runner.mjs"))
     assert data["setup"][0].startswith("npm install") and "package.json" in data["protect"]
+
+
+def test_an_exercise_is_held_out_in_every_language_or_in_none():
+    slugs = [f"exercise-{i}" for i in range(200)]
+    for slug in slugs:
+        assert (
+            exercism.held_out("go", slug)
+            == exercism.held_out("python", slug)
+            == exercism.held_out("rust", slug)
+        )
+
+
+def test_the_split_follows_the_exercise_not_the_manifest(tmp_path):
+    held = next(s for s in (f"ex-{i}" for i in range(100)) if exercism.held_out("go", s))
+    kept = next(s for s in (f"ex-{i}" for i in range(100)) if not exercism.held_out("go", s))
+    manifest = {}
+    for slug in (held, kept):
+        name = f"go_ex_{slug.replace('-', '_')}"
+        (tmp_path / name).mkdir()
+        (tmp_path / name / "task.toml").write_text('prompt = "p"\n', encoding="utf-8")
+        manifest[name] = {"track": "go", "split": "train", "passed": True}  # a split written by an older rule
+    (tmp_path / exercism.MANIFEST).write_text(json.dumps(manifest), encoding="utf-8")
+    assert [p.parent.name for p in exercism.validated_tasks(tmp_path, split="eval")] == [
+        f"go_ex_{held.replace('-', '_')}"
+    ]

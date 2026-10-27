@@ -317,18 +317,21 @@ def test_held_out_exercism_tasks_join_the_evaluation_one_per_language(tmp_path, 
     import json as _json
 
     from petru_train import evaluate as ev
+    from petru_train.exercism import held_out
 
+    held = sorted(s for s in (f"s{i}" for i in range(300)) if held_out("", s))
+    train = next(s for s in (f"s{i}" for i in range(300)) if not held_out("", s))
     pool = tmp_path / "pool"
     manifest = {}
-    for name, split, passed in [
-        ("go_ex_b", "eval", True), ("go_ex_a", "eval", True), ("rust_ex_c", "eval", True),
-        ("rust_ex_d", "train", True), ("c_ex_e", "eval", False),
+    for name, passed in [
+        (f"go_ex_{held[1]}", True), (f"go_ex_{held[0]}", True), (f"rust_ex_{held[2]}", True),
+        (f"rust_ex_{train}", True), (f"c_ex_{held[3]}", False),
     ]:  # fmt: skip
         (pool / name).mkdir(parents=True)
         (pool / name / "task.toml").write_text('prompt = "p"\n', encoding="utf-8")
-        manifest[name] = {"track": name.split("_")[0], "commit": "", "split": split, "passed": passed}
+        manifest[name] = {"track": name.split("_")[0], "commit": "", "passed": passed}
     (pool / "validated.json").write_text(_json.dumps(manifest), encoding="utf-8")
-    assert [p.parent.name for p in ev.held_out_tasks(pool)] == ["go_ex_a", "rust_ex_c"]
+    assert [p.parent.name for p in ev.held_out_tasks(pool)] == [f"go_ex_{held[0]}", f"rust_ex_{held[2]}"]
     harness = tmp_path / "tasks"
     harness.mkdir()
     (harness / "python_x.toml").write_text('prompt = "p"\n', encoding="utf-8")

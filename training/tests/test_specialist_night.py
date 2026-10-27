@@ -137,14 +137,19 @@ def test_a_specialist_without_evaluation_tasks_is_not_trained(tmp_path):
 
 def test_held_out_exercism_tasks_of_its_languages_evaluate_a_specialist(tmp_path, monkeypatch):
     from petru_train import evaluate
+    from petru_train.exercism import held_out
 
+    a, b, c = sorted(s for s in (f"s{i}" for i in range(300)) if held_out("", s))[:3]
     pool = tmp_path / "pool"
     manifest = {}
-    for name in ("go_ex_a", "go_ex_b", "rust_ex_c"):
+    for name in (f"go_ex_{a}", f"go_ex_{b}", f"rust_ex_{c}"):
         (pool / name).mkdir(parents=True)
         (pool / name / "task.toml").write_text('prompt = "p"\n', encoding="utf-8")
-        manifest[name] = {"track": name.split("_")[0], "split": "eval", "passed": True}
+        manifest[name] = {"track": name.split("_")[0], "passed": True}
     (pool / "validated.json").write_text(json.dumps(manifest), encoding="utf-8")
     monkeypatch.setattr(evaluate, "EVAL_POOL", pool)
     (tmp_path / "tasks").mkdir()
-    assert [t.parent.name for t in night.specialist_tasks(GO, tmp_path / "tasks")] == ["go_ex_a", "go_ex_b"]
+    assert [t.parent.name for t in night.specialist_tasks(GO, tmp_path / "tasks")] == [
+        f"go_ex_{a}",
+        f"go_ex_{b}",
+    ]

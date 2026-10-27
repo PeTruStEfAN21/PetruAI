@@ -197,8 +197,15 @@ def has_skips(track: str, text: str) -> bool:
 
 
 def held_out(track: str, slug: str) -> bool:
-    """Stable 1-in-10 split: these exercises only ever evaluate, the model never trains on them."""
-    return zlib.crc32(f"{track}/{slug}".encode()) % HELD_OUT_EVERY == 0
+    """Stable 1-in-10 split by exercise, the same in every track: a problem learned in one language must not
+    be evaluated in another. These exercises only ever evaluate; the model never trains on them."""
+    return zlib.crc32(slug.replace("-", "_").encode()) % HELD_OUT_EVERY == 0
+
+
+def split_of(task_name: str) -> str:
+    """The split of a task from its name (`<prefix>_ex_<slug>`), whatever an older manifest recorded."""
+    slug = task_name.split("_ex_", 1)[-1]
+    return "eval" if held_out("", slug) else "train"
 
 
 def _docs(ex: Exercise) -> str:
@@ -440,7 +447,7 @@ def validated_tasks(out_dir: Path = TASKS_DIR, split: str | None = None) -> list
         out_dir / name / "task.toml"
         for name, entry in manifest.items()
         if entry.get("passed")
-        and (split is None or entry.get("split") == split)
+        and (split is None or split_of(name) == split)
         and (out_dir / name / "task.toml").is_file()
     )
 
