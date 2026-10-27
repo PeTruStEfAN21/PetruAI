@@ -109,6 +109,44 @@ def worker_registry(root: Path, files: list[str]) -> ToolRegistry:
     return registry
 
 
+class Authors:
+    """Who created and who then changed each file, in order. The tools keep it themselves: a summarised
+    conversation loses the calls it would otherwise be read from."""
+
+    def __init__(self) -> None:
+        self.events: list[tuple[str, str, bool]] = []  # (lead or assistant, path, created)
+
+    def record(self, who: str, path: str, created: bool) -> None:
+        self.events.append((who, path, created))
+
+    def credits(self) -> dict[str, str]:
+        """Each file someone created: its author, and who changed it after (files given are left out)."""
+        creators: dict[str, str] = {}
+        changers: dict[str, set[str]] = {}
+        for who, path, created in self.events:
+            if path not in creators:
+                if created:
+                    creators[path], changers[path] = who, set()
+            elif who != creators[path]:
+                changers[path].add(who)
+        later = {"lead": "extended by the assistant", "assistant": "revised by the lead"}
+        return {
+            path: f"{who}, {later[who]}" if changers[path] else who for path, who in sorted(creators.items())
+        }
+
+
+def _snapshot(root: Path, files: list[str]) -> dict[str, bytes | None]:
+    """The content of each named file (None when absent), by its path relative to the project."""
+    found = {}
+    for name in files:
+        try:
+            path = resolve_in_project(name, root)
+        except OutsideProjectError:
+            continue
+        found[path.relative_to(root).as_posix()] = path.read_bytes() if path.is_file() else None
+    return found
+
+
 class DelegateTool(Tool):
     name = "delegate"
     description = (
@@ -141,6 +179,7 @@ class DelegateTool(Tool):
         self.worker = worker
         self.calls = 0
         self.unavailable = False  # its server would not start: the lead finishes alone
+        self.authors = Authors()
 
     def run(self, args: dict, ctx: ToolContext) -> ToolResult:
         from petru.agent.loop import Agent
@@ -165,7 +204,12 @@ class DelegateTool(Tool):
             False,
             max_iterations=self.worker.max_iterations,
         )
+        before = _snapshot(ctx.project_root, files)
         final = agent.run_turn(worker_request(str(args["task"]), files, read), quick=True)
+        after = _snapshot(ctx.project_root, files)
+        for path, old in before.items():
+            if after.get(path) not in (old, None):
+                self.authors.record("assistant", path, old is None)
         report = _last_tool_output(session, "task_complete") or final or "(no report)"
         checks = _last_tool_output(session, "run_checks") or "the assistant did not run the checks"
         changed = _run_git(["status", "--short"], ctx.project_root).output.strip() or "(nothing)"
@@ -232,9 +276,11 @@ class LeadWrite(Tool):
         self.mutating, self.changes_files = inner.mutating, inner.changes_files
 
     def run(self, args: dict, ctx: ToolContext) -> ToolResult:
+        relative, existed = None, True
         try:
             target = resolve_in_project(str(args.get("path", "")), ctx.project_root)
-            new = not target.exists() and not is_test_file(target.relative_to(ctx.project_root))
+            relative, existed = target.relative_to(ctx.project_root), target.exists()
+            new = not existed and not is_test_file(relative)
         except OutsideProjectError, ValueError:
             new = False  # the inner tool reports it
         if new and self.choice.mode is None:
@@ -252,19 +298,50 @@ class LeadWrite(Tool):
                 True,
             )
         result = self.inner.run(args, ctx)
-        if new and not result.is_error:
-            self.created += 1
+        if not result.is_error:
+            if new:
+                self.created += 1
+            if relative is not None:
+                self.delegate.authors.record("lead", relative.as_posix(), not existed)
+        return result
+
+
+class LeadEdit(Tool):
+    """The lead's edit_file, recorded in the credits."""
+
+    def __init__(self, inner: Tool, delegate: DelegateTool) -> None:
+        self.inner, self.delegate = inner, delegate
+        self.name, self.description, self.parameters = inner.name, inner.description, inner.parameters
+        self.mutating, self.changes_files = inner.mutating, inner.changes_files
+
+    def run(self, args: dict, ctx: ToolContext) -> ToolResult:
+        result = self.inner.run(args, ctx)
+        if not result.is_error:
+            try:
+                target = resolve_in_project(str(args.get("path", "")), ctx.project_root)
+                self.delegate.authors.record("lead", target.relative_to(ctx.project_root).as_posix(), False)
+            except OutsideProjectError, ValueError:
+                pass
         return result
 
 
 def lead_registry(registry: ToolRegistry, worker: Worker) -> None:
-    """Turn a full registry into the lead's: choose_mode, delegate, and write_file under LeadWrite."""
+    """Turn a full registry into the lead's: choose_mode, delegate, write_file under LeadWrite, edit_file
+    recorded in the credits."""
     delegate, choice = DelegateTool(worker), ChooseModeTool()
     registry.register(choice)
     registry.register(delegate)
-    write = registry.get("write_file")
+    write, edit = registry.get("write_file"), registry.get("edit_file")
     if write is not None:
         registry.register(LeadWrite(write, delegate, choice))
+    if edit is not None:
+        registry.register(LeadEdit(edit, delegate))
+
+
+def credits(registry: ToolRegistry) -> dict[str, str]:
+    """Team mode: who wrote each file the lead or the assistant created."""
+    delegate = registry.get("delegate")
+    return delegate.authors.credits() if isinstance(delegate, DelegateTool) else {}
 
 
 def start_task(registry: ToolRegistry) -> None:
@@ -273,7 +350,7 @@ def start_task(registry: ToolRegistry) -> None:
     if isinstance(choice, ChooseModeTool):
         choice.mode = None
     if isinstance(delegate, DelegateTool):
-        delegate.calls, delegate.unavailable = 0, False
+        delegate.calls, delegate.unavailable, delegate.authors = 0, False, Authors()
     if isinstance(write, LeadWrite):
         write.created = 0
 

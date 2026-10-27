@@ -21,7 +21,7 @@ from pathlib import Path
 from petru.agent.context import transcript_tokens
 from petru.agent.loop import Agent
 from petru.agent.state import Phase, Session
-from petru.agent.team import LEAD_PROMPT, WORKER_PORT_OFFSET, Worker, lead_registry
+from petru.agent.team import LEAD_PROMPT, WORKER_PORT_OFFSET, Worker, credits, lead_registry
 from petru.config import find_repo_root, load_config
 from petru.providers.base import ChatProvider
 from petru.providers.openai_compat import OpenAICompatProvider
@@ -116,6 +116,7 @@ class TaskResult:
     extra_turns: int
     delegations: int = 0  # team mode: delegate calls, counted by the tool itself
     team_choice: str | None = None  # team mode: what the lead chose with choose_mode (team, solo, or none)
+    authors: dict[str, str] = field(default_factory=dict)  # team mode: who wrote each file, kept by the tools
 
     def save(self, path: Path) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -266,6 +267,7 @@ def run_task(
         extra_turns=extra,
         delegations=getattr(registry.get("delegate"), "calls", 0),
         team_choice=getattr(registry.get("choose_mode"), "mode", None),
+        authors=credits(registry),
     )
 
 

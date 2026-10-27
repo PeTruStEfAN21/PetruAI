@@ -13,9 +13,9 @@ from tests.fakes import FakeProvider, call, result
 TASK = "Write a.py with x = 1. Only a.py."
 
 
-def lead_with(tmp_path, lead_steps, worker_steps):
+def lead_with(tmp_path, lead_steps, worker_steps, registry=None):
     worker = FakeProvider([result(tool_calls=[c]) for c in worker_steps] + [result(content="ok")])
-    registry = default_registry(False)
+    registry = default_registry(False) if registry is None else registry
     team.lead_registry(registry, team.Worker(provider=lambda tier: worker, ctx_tokens=8192))
     lead = FakeProvider(
         [result(tool_calls=[call("plan", {"title": "T", "steps": ["delegate a.py"]})])]
@@ -218,3 +218,27 @@ def test_a_delegation_whose_assistant_cannot_start_does_not_count(tmp_path):
     assert "could not start" in failed and "no VRAM" in failed
     assert registry.get("delegate").calls == 0
     assert (tmp_path / "b.py").is_file()  # without an assistant the lead finishes alone
+
+
+def test_the_tools_record_who_created_and_who_changed_each_file(tmp_path):
+    (tmp_path / "go.mod").write_text("module x\n", encoding="utf-8")  # given with the task
+    delegate = call("delegate", {"task": "Write b.py, extend a.py.", "files": ["b.py", "a.py", "go.mod"]})
+    worker_steps = [
+        write("b.py", "y = 2\n"),
+        call("edit_file", {"path": "a.py", "old": "x = 1", "new": "x = 3"}),
+        call("task_complete", {"summary": "done"}),
+    ]
+    lead_steps = [
+        choose("team"),
+        write("a.py"),
+        write("c.py"),  # refused: it must delegate first, so nobody created it
+        delegate,
+        call("edit_file", {"path": "b.py", "old": "y = 2", "new": "y = 4"}),
+        call("task_complete", {"summary": "done"}),
+    ]
+    registry = default_registry(False)
+    lead_with(tmp_path, lead_steps, worker_steps, registry)
+    assert team.credits(registry) == {
+        "a.py": "lead, extended by the assistant",
+        "b.py": "assistant, revised by the lead",
+    }
