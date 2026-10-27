@@ -16,7 +16,7 @@ TASK = "Write a.py with x = 1. Only a.py."
 def lead_with(tmp_path, lead_steps, worker_steps):
     worker = FakeProvider([result(tool_calls=[c]) for c in worker_steps] + [result(content="ok")])
     registry = default_registry(False)
-    team.lead_registry(registry, team.Worker(provider=lambda: worker, ctx_tokens=8192))
+    team.lead_registry(registry, team.Worker(provider=lambda tier: worker, ctx_tokens=8192))
     lead = FakeProvider(
         [result(tool_calls=[call("plan", {"title": "T", "steps": ["delegate a.py"]})])]
         + [result(tool_calls=[c]) for c in lead_steps]
@@ -158,10 +158,39 @@ def test_the_choice_is_final(tmp_path):
 
 def test_a_new_task_lets_the_lead_choose_again():
     registry = default_registry(False)
-    team.lead_registry(registry, team.Worker(provider=lambda: None, ctx_tokens=8192))
+    team.lead_registry(registry, team.Worker(provider=lambda tier: None, ctx_tokens=8192))
     registry.get("choose_mode").mode, registry.get("write_file").created = "solo", 3
     registry.get("delegate").calls = 2
     team.start_task(registry)
     assert registry.get("choose_mode").mode is None and registry.get("write_file").created == 0
     assert registry.get("delegate").calls == 0
     team.start_task(default_registry(False))  # a registry without the team's tools is left alone
+
+
+def test_each_piece_goes_to_the_assistant_for_its_language(tmp_path):
+    asked = []
+
+    def provider(tier):
+        asked.append(tier)
+        return FakeProvider([result(content="ok")])
+
+    worker = team.Worker(
+        provider=provider,
+        ctx_tokens=8192,
+        tier_for=lambda files: "tuned-go" if files[0].endswith(".go") else "fast",
+    )
+    registry = default_registry(False)
+    team.lead_registry(registry, worker)
+    lead = FakeProvider(
+        [
+            result(tool_calls=[call("plan", {"title": "T", "steps": ["delegate"]})]),
+            result(tool_calls=[call("delegate", {"task": "Write a.go.", "files": ["a.go"]})]),
+            result(tool_calls=[call("delegate", {"task": "Write b.py.", "files": ["b.py"]})]),
+            result(content="Done."),
+        ]
+    )
+    agent = Agent(
+        lead, registry, ScriptedUI(), Session(tmp_path, role=team.LEAD_PROMPT), tmp_path, 8192, False
+    )
+    agent.run_turn("build it")
+    assert asked == ["tuned-go", "fast"]

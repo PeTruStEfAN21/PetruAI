@@ -1,5 +1,5 @@
 from petru import cli
-from petru.router import choose_tier, project_specialist, request_specialist
+from petru.router import choose_tier, piece_tier, project_specialist, request_specialist
 
 
 def touch(root, *names, text="x"):
@@ -71,3 +71,12 @@ def test_cli_auto_starts_the_specialist_tier(tmp_path, monkeypatch):
     touch(tmp_path / "proj", "Cargo.toml", "src/lib.rs")
     assert cli.main(["-p", "x", "--project", str(tmp_path / "proj"), "--model", "auto"]) == 0
     assert FakeManager.instances[-1].started == ["tuned-rust"]
+
+
+def test_a_delegated_piece_goes_to_the_specialist_for_its_files(tmp_path):
+    tiers = {"fast": 1, "tuned-go": 1, "tuned-python": 1}
+    assert piece_tier(tmp_path, ["cmd/main.go", "cmd/util.go"], tiers, "fast") == "tuned-go"
+    assert piece_tier(tmp_path, ["web/app.ts"], tiers, "fast") == "fast"  # no web specialist yet
+    assert piece_tier(tmp_path, ["notes.md"], tiers, "fast") == "fast"
+    (tmp_path / "requirements.txt").write_text("flask\n", encoding="utf-8")
+    assert piece_tier(tmp_path, ["app/views.py"], tiers, "fast") == "tuned-python"  # stands in for web

@@ -313,7 +313,7 @@ def main(argv: list[str] | None = None) -> int:
             worker_manager = ServerManager(replace(cfg, port=cfg.port + WORKER_PORT_OFFSET))
             worker_url = worker_manager.ensure_running(args.worker_tier)
         worker = Worker(
-            provider=lambda: OpenAICompatProvider(worker_url),
+            provider=lambda tier: OpenAICompatProvider(worker_url),
             ctx_tokens=cfg.tiers[args.worker_tier].ctx,
             tier=args.worker_tier,
         )

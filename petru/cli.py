@@ -30,13 +30,17 @@ def make_provider(base_url: str) -> OpenAICompatProvider:
     return OpenAICompatProvider(base_url)
 
 
-def _assistant(manager: ServerManager, cfg) -> team.Worker:
-    """The team's assistant: the promoted fine-tune when there is one; its server starts on first use."""
+def _assistant(manager: ServerManager, cfg, project: Path) -> team.Worker:
+    """The team's assistant: for each piece, the promoted specialist for its language, else the general
+    fine-tune, else the 4B. Its server starts on the first delegation."""
+    from petru.router import piece_tier
+
     tier = "tuned" if "tuned" in cfg.tiers else "fast"
     return team.Worker(
-        provider=lambda: make_provider(manager.ensure_running(tier)),
+        provider=lambda name: make_provider(manager.ensure_running(name)),
         ctx_tokens=cfg.tiers[tier].ctx,
         tier=tier,
+        tier_for=lambda files: piece_tier(project, files, cfg.tiers, tier),
     )
 
 
@@ -354,7 +358,7 @@ def main(argv: list[str] | None = None) -> int:
         ui = NonInteractiveUI(err, yolo=ns.yolo) if ns.prompt is not None else RichUI(console)
         registry = default_registry(online)
         if worker_manager is not None:
-            team.lead_registry(registry, _assistant(worker_manager, cfg))
+            team.lead_registry(registry, _assistant(worker_manager, cfg, project))
             err.print(f"Team mode: {tier} leads; the assistant starts on its first delegation.", markup=False)
         agent = Agent(
             provider=provider,

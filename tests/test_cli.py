@@ -154,10 +154,19 @@ def test_each_new_task_in_the_repl_lets_the_lead_choose_again(tmp_path):
     from petru.tools.registry import default_registry
 
     registry = default_registry(False)
-    team.lead_registry(registry, team.Worker(provider=lambda: None, ctx_tokens=8192))
+    team.lead_registry(registry, team.Worker(provider=lambda tier: None, ctx_tokens=8192))
     registry.get("choose_mode").mode = "solo"  # what the lead chose for the previous task
     session = Session(tmp_path, role=team.LEAD_PROMPT)
     ui = cli.NonInteractiveUI(cli.Console(), yolo=True)
     agent = Agent(FakeProvider([result(content="hi")]), registry, ui, session, tmp_path, 8192, False)
     cli._run_turn(agent, ui, cli.Console(), "next task")
     assert registry.get("choose_mode").mode is None
+
+
+def test_a_piece_goes_to_its_language_specialist_when_one_was_promoted(tmp_path, monkeypatch):
+    tiers = {**default_tiers(), "tuned-python": Tier("tuned-python", "specialists/python.gguf", ctx=32768)}
+    delegate = call("delegate", {"task": "Write a.py.", "files": ["a.py"]})
+    lead = [result(tool_calls=[delegate]), result(content="done")]
+    patch_team(monkeypatch, tmp_path, lead, [result(content="ok")], tiers=tiers)
+    cli.main(["-p", "x", "--project", str(tmp_path), "--team"])
+    assert FakeManager.instances[1].started == ["tuned-python"]

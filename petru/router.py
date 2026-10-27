@@ -106,6 +106,20 @@ def choose_tier(root: Path, tiers: dict, fallback: str, request: str = "") -> st
     """`tuned-<specialist>` when that specialist was promoted (the general Python one stands in for its two
     branches), else `fallback`."""
     specialist = project_specialist(root) or (request_specialist(request) if request else None)
+    return _promoted(specialist, tiers, fallback)
+
+
+def piece_tier(root: Path, files: list[str], tiers: dict, fallback: str) -> str:
+    """Team mode: the promoted specialist for the language of a delegated piece's files, else `fallback`."""
+    counts = Counter(SPECIALIST_BY_EXT.get(Path(name).suffix.lower()) for name in files)
+    counts.pop(None, None)
+    if not counts:
+        return fallback
+    specialist = counts.most_common(1)[0][0]
+    return _promoted(_python_branch(root) if specialist == "python" else specialist, tiers, fallback)
+
+
+def _promoted(specialist: str | None, tiers: dict, fallback: str) -> str:
     if specialist is None:
         return fallback
     for candidate in (specialist, "python" if specialist.startswith("python-") else None):

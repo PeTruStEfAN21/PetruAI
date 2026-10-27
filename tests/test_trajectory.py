@@ -304,7 +304,7 @@ def test_a_task_can_run_as_a_team(tmp_path):
         repo_root=tmp_path,
         project=tmp_path / "p",
         ctx_tokens=8192,
-        worker=team.Worker(provider=lambda: worker, ctx_tokens=8192),
+        worker=team.Worker(provider=lambda tier: worker, ctx_tokens=8192),
     )
     assert res.passed and team.LEAD_PROMPT in res.messages[0]["content"]
     assert "delegate" in {t["function"]["name"] for t in res.tools}

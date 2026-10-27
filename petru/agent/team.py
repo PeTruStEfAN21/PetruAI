@@ -62,12 +62,14 @@ def worker_request(task: str, files: list[str], read: list[str]) -> str:
 
 @dataclass
 class Worker:
-    """How to reach the assistant model: a provider factory (its server starts on first use), its context."""
+    """How to reach the assistant: a provider factory for a tier (its server starts on first use), its
+    context, and which tier takes a piece (the specialist for the language of its files, once promoted)."""
 
-    provider: Callable[[], ChatProvider]
+    provider: Callable[[str], ChatProvider]
     ctx_tokens: int
     tier: str = "fast"
     max_iterations: int = WORKER_MAX_ITERATIONS
+    tier_for: Callable[[list[str]], str] | None = None
 
 
 class ScopedWrite(Tool):
@@ -145,9 +147,10 @@ class DelegateTool(Tool):
         self.calls += 1
         files = [str(f) for f in args.get("files") or []]
         read = [str(f) for f in args.get("read") or []]
-        session = Session(ctx.project_root, tier=self.worker.tier, role=WORKER_PROMPT)
+        tier = self.worker.tier_for(files) if self.worker.tier_for else self.worker.tier
+        session = Session(ctx.project_root, tier=tier, role=WORKER_PROMPT)
         agent = Agent(
-            self.worker.provider(),
+            self.worker.provider(tier),
             worker_registry(ctx.project_root, files),
             ScriptedUI(),
             session,
