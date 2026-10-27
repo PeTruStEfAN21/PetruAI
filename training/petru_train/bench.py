@@ -21,6 +21,7 @@ from pathlib import Path
 
 from petru_train.evaluate import BASE_GGUF, held_out_tasks
 from petru_train.exercism import TASKS_DIR as EXERCISM_TASKS
+from petru_train.export import MODELS_DIR, TUNED_FILE
 from petru_train.server import start_server, stop, wait_healthy
 from petru_train.teacher import TEACHER_GGUF
 from petru_train.trajectories import REPO_ROOT, kill_tree, task_name
@@ -60,6 +61,12 @@ def read_result(out: Path, keep: Path | None = None) -> dict:
         "delegations": data.get("delegations", delegations(data.get("messages") or [])),
         "team_choice": data.get("team_choice"),
     }
+
+
+def assistant_gguf(models_dir: Path = MODELS_DIR) -> Path:
+    """The team's assistant: the promoted fine-tune once there is one, else the base 4B."""
+    tuned = models_dir / TUNED_FILE
+    return tuned if tuned.is_file() else BASE_GGUF
 
 
 def keep_project(project: Path, dest: Path) -> None:
@@ -151,7 +158,9 @@ def main(argv: list[str] | None = None) -> int:
     lead = start_server(
         TEACHER_GGUF, LEAD_PORT, LEAD_CTX, log=report.with_suffix(".lead.log"), extra=("--cpu-moe",)
     )
-    worker = start_server(BASE_GGUF, WORKER_PORT, WORKER_CTX, log=report.with_suffix(".worker.log"))
+    assistant = assistant_gguf()
+    print(f"assistant: {assistant.name}", flush=True)
+    worker = start_server(assistant, WORKER_PORT, WORKER_CTX, log=report.with_suffix(".worker.log"))
     try:
         if not (wait_healthy(LEAD_PORT, timeout_s=900, proc=lead) and wait_healthy(WORKER_PORT, proc=worker)):
             raise RuntimeError("a model server did not start; see the logs next to the report")

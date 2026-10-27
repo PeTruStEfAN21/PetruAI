@@ -116,3 +116,9 @@ def test_a_run_keeps_the_project_it_built_next_to_its_transcript(tmp_path, monke
     bench.run_mode(tmp_path / "task.toml", "team", "lead", "worker", keep)
     kept = tmp_path / "transcripts" / "go_a-team" / "main.go"
     assert kept.read_text(encoding="utf-8") == "package main\n"
+
+
+def test_the_assistant_is_the_promoted_fine_tune_once_there_is_one(tmp_path):
+    assert bench.assistant_gguf(tmp_path) == bench.BASE_GGUF
+    (tmp_path / bench.TUNED_FILE).write_bytes(b"gguf")
+    assert bench.assistant_gguf(tmp_path) == tmp_path / bench.TUNED_FILE
