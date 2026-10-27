@@ -1,0 +1,26 @@
+name = "csharp_bank"
+prompt = """Build a small bank ledger in C# (.NET 10, no extra packages) in namespace `Bank`, with the source files under src/. The acceptance tests are Tests/LedgerTests.cs and Tests/StatementTests.cs (xunit), compiled by Bank.csproj; do not change them or Bank.csproj, and do not add Directory.Build files. `dotnet test` must pass.
+
+API (exact messages are in the tests):
+- `BankException : Exception`; `enum TransactionKind { Deposit, Withdrawal, TransferIn, TransferOut, Interest, Fee }`; `record Transaction(DateOnly Day, TransactionKind Kind, decimal Amount (signed), decimal BalanceAfter, string Description)`.
+- `Account` with Id, Owner, OverdraftLimit, Balance, IsClosed.
+- `Ledger`: Open(owner, overdraftLimit = 0) -> ids "ACC-0001", "ACC-0002", ... (blank owner -> ArgumentException, negative limit -> ArgumentOutOfRangeException); Get(id) ("unknown account ACC-0099"); History(id).
+  - Deposit / Withdraw / Transfer(from, to, amount, day): amounts must be positive (ArgumentOutOfRangeException); a balance may go down to -OverdraftLimit ("insufficient funds in ACC-0001"); a transfer to the same account is refused ("cannot transfer to the same account"); a refused operation changes nothing. Descriptions: "Deposit", "Withdrawal", "Transfer to ACC-0002", "Transfer from ACC-0001".
+  - Close(id) only with a zero balance ("account ACC-0001 has a non-zero balance"); a closed account refuses everything ("account ACC-0001 is closed").
+  - ApplyMonthlyInterest(day, annualRatePercent) -> the total interest paid: each open account in credit earns balance * rate / 100 / 12 rounded to cents (away from zero) as an Interest transaction (none when it is 0); each account below zero is charged a 5.00 Fee ("Overdraft fee"), even past its limit.
+- `Statement.Render(ledger, accountId, from, to)`: the header, the opening balance (after the last transaction before `from`), one line per transaction in the inclusive period, formatted as $"{yyyy-MM-dd}  {Description,-24}{Amount as +0.00/-0.00,10}{BalanceAfter as 0.00,10}" with the invariant culture, then the closing balance; lines joined with "\\n". An inverted period -> ArgumentException.
+
+Split the code into files: BankException, Transaction, Account, InterestPolicy, Ledger, Statement."""
+answers = [
+    "Keep the API exactly as the tests use it; one type per file under src/, all in namespace Bank.",
+    "No extra packages; decimal for all money, CultureInfo.InvariantCulture for every formatted number and date.",
+    "Work test-first against the two test files and run run_checks until dotnet test passes.",
+]
+seed = "seed"
+protect = ["Tests/LedgerTests.cs", "Tests/StatementTests.cs", "Bank.csproj"]
+forbid = ["conftest.py", "**/conftest.py", "pytest.ini", "tox.ini", "setup.cfg", "jest.config.*", "babel.config.*", "Directory.Build.*"]
+setup = []
+checks = []
+tier = "quality"
+eval = false
+split = "bench"
