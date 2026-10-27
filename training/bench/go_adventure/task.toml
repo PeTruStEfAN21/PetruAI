@@ -1,0 +1,23 @@
+name = "go_adventure"
+prompt = """Build a text adventure engine in Go (standard library only) as package `adventure` at the module root (go.mod: module adventure). The acceptance tests are in adventure_test.go; do not change it or go.mod. `go test ./...` must pass.
+
+API (exact output strings are in the tests):
+- `LoadWorld(r io.Reader) (*World, error)` reads a JSON world: start, optional goal, rooms with description, exits (direction -> room), items, optional locked_by (an item needed to enter). It validates: invalid JSON ("invalid world: ..."), "start room x does not exist", "goal room z does not exist", "room a: exit up leads to unknown room b".
+- `NewGame(world) *Game`; the game never modifies the world, so several games can share it. `Room()`, `Moves()` (successful moves), `Won()`.
+- `Do(line) string`: case and extra spaces are ignored. Commands: look / l; go <dir>, or a bare direction north/south/east/west/up/down and n/s/e/w/u/d; take / get <item>; drop <item>; inventory / i. A room is shown as its description, "Exits: <sorted, comma separated>", and "You see: <sorted items>" only when it has items; moving shows the new room. A locked room: "The way east is locked. You need the key." Entering the goal room adds "\\nYou win!" and every later command answers "The game is over.". Other answers: "You can't go up.", "Go where?", "Taken: lamp.", "There is no lamp here.", "Dropped: lamp.", "You don't have a sword.", "Take what?", "You are carrying nothing.", "You are carrying: bread, lamp", "Say something." for an empty line and `I don't understand "dance wildly".` otherwise.
+- `(*Game).Save(w io.Writer) error` writes JSON with at least room, inventory, rooms (room -> items) and moves; `LoadGame(world, r) (*Game, error)` restores it, failing with "save: unknown room attic" for a room the world lacks.
+
+Split the code into files: world, command (parsing and aliases), describe (text output), game, save."""
+answers = [
+    "Keep the API exactly as the tests use it; one file per part: world.go, command.go, describe.go, game.go, save.go.",
+    "Standard library only (encoding/json, sort, slices, strings); copy the room items into the game so the world stays untouched.",
+    "Work test-first against adventure_test.go and run run_checks until go test passes.",
+]
+seed = "seed"
+protect = ["adventure_test.go", "go.mod"]
+forbid = ["conftest.py", "**/conftest.py", "pytest.ini", "tox.ini", "setup.cfg", "jest.config.*", "babel.config.*", "Directory.Build.*"]
+setup = []
+checks = []
+tier = "quality"
+eval = false
+split = "bench"
