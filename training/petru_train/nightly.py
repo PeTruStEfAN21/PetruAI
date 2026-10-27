@@ -14,13 +14,14 @@ import time
 import traceback
 from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 TRAINING_DIR = Path(__file__).resolve().parents[1]
 RUNS_DIR = TRAINING_DIR / "runs"
-STEPS = ["build", "trajectories", "train", "export", "eval_base", "eval_cand", "promote"]
-OPTIONAL_STEPS = {"trajectories"}  # a failure is noted and the night goes on
+STEPS = ["build", "trajectories", "train", "export", "eval_base", "eval_cand", "promote", "specialists"]
+OPTIONAL_STEPS = {"trajectories", "specialists"}  # a failure is noted and the night goes on
+GENERALIST_SHARE = 0.5  # of the remaining night; the rest goes to the language specialists
 EVAL_RESERVE_MIN = 75  # minutes kept free after training for export + the two evaluations
 
 
@@ -118,7 +119,8 @@ def step_train(ctx: RunContext) -> None:
 
     stop_llama_servers()
     cfg = load_train_config()
-    budget = int(ctx.remaining_minutes()) - EVAL_RESERVE_MIN
+    remaining = ctx.remaining_minutes()
+    budget = int(min(remaining - EVAL_RESERVE_MIN, remaining * GENERALIST_SHARE))
     cfg.time_budget_min = max(10, budget)
     report = train(cfg, ctx.run_dir)
     ctx.notes["train"] = (
@@ -185,6 +187,14 @@ def step_promote(ctx: RunContext) -> None:
     ctx.notes["promote"] = f"promoted {promote(ctx.run_dir)}"
 
 
+def step_specialists(ctx: RunContext) -> None:
+    from petru_train import specialist_night
+
+    deadline = datetime.now() + timedelta(minutes=ctx.remaining_minutes())
+    results = specialist_night.run_specialists(ctx.run, deadline, runs_dir=ctx.runs_dir)
+    ctx.notes["specialists"] = "; ".join(f"{r['name']}: {r['status']}" for r in results) or "none ran"
+
+
 DEFAULT_STEPS: dict[str, Callable[[RunContext], None]] = {
     "build": step_build,
     "trajectories": step_trajectories,
@@ -193,6 +203,7 @@ DEFAULT_STEPS: dict[str, Callable[[RunContext], None]] = {
     "eval_base": step_eval_base,
     "eval_cand": step_eval_cand,
     "promote": step_promote,
+    "specialists": step_specialists,
 }
 
 

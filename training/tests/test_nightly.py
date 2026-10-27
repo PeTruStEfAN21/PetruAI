@@ -18,7 +18,9 @@ def recording_steps(order: list[str], fail_at: str | None = None, skip_at: str |
 
 
 def test_steps_are_the_documented_pipeline():
-    assert STEPS == ["build", "trajectories", "train", "export", "eval_base", "eval_cand", "promote"]
+    assert STEPS == [
+        "build", "trajectories", "train", "export", "eval_base", "eval_cand", "promote", "specialists",
+    ]  # fmt: skip
 
 
 def test_fresh_run_executes_every_step_and_persists_state(tmp_path):
@@ -36,7 +38,8 @@ def test_resume_skips_completed_steps(tmp_path):
     )
     order: list[str] = []
     state = run_nightly("r1", hours=1.0, steps=recording_steps(order), runs_dir=tmp_path)
-    assert order == ["train", "export", "eval_base", "eval_cand", "promote"] and state.done == STEPS
+    assert order == ["train", "export", "eval_base", "eval_cand", "promote", "specialists"]
+    assert state.done == STEPS
 
 
 def test_failing_step_records_the_error_and_stops(tmp_path):
@@ -129,3 +132,40 @@ def test_trajectories_keep_their_state_in_the_run_folder(tmp_path, monkeypatch):
     ctx = RunContext(run="r1", runs_dir=tmp_path, hours=3.0)
     nightly.step_trajectories(ctx)
     assert seen[0].state_file == ctx.run_dir / "trajectories.state.json"
+
+
+def test_specialists_get_the_rest_of_the_night(tmp_path, monkeypatch):
+    from petru_train import nightly, specialist_night
+
+    seen = {}
+
+    def fake_run(run, deadline, runs_dir):
+        seen.update(run=run, deadline=deadline)
+        return [{"name": "python", "status": "promoted"}]
+
+    monkeypatch.setattr(specialist_night, "run_specialists", fake_run)
+    ctx = RunContext(run="r1", runs_dir=tmp_path, hours=2.0)
+    nightly.step_specialists(ctx)
+    minutes = (seen["deadline"] - nightly.datetime.now()).total_seconds() / 60
+    assert seen["run"] == "r1" and 100 < minutes <= 120 and "python: promoted" in ctx.notes["specialists"]
+
+
+def test_the_generalist_leaves_half_of_the_night_to_the_specialists(tmp_path, monkeypatch):
+    from petru_train import nightly
+    from petru_train import train as train_module
+
+    budgets = []
+    monkeypatch.setattr(nightly, "stop_llama_servers", lambda: None)
+    monkeypatch.setattr(
+        train_module, "train", lambda cfg, run_dir: budgets.append(cfg.time_budget_min) or _report()
+    )
+    nightly.step_train(RunContext(run="r1", runs_dir=tmp_path, hours=10.0))
+    assert len(budgets) == 1 and 299 <= budgets[0] <= 300  # half of 10 hours, give or take the clock
+
+
+def _report():
+    from petru_train.train import TrainReport
+
+    return TrainReport(
+        steps=1, train_loss=1.0, eval_loss=0.9, minutes=1.0, adapter_dir="a", resumed_from=None
+    )
