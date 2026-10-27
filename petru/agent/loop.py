@@ -141,6 +141,10 @@ class Agent:
         except Exception as exc:  # a buggy tool must not end the session
             result = ToolResult(f"{type(exc).__name__}: {exc}", True)
         self.ui.tool_finished(call.name, result)
+        if call.name == "run_checks":
+            self.session.unverified_changes = result.is_error
+        elif tool.changes_files and not result.is_error:
+            self.session.unverified_changes = True
         output = truncate_output(result.output, MAX_TOOL_RESULT_CHARS)  # one result must not fill the context
         return (f"ERROR: {output}" if result.is_error else output), False
 

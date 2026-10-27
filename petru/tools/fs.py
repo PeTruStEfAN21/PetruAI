@@ -77,6 +77,7 @@ class WriteFileTool(Tool):
     name = "write_file"
     description = "Create or overwrite a UTF-8 text file inside the project. Parent folders are created."
     mutating = True
+    changes_files = True
     parameters = {
         "type": "object",
         "properties": {
@@ -108,6 +109,7 @@ class EditFileTool(Tool):
         "(whitespace differences are tolerated); set replace_all to replace every occurrence."
     )
     mutating = True
+    changes_files = True
     parameters = {
         "type": "object",
         "properties": {

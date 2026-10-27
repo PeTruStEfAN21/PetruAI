@@ -33,11 +33,14 @@ class Session:
     turn_tool_iterations: int = 0
     pending_decisions: list[str] = field(default_factory=list)
     turned_away_questions: int = 0  # ask_user calls refused as repeated or excess in this DESIGN phase
+    unverified_changes: bool = False  # files changed since the last green run_checks
+    completion_refusals: int = 0  # task_complete calls refused this turn for unverified changes
 
     def start_turn(self, text: str, quick: bool = False) -> None:
         """Record the user's prompt and arm the right phase for it."""
         self.messages.append({"role": "user", "content": text})
         self.turn_tool_iterations = 0
+        self.completion_refusals = 0
         if self.phase is Phase.IDLE:
             if quick or self.yolo:
                 self.phase = Phase.BUILD

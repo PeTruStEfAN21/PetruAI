@@ -185,6 +185,7 @@ class ShellTool(Tool):
         "Use it to run programs, install packages, and run tests."
     )
     mutating = True
+    changes_files = True
     parameters = {
         "type": "object",
         "properties": {

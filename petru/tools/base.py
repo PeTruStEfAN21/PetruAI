@@ -27,6 +27,7 @@ class Tool(ABC):
     description: str = ""
     parameters: dict = {"type": "object", "properties": {}}
     mutating: bool = False
+    changes_files: bool = False  # its success leaves the project unverified until run_checks is green
 
     @abstractmethod
     def run(self, args: dict, ctx: ToolContext) -> ToolResult: ...

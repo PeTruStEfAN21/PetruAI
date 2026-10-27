@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from petru.agent.decisions import append_decisions
 from petru.agent.state import Phase, Plan
+from petru.tools import checks
 from petru.tools.base import Tool, ToolContext, ToolResult
 
 
@@ -113,6 +114,13 @@ class PlanTool(Tool):
         return ToolResult(f"{prefix} You are now in BUILD phase. Follow these steps:\n{steps}")
 
 
+NOT_VERIFIED = (
+    "Not done yet: the latest changes are not verified. Call run_checks, fix what fails (read the error, "
+    "find the cause, change one thing at a time), and call task_complete once every check passes."
+)
+MAX_COMPLETION_REFUSALS = 2
+
+
 class TaskCompleteTool(Tool):
     name = "task_complete"
     description = (
@@ -127,9 +135,16 @@ class TaskCompleteTool(Tool):
     }
 
     def run(self, args: dict, ctx: ToolContext) -> ToolResult:
-        if ctx.session is not None:
-            ctx.session.complete()
-        return ToolResult(str(args["summary"]))
+        summary = str(args["summary"])
+        session = ctx.session
+        if session is not None and session.unverified_changes and checks.find_project_dirs(ctx.project_root):
+            if session.completion_refusals < MAX_COMPLETION_REFUSALS:
+                session.completion_refusals += 1
+                return ToolResult(NOT_VERIFIED, True)
+            summary = f"Unverified: {summary}"  # the user decides; a stuck model must not loop forever
+        if session is not None:
+            session.complete()
+        return ToolResult(summary)
 
 
 TOOLS: list[Tool] = [AskUserTool(), PlanTool(), TaskCompleteTool()]
