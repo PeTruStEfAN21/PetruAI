@@ -144,3 +144,61 @@ def test_a_project_without_any_check_does_not_pass(tmp_path):
     (tmp_path / "stats.py").write_text("print(1)\n", encoding="utf-8")  # a script, no tests
     ok, output = run_checks_for(tmp_path, [])
     assert not ok and "no checks" in output
+
+
+def seeded_task(tmp_path):
+    seed = tmp_path / "tasks" / "py_two" / "seed"
+    seed.mkdir(parents=True)
+    (seed / "two.py").write_text("def two():\n    raise NotImplementedError\n", encoding="utf-8")
+    (seed / "check_two.py").write_text("from two import two\nassert two() == 2\n", encoding="utf-8")
+    toml = tmp_path / "tasks" / "py_two" / "task.toml"
+    toml.write_text(
+        'name = "py_two"\nprompt = "make two() return 2"\nseed = "seed"\nprotect = ["check_two.py"]\n'
+        'checks = ["python check_two.py"]\n',
+        encoding="utf-8",
+    )
+    return load_task(toml)
+
+
+def test_load_task_resolves_the_seed_next_to_the_toml(tmp_path):
+    spec = seeded_task(tmp_path)
+    assert spec.seed == tmp_path / "tasks" / "py_two" / "seed" and spec.protect == ["check_two.py"]
+
+
+def finishing(*calls):
+    return FakeProvider(
+        [
+            result(tool_calls=[call("plan", {"title": "Two", "steps": ["edit two.py"]})]),
+            *[result(tool_calls=[c]) for c in calls],
+            result(tool_calls=[call("task_complete", {"summary": "done"})]),
+            result(content="Done."),
+        ]
+    )
+
+
+def test_a_seeded_task_starts_from_the_committed_scaffold(tmp_path):
+    import subprocess
+
+    solve = call("write_file", {"path": "two.py", "content": "def two():\n    return 2\n"})
+    res = run_task(
+        seeded_task(tmp_path),
+        provider=finishing(solve),
+        repo_root=tmp_path,
+        project=tmp_path / "p",
+        ctx_tokens=8192,
+    )
+    assert res.passed, res.check_output
+    log = subprocess.run(["git", "log", "--format=%s"], cwd=tmp_path / "p", capture_output=True, text=True)
+    assert log.stdout.strip().splitlines()[-1] == "Exercise scaffold"
+
+
+def test_changing_the_protected_tests_does_not_pass(tmp_path):
+    cheat = call("write_file", {"path": "check_two.py", "content": "pass\n"})
+    res = run_task(
+        seeded_task(tmp_path),
+        provider=finishing(cheat),
+        repo_root=tmp_path,
+        project=tmp_path / "p",
+        ctx_tokens=8192,
+    )
+    assert not res.passed and "NotImplementedError" in res.check_output

@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import sys
 import tempfile
 import time
@@ -25,7 +26,7 @@ from petru.providers.base import ChatProvider
 from petru.providers.openai_compat import OpenAICompatProvider
 from petru.server import ServerManager
 from petru.tools.checks import detect_checks, find_project_dirs
-from petru.tools.git import ensure_repo
+from petru.tools.git import _run_git, ensure_repo
 from petru.tools.registry import default_registry
 from petru.tools.shell import run_shell
 from petru.tui.port import ScriptedUI
@@ -45,6 +46,8 @@ class TaskSpec:
     answers: list[str] = field(default_factory=list)
     checks: list[str] = field(default_factory=list)
     tier: str = "quality"
+    seed: Path | None = None  # files copied into the project and committed before the agent starts
+    protect: list[str] = field(default_factory=list)  # seed files put back before the final checks
 
 
 def load_task(path: Path) -> TaskSpec:
@@ -56,7 +59,24 @@ def load_task(path: Path) -> TaskSpec:
         answers=[str(a) for a in data.get("answers", [])],
         checks=[str(c) for c in data.get("checks", [])],
         tier=str(data.get("tier", "quality")),
+        seed=path.parent / data["seed"] if data.get("seed") else None,
+        protect=[str(p) for p in data.get("protect", [])],
     )
+
+
+def plant_seed(seed: Path, project: Path) -> None:
+    """The exercise scaffold as the project's first commit, so the agent starts from a clean tree."""
+    shutil.copytree(seed, project, dirs_exist_ok=True)
+    _run_git(["add", "-A"], project)
+    _run_git(["commit", "-q", "-m", "Exercise scaffold"], project)
+
+
+def restore_protected(spec: TaskSpec, project: Path) -> None:
+    """Put the original tests back: a task passes on its own tests, not on ones the agent rewrote."""
+    for rel in spec.protect:
+        target = project / rel
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(spec.seed / rel, target)
 
 
 @dataclass
@@ -149,6 +169,8 @@ def run_task(
         provider = OpenAICompatProvider(base_url)
     project.mkdir(parents=True, exist_ok=True)
     ensure_repo(project)
+    if spec.seed is not None:
+        plant_seed(spec.seed, project)
     ui = TaskUI(list(spec.answers))
     session = Session(project, tier=spec.tier)
     registry = default_registry(online)
@@ -168,6 +190,8 @@ def run_task(
             agent.run_turn(message)
     completed = session.phase is Phase.IDLE and agent.stop_reason is None
     if completed:
+        if spec.seed is not None:
+            restore_protected(spec, project)
         ok, output = run_checks_for(project, spec.checks)
     else:
         ok, output = False, f"task did not complete (phase={session.phase.value}, stop={agent.stop_reason})"
