@@ -1,0 +1,31 @@
+name = "python_markdown"
+prompt = """Build a Markdown to HTML converter in Python 3 (standard library only), as the package `mdconv/` at the project root. The acceptance tests are tests/test_convert.py and tests/test_cli.py; do not change them or pyproject.toml.
+
+API: `mdconv.to_html(markdown: str) -> str`, and `mdconv.cli.main(argv) -> int`.
+
+Blocks (rendered blocks are joined with a single "\\n", no trailing newline; blank lines separate blocks):
+- `#` to `######` followed by a space: <h1>..<h6>, text stripped. Anything else starting with # is a paragraph.
+- Paragraph: consecutive non-blank lines joined with one space, <p>...</p>. A line that starts another block ends the paragraph.
+- `- ` or `* ` items: <ul>, `1. ` style items: <ol>; rendered as "<ul>\\n<li>a</li>\\n<li>b</li>\\n</ul>". Switching between bullet and number starts a new list.
+- Fenced code: ``` with an optional language, until the closing ``` or the end of the text: <pre><code class="language-py">...</code></pre> (no class without a language); content escaped, lines kept.
+- `---` or `***` alone: <hr>.
+- `> ` lines: <blockquote>\\n(inner blocks, parsed recursively)\\n</blockquote>.
+
+Inline (in headings, paragraphs and list items): escape & < > " first; `code` is literal (escaped, no other markup); [text](url) -> <a href="url">text</a>; **x** or __x__ -> <strong>; *x* or _x_ -> <em> (the marker must touch non-space text on both sides, so "2 * 3" stays as is).
+
+CLI: main([input, "-o", output, "--title", title]): reads the input file, writes the HTML plus a newline to the output file (parent folders created) or to stdout; with --title it wraps the body in a full page (see the test). A missing input prints an error naming the file to stderr and returns 1.
+
+Split the code into modules: blocks (block parser), inline, render, cli."""
+answers = [
+    "Keep to_html and main exactly as the tests use them; put blocks.py, inline.py, render.py and cli.py inside mdconv/.",
+    "Standard library only (re, argparse, pathlib); regexes are fine for the inline rules.",
+    "Work test-first against the two test files and run run_checks until everything passes.",
+]
+seed = "seed"
+protect = ["tests/test_convert.py", "tests/test_cli.py", "pyproject.toml"]
+forbid = ["conftest.py", "**/conftest.py", "pytest.ini", "tox.ini", "setup.cfg", "jest.config.*", "babel.config.*", "Directory.Build.*"]
+setup = []
+checks = []
+tier = "quality"
+eval = false
+split = "bench"
