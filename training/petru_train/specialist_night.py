@@ -19,6 +19,7 @@ from dataclasses import asdict
 from datetime import datetime
 from pathlib import Path
 
+from petru_train import evaluate as evaluate_module
 from petru_train.evaluate import BASE_GGUF, TASKS_DIR, EvalResult, evaluate, gate, gate_inputs
 from petru_train.export import MODELS_DIR, candidate_file, export_run
 from petru_train.specialists import Specialist, load_specialists, write_specialist_data
@@ -32,6 +33,7 @@ MIN_TRAIN = 40  # fewer samples cannot teach a specialist anything reliable
 MIN_TRAIN_MINUTES = 30
 RESERVE_MIN = 90  # export, and the base and candidate evaluations on its tasks
 MAX_TRAIN_MIN = 120  # training time per specialist and night, so the rotation reaches several of them
+HELD_OUT_PER_SPECIALIST = 4  # held-out Exercism tasks per stack in a specialist's gate
 
 
 def rotation(specialists: list[Specialist], state: dict[str, str]) -> list[Specialist]:
@@ -40,7 +42,10 @@ def rotation(specialists: list[Specialist], state: dict[str, str]) -> list[Speci
 
 
 def specialist_tasks(specialist: Specialist, tasks_dir: Path = TASKS_DIR) -> list[Path]:
-    return sorted(t for t in tasks_dir.glob("*.toml") if t.stem.split("_")[0] in specialist.tasks)
+    """Its harness tasks, plus up to HELD_OUT_PER_SPECIALIST held-out Exercism tasks of each of its stacks."""
+    harness = sorted(t for t in tasks_dir.glob("*.toml") if t.stem.split("_")[0] in specialist.tasks)
+    held_out = evaluate_module.held_out_tasks(evaluate_module.EVAL_POOL, per_language=HELD_OUT_PER_SPECIALIST)
+    return harness + [t for t in held_out if t.parent.name.split("_")[0] in specialist.tasks]
 
 
 def _write(path: Path, data: dict) -> dict:
@@ -82,6 +87,10 @@ def run_one(
     report_file = out / "train_report.json"
     if not report_file.is_file() and remaining_min < RESERVE_MIN + MIN_TRAIN_MINUTES:
         return {"status": "no time", "name": specialist.name}
+    tasks = specialist_tasks(specialist, tasks_dir)
+    if not tasks:  # a gate on the loss alone could promote a worse agent
+        reason = "no evaluation tasks for its stacks: it would be judged on its loss alone"
+        return _write(done, {"status": "skipped", "name": specialist.name, "reason": reason})
     counts = write_specialist_data(train_file, eval_file, specialist, out / "data")
     if counts["train"] < MIN_TRAIN or counts["eval"] == 0:
         reason = f"too little data: {counts['train']} train, {counts['eval']} eval (needs {MIN_TRAIN} and 1)"
@@ -102,7 +111,6 @@ def run_one(
         candidate = export_fn(out, cfg_base_model())
         shutil.rmtree(out / "merged", ignore_errors=True)  # 8 GB of merged weights, no longer needed
 
-    tasks = specialist_tasks(specialist, tasks_dir)
     cand_file = out / "eval_cand.json"
     if cand_file.is_file():
         cand = EvalResult.load(cand_file)

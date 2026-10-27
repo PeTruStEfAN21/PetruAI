@@ -50,6 +50,11 @@ class Fakes:
         return EvalResult(float("nan"), 1.0, passed, {}, "sig")
 
 
+def harness_task(tmp_path, name="python_a"):
+    (tmp_path / "tasks").mkdir(exist_ok=True)
+    (tmp_path / "tasks" / f"{name}.toml").write_text('prompt = "p"\n', encoding="utf-8")
+
+
 def run(tmp_path, spec, fakes, remaining=600.0, n_train=50):
     train, eval_ = data(tmp_path, n_train)
     return night.run_one(
@@ -60,7 +65,7 @@ def run(tmp_path, spec, fakes, remaining=600.0, n_train=50):
 
 
 def test_a_specialist_is_trained_exported_evaluated_and_promoted(tmp_path):
-    (tmp_path / "tasks").mkdir()
+    harness_task(tmp_path)
     (tmp_path / "tasks" / "python_a.toml").write_text('prompt = "p"\n', encoding="utf-8")
     fakes = Fakes()
     status = run(tmp_path, PY, fakes)
@@ -71,14 +76,14 @@ def test_a_specialist_is_trained_exported_evaluated_and_promoted(tmp_path):
 
 
 def test_a_regressing_specialist_is_not_promoted(tmp_path):
-    (tmp_path / "tasks").mkdir()
+    harness_task(tmp_path)
     status = run(tmp_path, PY, Fakes(cand_loss=1.2))
     assert status["status"] == "rejected" and "loss" in status["reason"]
     assert not (tmp_path / "models" / "specialists" / "python.gguf").exists()
 
 
 def test_too_little_data_skips_the_specialist(tmp_path):
-    (tmp_path / "tasks").mkdir()
+    harness_task(tmp_path)
     fakes = Fakes()
     status = run(tmp_path, GO, fakes)  # the data is all python: nothing for go
     assert status["status"] == "skipped" and not fakes.calls
@@ -91,14 +96,14 @@ def test_rotation_trains_the_never_trained_first_then_the_oldest():
 
 
 def test_not_enough_time_left_stops_the_night(tmp_path):
-    (tmp_path / "tasks").mkdir()
+    harness_task(tmp_path)
     fakes = Fakes()
     assert run(tmp_path, PY, fakes, remaining=night.RESERVE_MIN + 5)["status"] == "no time"
     assert not fakes.calls
 
 
 def test_one_specialist_cannot_take_the_whole_night(tmp_path):
-    (tmp_path / "tasks").mkdir()
+    harness_task(tmp_path)
     budgets = []
     fakes = Fakes()
     original = fakes.train
@@ -121,3 +126,25 @@ def test_a_failing_specialist_does_not_stop_the_others(tmp_path, monkeypatch):
     assert "exit code 1" in results[0]["reason"]
     state = json.loads((tmp_path / "specialists.json").read_text(encoding="utf-8"))
     assert state == {"web": "r"}  # the failed one stays first in the rotation for the next night
+
+
+def test_a_specialist_without_evaluation_tasks_is_not_trained(tmp_path):
+    (tmp_path / "tasks").mkdir()
+    fakes = Fakes()
+    result = run(tmp_path, GO, fakes)
+    assert result["status"] == "skipped" and "no evaluation tasks" in result["reason"] and not fakes.calls
+
+
+def test_held_out_exercism_tasks_of_its_languages_evaluate_a_specialist(tmp_path, monkeypatch):
+    from petru_train import evaluate
+
+    pool = tmp_path / "pool"
+    manifest = {}
+    for name in ("go_ex_a", "go_ex_b", "rust_ex_c"):
+        (pool / name).mkdir(parents=True)
+        (pool / name / "task.toml").write_text('prompt = "p"\n', encoding="utf-8")
+        manifest[name] = {"track": name.split("_")[0], "split": "eval", "passed": True}
+    (pool / "validated.json").write_text(json.dumps(manifest), encoding="utf-8")
+    monkeypatch.setattr(evaluate, "EVAL_POOL", pool)
+    (tmp_path / "tasks").mkdir()
+    assert [t.parent.name for t in night.specialist_tasks(GO, tmp_path / "tasks")] == ["go_ex_a", "go_ex_b"]

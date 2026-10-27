@@ -35,7 +35,7 @@ tasks = ["ts", "js"]
 [[specialist]]
 name = "flutter"
 languages = ["dart"]
-tasks = ["flutter"]
+tasks = ["flutter", "dart"]
 
 [[specialist]]
 name = "jvm"
