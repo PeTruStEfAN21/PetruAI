@@ -52,3 +52,162 @@ nlohmann/json
 ggml-org/llama.cpp
 # SQL / infra
 sqlfluff/sqlfluff
+# Python: web
+Kludex/starlette
+Kludex/uvicorn
+fastapi/sqlmodel
+pallets/werkzeug
+pallets/quart
+django/channels
+django-commons/django-debug-toolbar
+aio-libs/aiohttp
+litestar-org/litestar
+# Python: data
+pandas-dev/pandas
+scikit-learn/scikit-learn
+mwaskom/seaborn
+vega/altair
+pydata/xarray
+dask/dask
+statsmodels/statsmodels
+unionai-oss/pandera
+# JavaScript
+eslint/eslint
+webpack/webpack
+axios/axios
+preactjs/preact
+sveltejs/svelte
+nodejs/undici
+pinojs/pino
+Leaflet/Leaflet
+# TypeScript
+vuejs/core
+remix-run/react-router
+reduxjs/redux-toolkit
+pmndrs/zustand
+react-hook-form/react-hook-form
+kysely-org/kysely
+sindresorhus/ky
+typeorm/typeorm
+# Java
+google/gson
+FasterXML/jackson-databind
+mockito/mockito
+apache/commons-lang
+netty/netty
+resilience4j/resilience4j
+jhy/jsoup
+assertj/assertj
+# Kotlin
+Kotlin/kotlinx.coroutines
+Kotlin/kotlinx.serialization
+Kotlin/kotlinx-datetime
+ktorio/ktor
+square/moshi
+InsertKoinIO/koin
+JetBrains/Exposed
+coil-kt/coil
+# C#: libraries
+JamesNK/Newtonsoft.Json
+serilog/serilog
+App-vNext/Polly
+FluentValidation/FluentValidation
+spectreconsole/spectre.console
+dotnet/command-line-api
+autofac/Autofac
+dotnet/efcore
+# C
+valkey-io/valkey
+libuv/libuv
+nginx/nginx
+tmux/tmux
+DaveGamble/cJSON
+memcached/memcached
+FreeRTOS/FreeRTOS-Kernel
+h2o/h2o
+# C++
+google/googletest
+abseil/abseil-cpp
+ocornut/imgui
+google/benchmark
+simdjson/simdjson
+yhirose/cpp-httplib
+skypjack/entt
+duckdb/duckdb
+# Go: libraries
+go-chi/chi
+labstack/echo
+stretchr/testify
+uber-go/zap
+charmbracelet/bubbletea
+go-gorm/gorm
+# Rust: libraries
+serde-rs/serde
+tokio-rs/axum
+hyperium/hyper
+seanmonstar/reqwest
+tokio-rs/tracing
+astral-sh/ruff
+# PHP
+laravel/framework
+symfony/symfony
+guzzle/guzzle
+composer/composer
+Seldaek/monolog
+doctrine/orm
+nikic/PHP-Parser
+briannesbitt/Carbon
+# Ruby
+rails/rails
+sinatra/sinatra
+heartcombo/devise
+rubocop/rubocop
+puma/puma
+Shopify/liquid
+ruby-grape/grape
+thoughtbot/factory_bot
+# Swift
+Alamofire/Alamofire
+apple/swift-argument-parser
+apple/swift-nio
+vapor/vapor
+pointfreeco/swift-composable-architecture
+onevcat/Kingfisher
+apple/swift-collections
+swiftlang/swift-format
+# Dart / Flutter: more packages and apps
+simolus3/drift
+flame-engine/flame
+google/json_serializable.dart
+dart-lang/shelf
+dart-lang/http
+fluttercommunity/plus_plugins
+localsend/localsend
+# Scala
+typelevel/cats-effect
+http4s/http4s
+circe/circe
+scalameta/scalafmt
+playframework/playframework
+apache/pekko
+# R
+rstudio/renv
+rstudio/reticulate
+rstudio/tensorflow
+sparklyr/sparklyr
+pharmaverse/admiral
+# Shell / PowerShell
+nvm-sh/nvm
+ohmyzsh/ohmyzsh
+bats-core/bats-core
+pyenv/pyenv
+ChrisTitusTech/winutil
+nightroman/Invoke-Build
+dataplat/dbatools
+# SQL (dbt packages: small SQL/Jinja macro files)
+dbt-labs/dbt-utils
+dbt-labs/dbt-codegen
+dbt-labs/dbt-audit-helper
+dbt-labs/dbt-project-evaluator
+metaplane/dbt-expectations
+tobymao/sqlglot

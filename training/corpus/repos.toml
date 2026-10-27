@@ -4,161 +4,161 @@
 url = "https://github.com/fastapi/fastapi"
 license = "MIT"
 language = "Python"
-stars = 104210
-pushed_at = "2026-10-26T10:40:40Z"
+stars = 104237
+pushed_at = "2026-10-26T20:54:19Z"
 default_branch = "master"
-verified_at = "2026-10-26"
-commit = "79cab5bed28b24d92c185d236feb33f5783dfeb3"
+verified_at = "2026-10-27"
+commit = ""
 
 [[repo]]
 url = "https://github.com/encode/httpx"
 license = "BSD-3-Clause"
 language = "Python"
-stars = 15804
+stars = 15818
 pushed_at = "2026-10-02T12:53:43Z"
 default_branch = "master"
-verified_at = "2026-10-26"
-commit = "b5addb64f0161ff6bfe94c124ef76f6a1fba5254"
+verified_at = "2026-10-27"
+commit = ""
 
 [[repo]]
 url = "https://github.com/pydantic/pydantic"
 license = "MIT"
 language = "Python"
-stars = 29198
-pushed_at = "2026-10-26T13:36:22Z"
+stars = 29207
+pushed_at = "2026-10-26T20:45:18Z"
 default_branch = "main"
-verified_at = "2026-10-26"
-commit = "8459f597aac7f86bf44338b7a140010f9471368f"
+verified_at = "2026-10-27"
+commit = ""
 
 [[repo]]
 url = "https://github.com/Textualize/rich"
 license = "MIT"
 language = "Python"
-stars = 57638
+stars = 57653
 pushed_at = "2026-06-23T03:10:19Z"
 default_branch = "main"
-verified_at = "2026-10-26"
-commit = "9d8f9a372cc5916fd4781fec207ced7ddac2f08f"
+verified_at = "2026-10-27"
+commit = ""
 
 [[repo]]
 url = "https://github.com/fastapi/typer"
 license = "MIT"
 language = "Python"
-stars = 20206
+stars = 20224
 pushed_at = "2026-10-15T15:22:01Z"
 default_branch = "master"
-verified_at = "2026-10-26"
-commit = "a5882dedf0bc7a46cd861fdfca020f88519e0f21"
+verified_at = "2026-10-27"
+commit = ""
 
 [[repo]]
 url = "https://github.com/sqlalchemy/sqlalchemy"
 license = "MIT"
 language = "Python"
 stars = 12266
-pushed_at = "2026-10-26T15:22:48Z"
+pushed_at = "2026-10-26T21:20:06Z"
 default_branch = "main"
-verified_at = "2026-10-26"
-commit = "7663f5c48a2b2bbad70d3d79a86ae098605bb315"
+verified_at = "2026-10-27"
+commit = ""
 
 [[repo]]
 url = "https://github.com/pallets/flask"
 license = "BSD-3-Clause"
 language = "Python"
-stars = 75091
+stars = 75102
 pushed_at = "2026-10-07T14:02:59Z"
 default_branch = "main"
-verified_at = "2026-10-26"
-commit = "d086db856be187255b8ec61ef409357393020f32"
+verified_at = "2026-10-27"
+commit = ""
 
 [[repo]]
 url = "https://github.com/django/django"
 license = "BSD-3-Clause"
 language = "Python"
-stars = 91661
-pushed_at = "2026-10-26T15:48:51Z"
+stars = 91677
+pushed_at = "2026-10-26T19:58:25Z"
 default_branch = "main"
-verified_at = "2026-10-26"
-commit = "5c13b5a19864807cae7266339554c14e151e5961"
+verified_at = "2026-10-27"
+commit = ""
 
 [[repo]]
 url = "https://github.com/psf/requests"
 license = "Apache-2.0"
 language = "Python"
-stars = 54717
-pushed_at = "2026-10-26T16:56:36Z"
+stars = 54728
+pushed_at = "2026-10-26T17:14:44Z"
 default_branch = "main"
-verified_at = "2026-10-26"
-commit = "611c6162cbc4ac2020a2f91c7cfa4f3abf9bbb60"
+verified_at = "2026-10-27"
+commit = ""
 
 [[repo]]
 url = "https://github.com/python-poetry/poetry"
 license = "MIT"
 language = "Python"
-stars = 34323
-pushed_at = "2026-10-25T13:03:15Z"
+stars = 34325
+pushed_at = "2026-10-26T22:08:25Z"
 default_branch = "main"
-verified_at = "2026-10-26"
-commit = "1fe5e0a57928572eb1d08f83b0cf0179043280dd"
+verified_at = "2026-10-27"
+commit = ""
 
 [[repo]]
 url = "https://github.com/expressjs/express"
 license = "MIT"
 language = "JavaScript"
-stars = 69580
+stars = 69581
 pushed_at = "2026-10-26T09:28:27Z"
 default_branch = "master"
-verified_at = "2026-10-26"
-commit = "1c6f1b0fe4000977b9a7b4f34097e4d527dd9824"
+verified_at = "2026-10-27"
+commit = ""
 
 [[repo]]
 url = "https://github.com/colinhacks/zod"
 license = "MIT"
 language = "TypeScript"
-stars = 44199
+stars = 44202
 pushed_at = "2026-10-19T22:46:10Z"
 default_branch = "main"
-verified_at = "2026-10-26"
-commit = "afdac65e0f80c0ccf9e8909da97c411567908b57"
+verified_at = "2026-10-27"
+commit = ""
 
 [[repo]]
 url = "https://github.com/vitejs/vite"
 license = "MIT"
 language = "TypeScript"
-stars = 83562
-pushed_at = "2026-10-26T07:34:06Z"
+stars = 83587
+pushed_at = "2026-10-26T20:40:46Z"
 default_branch = "main"
-verified_at = "2026-10-26"
-commit = "e954a9cda0b5254be495a937333a0be1b8503d8f"
+verified_at = "2026-10-27"
+commit = ""
 
 [[repo]]
 url = "https://github.com/honojs/hono"
 license = "MIT"
 language = "TypeScript"
-stars = 32703
+stars = 32706
 pushed_at = "2026-10-26T06:05:22Z"
 default_branch = "main"
-verified_at = "2026-10-26"
-commit = "bac5c4a8bcd76b165428ce757e1185753c7935bd"
+verified_at = "2026-10-27"
+commit = ""
 
 [[repo]]
 url = "https://github.com/trpc/trpc"
 license = "MIT"
 language = "TypeScript"
-stars = 40727
-pushed_at = "2026-10-26T17:07:47Z"
+stars = 40731
+pushed_at = "2026-10-26T17:21:41Z"
 default_branch = "main"
-verified_at = "2026-10-26"
-commit = "9282601f6e9c2edfc285cac72aff816f0d5ed4f7"
+verified_at = "2026-10-27"
+commit = ""
 
 [[repo]]
 url = "https://github.com/drizzle-team/drizzle-orm"
 license = "Apache-2.0"
 language = "TypeScript"
-stars = 36145
-pushed_at = "2026-10-26T14:47:21Z"
+stars = 36150
+pushed_at = "2026-10-26T23:44:37Z"
 default_branch = "main"
-verified_at = "2026-10-26"
-commit = "eab8bedbb65d5429c54e612ddbd88aa23091d398"
+verified_at = "2026-10-27"
+commit = ""
 
 [[repo]]
 url = "https://github.com/prisma/orm"
@@ -167,88 +167,88 @@ language = "TypeScript"
 stars = 47671
 pushed_at = "2026-10-26T06:59:27Z"
 default_branch = "main"
-verified_at = "2026-10-26"
-commit = "f543fb4173e64e45f87fdcfa85d6cfbd3ea034a5"
+verified_at = "2026-10-27"
+commit = ""
 
 [[repo]]
 url = "https://github.com/TanStack/query"
 license = "MIT"
 language = "TypeScript"
-stars = 50484
-pushed_at = "2026-10-26T17:05:32Z"
+stars = 50486
+pushed_at = "2026-10-27T00:13:12Z"
 default_branch = "main"
-verified_at = "2026-10-26"
-commit = "6f8a48d543b499b6d9b0e95050c28183c8c18ae0"
+verified_at = "2026-10-27"
+commit = ""
 
 [[repo]]
 url = "https://github.com/vitest-dev/vitest"
 license = "MIT"
 language = "TypeScript"
-stars = 17286
+stars = 17288
 pushed_at = "2026-10-26T16:14:34Z"
 default_branch = "main"
-verified_at = "2026-10-26"
-commit = "1a77c6cbcb30fb7abf3a16bdbd5396c19c6cef46"
+verified_at = "2026-10-27"
+commit = ""
 
 [[repo]]
 url = "https://github.com/vercel/next.js"
 license = "MIT"
 language = "JavaScript"
-stars = 143301
-pushed_at = "2026-10-26T17:03:16Z"
+stars = 143307
+pushed_at = "2026-10-27T00:12:48Z"
 default_branch = "canary"
-verified_at = "2026-10-26"
-commit = "7748e532a1abeb4387a722b0f1665bd53218f51a"
+verified_at = "2026-10-27"
+commit = ""
 
 [[repo]]
 url = "https://github.com/nestjs/nest"
 license = "MIT"
 language = "TypeScript"
-stars = 76910
-pushed_at = "2026-10-26T14:11:18Z"
+stars = 76916
+pushed_at = "2026-10-26T21:43:54Z"
 default_branch = "master"
-verified_at = "2026-10-26"
-commit = "6aafca1fd833ff04852ecd6607ceb969faa0c9de"
+verified_at = "2026-10-27"
+commit = ""
 
 [[repo]]
 url = "https://github.com/fastify/fastify"
 license = "MIT"
 language = "JavaScript"
-stars = 37304
+stars = 37306
 pushed_at = "2026-10-25T15:52:43Z"
 default_branch = "main"
-verified_at = "2026-10-26"
-commit = "5df959f3af698823dd582f1c3661f3e80df0b5da"
+verified_at = "2026-10-27"
+commit = ""
 
 [[repo]]
 url = "https://github.com/shadcn-ui/ui"
 license = "MIT"
 language = "TypeScript"
-stars = 126593
+stars = 126621
 pushed_at = "2026-10-26T09:04:12Z"
 default_branch = "main"
-verified_at = "2026-10-26"
-commit = "8f04138777c1b6996e709993362a7b0a12888ecf"
+verified_at = "2026-10-27"
+commit = ""
 
 [[repo]]
 url = "https://github.com/excalidraw/excalidraw"
 license = "MIT"
 language = "TypeScript"
-stars = 134595
-pushed_at = "2026-10-26T11:00:04Z"
+stars = 134613
+pushed_at = "2026-10-26T22:29:13Z"
 default_branch = "master"
-verified_at = "2026-10-26"
-commit = "b7de45e88111f5680ae4bb3c3f3541c7d3b279fe"
+verified_at = "2026-10-27"
+commit = ""
 
 [[repo]]
 url = "https://github.com/flutter/packages"
 license = "BSD-3-Clause"
 language = "Dart"
 stars = 5328
-pushed_at = "2026-10-26T16:04:33Z"
+pushed_at = "2026-10-26T21:53:50Z"
 default_branch = "main"
-verified_at = "2026-10-26"
-commit = "ae20ca6bc95abcc6e97814b948e5157887ec76d1"
+verified_at = "2026-10-27"
+commit = ""
 
 [[repo]]
 url = "https://github.com/rrousselGit/riverpod"
@@ -257,8 +257,8 @@ language = "Dart"
 stars = 7411
 pushed_at = "2026-10-25T22:26:03Z"
 default_branch = "master"
-verified_at = "2026-10-26"
-commit = "33af1e81224f18a6ade77bf71c34776cf7af2c12"
+verified_at = "2026-10-27"
+commit = ""
 
 [[repo]]
 url = "https://github.com/felangel/bloc"
@@ -267,8 +267,8 @@ language = "Dart"
 stars = 12484
 pushed_at = "2026-10-25T01:14:54Z"
 default_branch = "master"
-verified_at = "2026-10-26"
-commit = "b9be1e252ee24ffbe9f2fb629edc7624b2cfbf05"
+verified_at = "2026-10-27"
+commit = ""
 
 [[repo]]
 url = "https://github.com/cfug/dio"
@@ -277,8 +277,8 @@ language = "Dart"
 stars = 12841
 pushed_at = "2026-10-25T14:55:53Z"
 default_branch = "main"
-verified_at = "2026-10-26"
-commit = "f1bef462289b40992d625d4eb2a2f42321217573"
+verified_at = "2026-10-27"
+commit = ""
 
 [[repo]]
 url = "https://github.com/jonataslaw/getx"
@@ -287,98 +287,98 @@ language = "Dart"
 stars = 11195
 pushed_at = "2026-06-12T14:17:03Z"
 default_branch = "master"
-verified_at = "2026-10-26"
-commit = "e3c8fa04ae65ebf7ff0128dbeb2dc91d4dafa429"
+verified_at = "2026-10-27"
+commit = ""
 
 [[repo]]
 url = "https://github.com/gin-gonic/gin"
 license = "MIT"
 language = "Go"
-stars = 89433
+stars = 89435
 pushed_at = "2026-10-10T04:20:35Z"
 default_branch = "master"
-verified_at = "2026-10-26"
-commit = "0f09c3a9b4626d9fe9979cf4d0521d6ae32ab646"
+verified_at = "2026-10-27"
+commit = ""
 
 [[repo]]
 url = "https://github.com/spf13/cobra"
 license = "Apache-2.0"
 language = "Go"
-stars = 44724
+stars = 44726
 pushed_at = "2026-07-11T00:43:07Z"
 default_branch = "main"
-verified_at = "2026-10-26"
-commit = "adbc8813901bba65827259daa8e22ff94ec1f30e"
+verified_at = "2026-10-27"
+commit = ""
 
 [[repo]]
 url = "https://github.com/gohugoio/hugo"
 license = "Apache-2.0"
 language = "Go"
-stars = 90245
-pushed_at = "2026-10-26T11:48:28Z"
+stars = 90247
+pushed_at = "2026-10-26T17:58:26Z"
 default_branch = "master"
-verified_at = "2026-10-26"
-commit = "3e67572c5df68ec9e369b59d8e689a04a35ceb9d"
+verified_at = "2026-10-27"
+commit = ""
 
 [[repo]]
 url = "https://github.com/BurntSushi/ripgrep"
 license = "Unlicense"
 language = "Rust"
-stars = 69460
+stars = 69476
 pushed_at = "2026-10-23T20:00:21Z"
 default_branch = "master"
-verified_at = "2026-10-26"
-commit = "6892bc2b7efe5909cbbeec8f757ed2c4c76b1d30"
+verified_at = "2026-10-27"
+commit = ""
 
 [[repo]]
 url = "https://github.com/tokio-rs/tokio"
 license = "MIT"
 language = "Rust"
-stars = 33523
+stars = 33524
 pushed_at = "2026-10-26T08:56:12Z"
 default_branch = "master"
-verified_at = "2026-10-26"
-commit = "b980c95d4755697ee376f5e19b95c328e173e304"
+verified_at = "2026-10-27"
+commit = ""
 
 [[repo]]
 url = "https://github.com/clap-rs/clap"
 license = "Apache-2.0"
 language = "Rust"
-stars = 16800
+stars = 16802
 pushed_at = "2026-10-06T16:19:09Z"
 default_branch = "main"
-verified_at = "2026-10-26"
-commit = "ccc89b83875474399e9d9d70841163f6319d1a41"
+verified_at = "2026-10-27"
+commit = ""
 
 [[repo]]
 url = "https://github.com/spring-projects/spring-boot"
 license = "Apache-2.0"
 language = "Java"
-stars = 81778
-pushed_at = "2026-10-26T17:10:28Z"
+stars = 81777
+pushed_at = "2026-10-26T23:54:31Z"
 default_branch = "main"
-verified_at = "2026-10-26"
-commit = "e0a8055ec12a74073598f24e516627dcd78cdde2"
+verified_at = "2026-10-27"
+commit = ""
 
 [[repo]]
 url = "https://github.com/google/guava"
 license = "Apache-2.0"
 language = "Java"
-stars = 51915
-pushed_at = "2026-10-26T16:14:52Z"
+stars = 51916
+pushed_at = "2026-10-26T21:41:37Z"
 default_branch = "master"
-verified_at = "2026-10-26"
-commit = "37535d73f0416f30e0301efe61a8eb8ede44c1b7"
+verified_at = "2026-10-27"
+commit = ""
 
 [[repo]]
 url = "https://github.com/dotnet/aspnetcore"
 license = "MIT"
 language = "C#"
-stars = 38496
-pushed_at = "2026-10-26T16:04:14Z"
+stars = 38497
+pushed_at = "2026-10-26T21:50:09Z"
 default_branch = "main"
-verified_at = "2026-10-26"
-commit = "766e22542bd300a802a35955b7a6e535ca33f1a4"
+verified_at = "2026-10-27"
+commit = ""
 
 [[repo]]
 url = "https://github.com/fmtlib/fmt"
@@ -387,28 +387,28 @@ language = "C++"
 stars = 25896
 pushed_at = "2026-10-25T16:49:29Z"
 default_branch = "main"
-verified_at = "2026-10-26"
-commit = "f87a75e15262614ce8aa0e6a0664df9d0823fb92"
+verified_at = "2026-10-27"
+commit = ""
 
 [[repo]]
 url = "https://github.com/nlohmann/json"
 license = "MIT"
 language = "C++"
-stars = 50805
-pushed_at = "2026-10-26T16:17:04Z"
+stars = 50807
+pushed_at = "2026-10-26T21:24:38Z"
 default_branch = "develop"
-verified_at = "2026-10-26"
-commit = "81d66291c5569a5ebc92f6e163e44b22f1f97499"
+verified_at = "2026-10-27"
+commit = ""
 
 [[repo]]
 url = "https://github.com/ggml-org/llama.cpp"
 license = "MIT"
 language = "C++"
-stars = 132430
-pushed_at = "2026-10-26T16:58:24Z"
+stars = 132460
+pushed_at = "2026-10-26T23:57:03Z"
 default_branch = "master"
-verified_at = "2026-10-26"
-commit = "caa8191df159f764fb0160e3d2fc6be008948aee"
+verified_at = "2026-10-27"
+commit = ""
 
 [[repo]]
 url = "https://github.com/sqlfluff/sqlfluff"
@@ -417,5 +417,1405 @@ language = "Python"
 stars = 9994
 pushed_at = "2026-10-26T13:26:29Z"
 default_branch = "main"
-verified_at = "2026-10-26"
-commit = "692629bba783560619e0c041817efbd1d62af809"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/Kludex/starlette"
+license = "BSD-3-Clause"
+language = "Python"
+stars = 12686
+pushed_at = "2026-10-24T17:17:21Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/Kludex/uvicorn"
+license = "BSD-3-Clause"
+language = "Python"
+stars = 11042
+pushed_at = "2026-10-25T13:37:00Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/fastapi/sqlmodel"
+license = "MIT"
+language = "Python"
+stars = 18498
+pushed_at = "2026-10-15T15:47:18Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/pallets/werkzeug"
+license = "BSD-3-Clause"
+language = "Python"
+stars = 6880
+pushed_at = "2026-10-26T03:13:52Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/pallets/quart"
+license = "MIT"
+language = "Python"
+stars = 3678
+pushed_at = "2026-09-12T09:07:36Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/django/channels"
+license = "BSD-3-Clause"
+language = "Python"
+stars = 6366
+pushed_at = "2026-08-06T05:09:41Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/django-commons/django-debug-toolbar"
+license = "BSD-3-Clause"
+language = "Python"
+stars = 8379
+pushed_at = "2026-10-26T23:39:12Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/aio-libs/aiohttp"
+license = "Apache-2.0"
+language = "Python"
+stars = 16594
+pushed_at = "2026-10-26T23:03:52Z"
+default_branch = "master"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/litestar-org/litestar"
+license = "MIT"
+language = "Python"
+stars = 8532
+pushed_at = "2026-10-26T15:30:00Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/pandas-dev/pandas"
+license = "BSD-3-Clause"
+language = "Python"
+stars = 50305
+pushed_at = "2026-10-26T22:41:18Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/scikit-learn/scikit-learn"
+license = "BSD-3-Clause"
+language = "Python"
+stars = 67938
+pushed_at = "2026-10-26T14:13:29Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/mwaskom/seaborn"
+license = "BSD-3-Clause"
+language = "Python"
+stars = 14087
+pushed_at = "2026-10-08T01:29:20Z"
+default_branch = "master"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/vega/altair"
+license = "BSD-3-Clause"
+language = "Python"
+stars = 10503
+pushed_at = "2026-10-26T00:52:13Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/pydata/xarray"
+license = "Apache-2.0"
+language = "Python"
+stars = 4217
+pushed_at = "2026-10-26T21:23:32Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/dask/dask"
+license = "BSD-3-Clause"
+language = "Python"
+stars = 13939
+pushed_at = "2026-09-29T10:11:03Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/statsmodels/statsmodels"
+license = "BSD-3-Clause"
+language = "Python"
+stars = 11717
+pushed_at = "2026-10-26T23:51:59Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/unionai-oss/pandera"
+license = "MIT"
+language = "Python"
+stars = 4499
+pushed_at = "2026-10-26T16:10:06Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/eslint/eslint"
+license = "MIT"
+language = "JavaScript"
+stars = 27603
+pushed_at = "2026-10-26T20:08:25Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/webpack/webpack"
+license = "MIT"
+language = "JavaScript"
+stars = 65971
+pushed_at = "2026-10-26T20:18:52Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/axios/axios"
+license = "MIT"
+language = "JavaScript"
+stars = 109309
+pushed_at = "2026-10-26T14:49:25Z"
+default_branch = "v1.x"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/preactjs/preact"
+license = "MIT"
+language = "JavaScript"
+stars = 38958
+pushed_at = "2026-10-25T09:37:46Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/sveltejs/svelte"
+license = "MIT"
+language = "JavaScript"
+stars = 88489
+pushed_at = "2026-10-26T20:16:25Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/nodejs/undici"
+license = "MIT"
+language = "JavaScript"
+stars = 7724
+pushed_at = "2026-10-27T00:04:08Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/pinojs/pino"
+license = "MIT"
+language = "JavaScript"
+stars = 18266
+pushed_at = "2026-10-06T15:34:15Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/Leaflet/Leaflet"
+license = "BSD-2-Clause"
+language = "JavaScript"
+stars = 45784
+pushed_at = "2026-10-26T21:22:37Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/vuejs/core"
+license = "MIT"
+language = "TypeScript"
+stars = 54905
+pushed_at = "2026-10-27T00:10:08Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/remix-run/react-router"
+license = "MIT"
+language = "TypeScript"
+stars = 56628
+pushed_at = "2026-10-26T21:23:47Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/reduxjs/redux-toolkit"
+license = "MIT"
+language = "TypeScript"
+stars = 11232
+pushed_at = "2026-10-06T22:42:40Z"
+default_branch = "master"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/pmndrs/zustand"
+license = "MIT"
+language = "TypeScript"
+stars = 58872
+pushed_at = "2026-10-22T04:23:23Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/react-hook-form/react-hook-form"
+license = "MIT"
+language = "TypeScript"
+stars = 44882
+pushed_at = "2026-10-26T20:51:56Z"
+default_branch = "master"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/kysely-org/kysely"
+license = "MIT"
+language = "TypeScript"
+stars = 14306
+pushed_at = "2026-10-26T07:44:59Z"
+default_branch = "master"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/sindresorhus/ky"
+license = "MIT"
+language = "TypeScript"
+stars = 17139
+pushed_at = "2026-10-09T06:29:49Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/typeorm/typeorm"
+license = "MIT"
+language = "TypeScript"
+stars = 36663
+pushed_at = "2026-10-25T18:37:08Z"
+default_branch = "master"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/google/gson"
+license = "Apache-2.0"
+language = "Java"
+stars = 24235
+pushed_at = "2026-10-24T12:10:16Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/FasterXML/jackson-databind"
+license = "Apache-2.0"
+language = "Java"
+stars = 3756
+pushed_at = "2026-10-25T03:04:41Z"
+default_branch = "3.x"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/mockito/mockito"
+license = "MIT"
+language = "Java"
+stars = 15453
+pushed_at = "2026-10-24T13:36:18Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/apache/commons-lang"
+license = "Apache-2.0"
+language = "Java"
+stars = 3015
+pushed_at = "2026-10-26T15:03:11Z"
+default_branch = "master"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/netty/netty"
+license = "Apache-2.0"
+language = "Java"
+stars = 35065
+pushed_at = "2026-10-26T23:59:02Z"
+default_branch = "4.2"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/resilience4j/resilience4j"
+license = "Apache-2.0"
+language = "Java"
+stars = 10796
+pushed_at = "2026-10-23T16:42:48Z"
+default_branch = "master"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/jhy/jsoup"
+license = "MIT"
+language = "Java"
+stars = 11415
+pushed_at = "2026-10-23T04:14:23Z"
+default_branch = "master"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/assertj/assertj"
+license = "Apache-2.0"
+language = "Java"
+stars = 2853
+pushed_at = "2026-10-26T21:43:05Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/Kotlin/kotlinx.coroutines"
+license = "Apache-2.0"
+language = "Kotlin"
+stars = 13823
+pushed_at = "2026-10-26T20:02:39Z"
+default_branch = "master"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/Kotlin/kotlinx.serialization"
+license = "Apache-2.0"
+language = "Kotlin"
+stars = 5949
+pushed_at = "2026-10-23T21:10:06Z"
+default_branch = "master"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/Kotlin/kotlinx-datetime"
+license = "Apache-2.0"
+language = "Kotlin"
+stars = 2823
+pushed_at = "2026-10-26T08:37:21Z"
+default_branch = "master"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/ktorio/ktor"
+license = "Apache-2.0"
+language = "Kotlin"
+stars = 14554
+pushed_at = "2026-10-26T15:54:00Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/square/moshi"
+license = "Apache-2.0"
+language = "Kotlin"
+stars = 10166
+pushed_at = "2026-10-20T09:05:34Z"
+default_branch = "master"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/InsertKoinIO/koin"
+license = "Apache-2.0"
+language = "Kotlin"
+stars = 10023
+pushed_at = "2026-10-22T09:09:21Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/JetBrains/Exposed"
+license = "Apache-2.0"
+language = "Kotlin"
+stars = 9301
+pushed_at = "2026-10-26T23:56:33Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/coil-kt/coil"
+license = "Apache-2.0"
+language = "Kotlin"
+stars = 11951
+pushed_at = "2026-10-25T01:53:41Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/JamesNK/Newtonsoft.Json"
+license = "MIT"
+language = "C#"
+stars = 11314
+pushed_at = "2026-09-21T09:58:07Z"
+default_branch = "master"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/serilog/serilog"
+license = "Apache-2.0"
+language = "C#"
+stars = 8055
+pushed_at = "2026-10-23T22:33:20Z"
+default_branch = "dev"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/App-vNext/Polly"
+license = "BSD-3-Clause"
+language = "C#"
+stars = 14257
+pushed_at = "2026-10-26T16:55:11Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/FluentValidation/FluentValidation"
+license = "Apache-2.0"
+language = "C#"
+stars = 9769
+pushed_at = "2026-10-23T15:21:50Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/spectreconsole/spectre.console"
+license = "MIT"
+language = "C#"
+stars = 11677
+pushed_at = "2026-10-26T10:51:23Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/dotnet/command-line-api"
+license = "MIT"
+language = "C#"
+stars = 3679
+pushed_at = "2026-10-26T02:07:54Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/autofac/Autofac"
+license = "MIT"
+language = "C#"
+stars = 4660
+pushed_at = "2026-09-18T16:02:03Z"
+default_branch = "develop"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/dotnet/efcore"
+license = "MIT"
+language = "C#"
+stars = 14811
+pushed_at = "2026-10-26T23:49:20Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/valkey-io/valkey"
+license = "BSD-3-Clause"
+language = "C"
+stars = 27527
+pushed_at = "2026-10-27T00:04:11Z"
+default_branch = "unstable"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/libuv/libuv"
+license = "MIT"
+language = "C"
+stars = 27285
+pushed_at = "2026-10-26T11:29:34Z"
+default_branch = "v1.x"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/nginx/nginx"
+license = "BSD-2-Clause"
+language = "C"
+stars = 31978
+pushed_at = "2026-10-23T14:54:14Z"
+default_branch = "master"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/tmux/tmux"
+license = "ISC"
+language = "C"
+stars = 50014
+pushed_at = "2026-10-26T17:43:16Z"
+default_branch = "master"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/DaveGamble/cJSON"
+license = "MIT"
+language = "C"
+stars = 13053
+pushed_at = "2026-09-16T01:55:35Z"
+default_branch = "master"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/memcached/memcached"
+license = "BSD-3-Clause"
+language = "C"
+stars = 14300
+pushed_at = "2026-09-11T03:07:33Z"
+default_branch = "master"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/FreeRTOS/FreeRTOS-Kernel"
+license = "MIT"
+language = "C"
+stars = 4611
+pushed_at = "2026-10-16T17:03:47Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/h2o/h2o"
+license = "MIT"
+language = "C"
+stars = 11558
+pushed_at = "2026-10-24T22:36:20Z"
+default_branch = "master"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/google/googletest"
+license = "BSD-3-Clause"
+language = "C++"
+stars = 39665
+pushed_at = "2026-10-21T21:01:17Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/abseil/abseil-cpp"
+license = "Apache-2.0"
+language = "C++"
+stars = 18170
+pushed_at = "2026-10-26T22:44:48Z"
+default_branch = "master"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/ocornut/imgui"
+license = "MIT"
+language = "C++"
+stars = 76835
+pushed_at = "2026-10-26T12:59:47Z"
+default_branch = "master"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/google/benchmark"
+license = "Apache-2.0"
+language = "C++"
+stars = 10482
+pushed_at = "2026-10-26T20:05:41Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/simdjson/simdjson"
+license = "Apache-2.0"
+language = "C++"
+stars = 24465
+pushed_at = "2026-10-26T23:08:37Z"
+default_branch = "master"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/yhirose/cpp-httplib"
+license = "MIT"
+language = "C++"
+stars = 16942
+pushed_at = "2026-10-26T02:56:32Z"
+default_branch = "master"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/skypjack/entt"
+license = "MIT"
+language = "C++"
+stars = 13224
+pushed_at = "2026-10-26T11:19:16Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/duckdb/duckdb"
+license = "MIT"
+language = "C++"
+stars = 42598
+pushed_at = "2026-10-26T19:48:20Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/go-chi/chi"
+license = "MIT"
+language = "Go"
+stars = 23005
+pushed_at = "2026-10-18T13:50:22Z"
+default_branch = "master"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/labstack/echo"
+license = "MIT"
+language = "Go"
+stars = 32780
+pushed_at = "2026-10-23T01:54:51Z"
+default_branch = "master"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/stretchr/testify"
+license = "MIT"
+language = "Go"
+stars = 26234
+pushed_at = "2026-10-19T11:52:30Z"
+default_branch = "master"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/uber-go/zap"
+license = "MIT"
+language = "Go"
+stars = 24682
+pushed_at = "2026-09-16T19:17:34Z"
+default_branch = "master"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/charmbracelet/bubbletea"
+license = "MIT"
+language = "Go"
+stars = 45521
+pushed_at = "2026-10-26T13:59:19Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/go-gorm/gorm"
+license = "MIT"
+language = "Go"
+stars = 39986
+pushed_at = "2026-10-24T07:00:16Z"
+default_branch = "master"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/serde-rs/serde"
+license = "Apache-2.0"
+language = "Rust"
+stars = 10918
+pushed_at = "2026-10-16T03:31:38Z"
+default_branch = "master"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/tokio-rs/axum"
+license = "MIT"
+language = "Rust"
+stars = 27623
+pushed_at = "2026-10-20T02:23:42Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/hyperium/hyper"
+license = "MIT"
+language = "Rust"
+stars = 16379
+pushed_at = "2026-10-13T17:51:07Z"
+default_branch = "master"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/seanmonstar/reqwest"
+license = "Apache-2.0"
+language = "Rust"
+stars = 11889
+pushed_at = "2026-10-19T21:47:54Z"
+default_branch = "master"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/tokio-rs/tracing"
+license = "MIT"
+language = "Rust"
+stars = 6941
+pushed_at = "2026-10-09T17:40:26Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/astral-sh/ruff"
+license = "MIT"
+language = "Rust"
+stars = 50317
+pushed_at = "2026-10-27T00:14:30Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/laravel/framework"
+license = "MIT"
+language = "PHP"
+stars = 34983
+pushed_at = "2026-10-26T14:23:42Z"
+default_branch = "13.x"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/symfony/symfony"
+license = "MIT"
+language = "PHP"
+stars = 31209
+pushed_at = "2026-10-26T22:06:55Z"
+default_branch = "8.2"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/guzzle/guzzle"
+license = "MIT"
+language = "PHP"
+stars = 23445
+pushed_at = "2026-10-25T21:37:36Z"
+default_branch = "8.3"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/composer/composer"
+license = "MIT"
+language = "PHP"
+stars = 29565
+pushed_at = "2026-10-26T14:37:47Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/Seldaek/monolog"
+license = "MIT"
+language = "PHP"
+stars = 21403
+pushed_at = "2026-10-05T21:03:46Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/doctrine/orm"
+license = "MIT"
+language = "PHP"
+stars = 10168
+pushed_at = "2026-10-26T18:17:08Z"
+default_branch = "3.7.x"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/nikic/PHP-Parser"
+license = "BSD-3-Clause"
+language = "PHP"
+stars = 17461
+pushed_at = "2026-10-05T07:07:23Z"
+default_branch = "master"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/briannesbitt/Carbon"
+license = "MIT"
+language = "PHP"
+stars = 16589
+pushed_at = "2026-10-25T16:56:47Z"
+default_branch = "master"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/rails/rails"
+license = "MIT"
+language = "Ruby"
+stars = 58857
+pushed_at = "2026-10-26T21:43:00Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/sinatra/sinatra"
+license = "MIT"
+language = "Ruby"
+stars = 12457
+pushed_at = "2026-07-20T09:59:21Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/heartcombo/devise"
+license = "MIT"
+language = "Ruby"
+stars = 24356
+pushed_at = "2026-10-06T12:03:09Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/rubocop/rubocop"
+license = "MIT"
+language = "Ruby"
+stars = 12919
+pushed_at = "2026-10-26T21:37:58Z"
+default_branch = "master"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/puma/puma"
+license = "BSD-3-Clause"
+language = "Ruby"
+stars = 7921
+pushed_at = "2026-10-25T02:54:20Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/Shopify/liquid"
+license = "MIT"
+language = "Ruby"
+stars = 11911
+pushed_at = "2026-09-24T14:10:32Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/ruby-grape/grape"
+license = "MIT"
+language = "Ruby"
+stars = 10013
+pushed_at = "2026-10-25T19:10:57Z"
+default_branch = "master"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/thoughtbot/factory_bot"
+license = "MIT"
+language = "Ruby"
+stars = 8166
+pushed_at = "2026-10-13T14:54:54Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/Alamofire/Alamofire"
+license = "MIT"
+language = "Swift"
+stars = 42395
+pushed_at = "2026-10-10T07:58:42Z"
+default_branch = "master"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/apple/swift-argument-parser"
+license = "Apache-2.0"
+language = "Swift"
+stars = 3798
+pushed_at = "2026-10-24T16:11:36Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/apple/swift-nio"
+license = "Apache-2.0"
+language = "Swift"
+stars = 8541
+pushed_at = "2026-10-19T12:23:20Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/vapor/vapor"
+license = "MIT"
+language = "Swift"
+stars = 26242
+pushed_at = "2026-10-26T18:32:37Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/pointfreeco/swift-composable-architecture"
+license = "MIT"
+language = "Swift"
+stars = 14991
+pushed_at = "2026-10-06T22:13:50Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/onevcat/Kingfisher"
+license = "MIT"
+language = "Swift"
+stars = 24405
+pushed_at = "2026-10-26T14:34:36Z"
+default_branch = "master"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/apple/swift-collections"
+license = "Apache-2.0"
+language = "Swift"
+stars = 4526
+pushed_at = "2026-10-26T19:40:35Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/swiftlang/swift-format"
+license = "Apache-2.0"
+language = "Swift"
+stars = 2961
+pushed_at = "2026-10-26T20:14:24Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/simolus3/drift"
+license = "MIT"
+language = "Dart"
+stars = 3297
+pushed_at = "2026-10-26T22:47:25Z"
+default_branch = "develop"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/flame-engine/flame"
+license = "MIT"
+language = "Dart"
+stars = 10802
+pushed_at = "2026-10-26T16:30:03Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/google/json_serializable.dart"
+license = "BSD-3-Clause"
+language = "Dart"
+stars = 1619
+pushed_at = "2026-10-20T19:44:35Z"
+default_branch = "master"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/dart-lang/shelf"
+license = "BSD-3-Clause"
+language = "Dart"
+stars = 1012
+pushed_at = "2026-10-23T20:18:58Z"
+default_branch = "master"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/dart-lang/http"
+license = "BSD-3-Clause"
+language = "Dart"
+stars = 1115
+pushed_at = "2026-10-26T22:17:28Z"
+default_branch = "master"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/fluttercommunity/plus_plugins"
+license = "BSD-3-Clause"
+language = "Dart"
+stars = 1877
+pushed_at = "2026-10-14T06:07:51Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/localsend/localsend"
+license = "Apache-2.0"
+language = "Dart"
+stars = 95788
+pushed_at = "2026-10-25T12:11:01Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/typelevel/cats-effect"
+license = "Apache-2.0"
+language = "Scala"
+stars = 2249
+pushed_at = "2026-10-17T20:16:26Z"
+default_branch = "series/3.x"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/http4s/http4s"
+license = "Apache-2.0"
+language = "Scala"
+stars = 2628
+pushed_at = "2026-10-26T21:55:53Z"
+default_branch = "series/0.23"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/circe/circe"
+license = "Apache-2.0"
+language = "Scala"
+stars = 2541
+pushed_at = "2026-10-26T14:13:40Z"
+default_branch = "series/0.14.x"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/scalameta/scalafmt"
+license = "Apache-2.0"
+language = "Scala"
+stars = 1491
+pushed_at = "2026-10-15T01:57:19Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/playframework/playframework"
+license = "Apache-2.0"
+language = "Scala"
+stars = 12622
+pushed_at = "2026-10-26T21:23:30Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/apache/pekko"
+license = "Apache-2.0"
+language = "Scala"
+stars = 1655
+pushed_at = "2026-10-26T16:32:23Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/rstudio/renv"
+license = "MIT"
+language = "R"
+stars = 1165
+pushed_at = "2026-10-23T17:10:13Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/rstudio/reticulate"
+license = "Apache-2.0"
+language = "R"
+stars = 1765
+pushed_at = "2026-10-16T14:11:28Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/rstudio/tensorflow"
+license = "Apache-2.0"
+language = "R"
+stars = 1340
+pushed_at = "2026-05-08T15:49:04Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/sparklyr/sparklyr"
+license = "Apache-2.0"
+language = "R"
+stars = 972
+pushed_at = "2026-10-06T13:51:30Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/pharmaverse/admiral"
+license = "Apache-2.0"
+language = "R"
+stars = 324
+pushed_at = "2026-10-26T23:05:21Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/nvm-sh/nvm"
+license = "MIT"
+language = "Shell"
+stars = 95672
+pushed_at = "2026-10-26T15:39:06Z"
+default_branch = "master"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/ohmyzsh/ohmyzsh"
+license = "MIT"
+language = "Shell"
+stars = 190180
+pushed_at = "2026-10-25T14:39:33Z"
+default_branch = "master"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/bats-core/bats-core"
+license = "MIT"
+language = "Shell"
+stars = 6332
+pushed_at = "2026-10-20T12:07:34Z"
+default_branch = "master"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/pyenv/pyenv"
+license = "MIT"
+language = "Shell"
+stars = 45171
+pushed_at = "2026-10-26T19:57:00Z"
+default_branch = "master"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/ChrisTitusTech/winutil"
+license = "MIT"
+language = "PowerShell"
+stars = 65082
+pushed_at = "2026-10-26T08:43:24Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/nightroman/Invoke-Build"
+license = "Apache-2.0"
+language = "PowerShell"
+stars = 725
+pushed_at = "2026-01-28T12:52:07Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/dataplat/dbatools"
+license = "MIT"
+language = "PowerShell"
+stars = 2855
+pushed_at = "2026-10-26T12:05:19Z"
+default_branch = "development"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/dbt-labs/dbt-utils"
+license = "Apache-2.0"
+language = "Makefile"
+stars = 1829
+pushed_at = "2026-10-01T15:01:25Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/dbt-labs/dbt-codegen"
+license = "Apache-2.0"
+language = "Makefile"
+stars = 677
+pushed_at = "2026-10-01T14:13:36Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/dbt-labs/dbt-audit-helper"
+license = "Apache-2.0"
+language = ""
+stars = 425
+pushed_at = "2026-05-19T12:18:10Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/dbt-labs/dbt-project-evaluator"
+license = "Apache-2.0"
+language = "Python"
+stars = 583
+pushed_at = "2026-10-26T18:13:33Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/metaplane/dbt-expectations"
+license = "Apache-2.0"
+language = "Shell"
+stars = 166
+pushed_at = "2026-05-17T17:00:00Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
+
+[[repo]]
+url = "https://github.com/tobymao/sqlglot"
+license = "MIT"
+language = "Python"
+stars = 9725
+pushed_at = "2026-10-26T22:03:14Z"
+default_branch = "main"
+verified_at = "2026-10-27"
+commit = ""
