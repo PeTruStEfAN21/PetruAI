@@ -1,9 +1,10 @@
-# O noapte de antrenare: oprește orice llama-server (eliberează VRAM), rulează orchestratorul, loghează.
+﻿# O noapte de antrenare: oprește orice llama-server (eliberează VRAM), rulează orchestratorul, loghează.
 #   powershell -NoProfile -ExecutionPolicy Bypass -File training/run_night.ps1 -Run 2026-10-27 -Hours 7
 # Reluare după o întrerupere: aceeași comandă, același -Run (pașii terminați sunt săriți).
+# Fără -Run, numele rulării e data de azi (așa o pornește task-ul programat în fiecare noapte).
 # -Skip build,trajectories,... marchează pași ca făcuți fără să-i ruleze (util pentru teste).
 param(
-    [Parameter(Mandatory = $true)][string]$Run,
+    [string]$Run = (Get-Date -Format yyyy-MM-dd),  # the nightly scheduled task omits it: one run per date
     [double]$Hours = 7,
     [switch]$SkipTrajectories,
     [string[]]$Skip = @()
