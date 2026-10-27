@@ -69,3 +69,37 @@ def test_the_delegation_count_comes_from_the_result_when_it_has_one(tmp_path):
     out = tmp_path / "result.json"
     out.write_text(json.dumps({"passed": True, "delegations": 4, "messages": []}), encoding="utf-8")
     assert bench.read_result(out)["delegations"] == 4
+
+
+def test_a_finished_project_is_kept_without_its_build_output(tmp_path):
+    project = tmp_path / "project"
+    built = ("bin/Debug/a.dll", "obj/x.json", "node_modules/m/i.js", ".git/HEAD")
+    for name in ("src/Ledger.cs", "go.mod", *built):
+        (project / name).parent.mkdir(parents=True, exist_ok=True)
+        (project / name).write_text("x", encoding="utf-8")
+    dest = tmp_path / "kept"
+    bench.keep_project(project, dest)
+    kept = sorted(p.relative_to(dest).as_posix() for p in dest.rglob("*") if p.is_file())
+    assert kept == ["go.mod", "src/Ledger.cs"]
+
+
+class FakeRun:
+    """Stands in for petru.trajectory: writes one source file into the project and a result."""
+
+    def __init__(self, cmd, **_):
+        project = cmd[cmd.index("--project") + 1]
+        out = cmd[cmd.index("--out") + 1]
+        (bench.Path(project) / "main.go").parent.mkdir(parents=True, exist_ok=True)
+        (bench.Path(project) / "main.go").write_text("package main\n", encoding="utf-8")
+        bench.Path(out).write_text(json.dumps({"passed": True, "messages": []}), encoding="utf-8")
+
+    def wait(self, timeout):
+        return 0
+
+
+def test_a_run_keeps_the_project_it_built_next_to_its_transcript(tmp_path, monkeypatch):
+    monkeypatch.setattr(bench.subprocess, "Popen", FakeRun)
+    keep = tmp_path / "transcripts" / "go_a-team.json"
+    bench.run_mode(tmp_path / "task.toml", "team", "lead", "worker", keep)
+    kept = tmp_path / "transcripts" / "go_a-team" / "main.go"
+    assert kept.read_text(encoding="utf-8") == "package main\n"

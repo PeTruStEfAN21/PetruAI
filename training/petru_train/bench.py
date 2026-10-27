@@ -32,6 +32,8 @@ LEAD_PORT, WORKER_PORT = 8082, 8092
 LEAD_CTX, WORKER_CTX = 32768, 32768  # the quality and fast tiers' contexts
 ATTEMPT_TIMEOUT_S = 3600
 MODES = ("solo", "team")
+BUILD_OUTPUT = ("bin", "obj", "target", "build", "node_modules", ".gradle", ".dart_tool", "__pycache__")
+BUILD_OUTPUT += (".git",)  # the agent's own history; the sources are what is kept
 Runner = Callable[[Path, str], dict]
 
 
@@ -59,6 +61,12 @@ def read_result(out: Path, keep: Path | None = None) -> dict:
     }
 
 
+def keep_project(project: Path, dest: Path) -> None:
+    """The sources a run wrote, without what the build regenerates, for reading (and showing) later."""
+    if project.is_dir():
+        shutil.copytree(project, dest, ignore=shutil.ignore_patterns(*BUILD_OUTPUT), dirs_exist_ok=True)
+
+
 def run_mode(task: Path, mode: str, lead_url: str, worker_url: str, keep: Path | None = None) -> dict:
     """One attempt through petru.trajectory (agent env); past the timeout, its tree is killed."""
     with tempfile.TemporaryDirectory(prefix="petru-bench-", ignore_cleanup_errors=True) as tmp:
@@ -71,10 +79,15 @@ def run_mode(task: Path, mode: str, lead_url: str, worker_url: str, keep: Path |
         if mode == "team":
             cmd += ["--team", "--worker-tier", "fast", "--worker-base-url", worker_url]
         proc = subprocess.Popen(cmd, cwd=str(REPO_ROOT), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        timed_out = False
         try:
             proc.wait(timeout=ATTEMPT_TIMEOUT_S)
         except subprocess.TimeoutExpired:
             kill_tree(proc.pid)
+            timed_out = True
+        if keep is not None:
+            keep_project(Path(tmp) / "project", keep.with_suffix(""))
+        if timed_out:
             return {"passed": False, "seconds": float(ATTEMPT_TIMEOUT_S), "stop_reason": "timeout"}
         if not out.is_file():
             return {"passed": False, "seconds": None, "stop_reason": "runner error"}
