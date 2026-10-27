@@ -99,11 +99,15 @@ def write(path, content="x = 1\n"):
     return call("write_file", {"path": path, "content": content})
 
 
+def choose(mode, reason="r"):
+    return call("choose_mode", {"mode": mode, "reason": reason})
+
+
 def test_the_lead_may_start_with_one_file_then_must_delegate_before_creating_more(tmp_path):
     delegate = call("delegate", {"task": "Write c.py with z = 3.", "files": ["c.py"]})
     worker_steps = [write("c.py", "z = 3\n"), call("task_complete", {"summary": "c.py written"})]
     done = call("task_complete", {"summary": "done"})
-    lead_steps = [write("a.py"), write("b.py"), delegate, write("b.py"), done]
+    lead_steps = [choose("team"), write("a.py"), write("b.py"), delegate, write("b.py"), done]
     session, _ = lead_with(tmp_path, lead_steps, worker_steps)
     _, refused, allowed = replies(session, "write_file")
     assert "delegate" in refused and "delegate" not in allowed
@@ -111,17 +115,42 @@ def test_the_lead_may_start_with_one_file_then_must_delegate_before_creating_mor
 
 
 def test_the_lead_may_always_rewrite_a_file_that_exists(tmp_path):
-    lead_steps = [write("a.py"), write("a.py", "x = 2\n"), call("task_complete", {"summary": "done"})]
+    done = call("task_complete", {"summary": "done"})
+    lead_steps = [choose("team"), write("a.py"), write("a.py", "x = 2\n"), done]
     lead_with(tmp_path, lead_steps, [])
     assert (tmp_path / "a.py").read_text(encoding="utf-8") == "x = 2\n"
 
 
 def test_the_lead_may_write_test_files_of_its_own_at_any_time(tmp_path):
     names = ["a.py", "test_b.py", "b_test.go", "BTests.cs", "c.test.ts", "tests/helpers.py"]
-    session, _ = lead_with(tmp_path, [*map(write, names), call("task_complete", {"summary": "done"})], [])
+    steps = [choose("team"), *map(write, names), call("task_complete", {"summary": "done"})]
+    session, _ = lead_with(tmp_path, steps, [])
     assert not any("Team mode" in reply for reply in replies(session, "write_file"))
     assert all((tmp_path / name).is_file() for name in names)
 
 
 def test_a_name_that_only_contains_test_is_not_a_test_file():
     assert not team.is_test_file(Path("latest.go")) and not team.is_test_file(Path("contest/rules.py"))
+
+
+def test_the_lead_decides_whether_the_project_needs_the_team_before_it_creates_a_file(tmp_path):
+    done = call("task_complete", {"summary": "done"})
+    steps = [write("a.py"), choose("solo", "one small file"), write("a.py"), done]
+    session, _ = lead_with(tmp_path, steps, [])
+    refused, allowed = replies(session, "write_file")
+    assert "choose_mode" in refused and "choose_mode" not in allowed
+
+
+def test_a_lead_that_works_alone_may_create_every_file_itself(tmp_path):
+    done = call("task_complete", {"summary": "done"})
+    session, _ = lead_with(tmp_path, [choose("solo"), write("a.py"), write("b.py"), write("c.py"), done], [])
+    assert not any("Team mode" in reply for reply in replies(session, "write_file"))
+    assert all((tmp_path / name).is_file() for name in ("a.py", "b.py", "c.py"))
+
+
+def test_the_choice_is_final(tmp_path):
+    done = call("task_complete", {"summary": "done"})
+    lead_steps = [choose("team"), choose("solo"), write("a.py"), write("b.py"), done]
+    session, _ = lead_with(tmp_path, lead_steps, [])
+    assert "final" in replies(session, "choose_mode")[1]
+    assert not (tmp_path / "b.py").exists()  # still a team: b.py waits for a delegation

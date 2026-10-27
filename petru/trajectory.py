@@ -116,6 +116,7 @@ class TaskResult:
     check_output: str
     extra_turns: int
     delegations: int = 0  # team mode: delegate calls, counted by the tool itself
+    team_choice: str | None = None  # team mode: what the lead chose with choose_mode (team, solo, or none)
 
     def save(self, path: Path) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -265,6 +266,7 @@ def run_task(
         check_output=output,
         extra_turns=extra,
         delegations=getattr(registry.get("delegate"), "calls", 0),
+        team_choice=getattr(registry.get("choose_mode"), "mode", None),
     )
 
 

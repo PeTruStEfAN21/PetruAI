@@ -292,6 +292,7 @@ def test_a_task_can_run_as_a_team(tmp_path):
     lead = FakeProvider(
         [
             result(tool_calls=[call("plan", {"title": "Hello", "steps": ["delegate hello.py"]})]),
+            result(tool_calls=[call("choose_mode", {"mode": "team", "reason": "a simple piece"})]),
             result(tool_calls=[call("delegate", {"task": "print hello", "files": ["hello.py"]})]),
             result(tool_calls=[call("task_complete", {"summary": "done"})]),
             result(content="Done."),
@@ -308,3 +309,4 @@ def test_a_task_can_run_as_a_team(tmp_path):
     assert res.passed and team.LEAD_PROMPT in res.messages[0]["content"]
     assert "delegate" in {t["function"]["name"] for t in res.tools}
     assert res.delegations == 1  # counted by the tool: a summarised transcript may lose the call
+    assert res.team_choice == "team"

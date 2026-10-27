@@ -58,6 +58,7 @@ def read_result(out: Path, keep: Path | None = None) -> dict:
         "tokens": data.get("tokens"),
         "stop_reason": data.get("stop_reason"),
         "delegations": data.get("delegations", delegations(data.get("messages") or [])),
+        "team_choice": data.get("team_choice"),
     }
 
 

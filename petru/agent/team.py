@@ -21,8 +21,11 @@ from petru.tools.paths import OutsideProjectError, resolve_in_project
 from petru.tools.registry import ToolRegistry
 from petru.tui.port import ScriptedUI
 
-LEAD_PROMPT = """You lead a small team and you are expected to use it. Before you write code, read the \
-tests and split the work into pieces of one file each. Hand every piece with a clear interface and little \
+LEAD_PROMPT = """You lead a small team. Read the task and its tests first, then decide once, with \
+choose_mode, whether this project needs the team: choose team when the work splits into several files and \
+some of them are simple pieces, solo when it is small or its parts depend too tightly on each other to hand \
+out. Working alone, you write everything yourself. Working as a team, split the work into pieces of one \
+file each. Hand every piece with a clear interface and little \
 logic of its own (records and value types, exceptions, formatting and rendering, parsing helpers, simple \
 validation) to the assistant with delegate, one piece per call, naming the exact types, signatures and \
 messages it must provide and the files it should read. Keep only the hard parts yourself: the central \
@@ -163,6 +166,38 @@ class DelegateTool(Tool):
         )
 
 
+class ChooseModeTool(Tool):
+    name = "choose_mode"
+    description = (
+        "Decide once, after reading the task and its tests, whether this project needs the team: 'team' when "
+        "the work splits into several files and some are simple pieces the assistant can write from a clear "
+        "interface, 'solo' when it is small or its parts depend too tightly on each other to hand out."
+    )
+    parameters = {
+        "type": "object",
+        "properties": {
+            "mode": {"type": "string", "enum": ["team", "solo"]},
+            "reason": {"type": "string", "description": "One sentence: why this project needs it or not"},
+        },
+        "required": ["mode", "reason"],
+        "additionalProperties": False,
+    }
+
+    def __init__(self) -> None:
+        self.mode: str | None = None
+
+    def run(self, args: dict, ctx: ToolContext) -> ToolResult:
+        if self.mode is not None:
+            return ToolResult(f"You already chose {self.mode}; the choice is final.", True)
+        mode = str(args.get("mode", ""))
+        if mode not in ("team", "solo"):
+            return ToolResult("mode must be team or solo.", True)
+        self.mode = mode
+        if mode == "solo":
+            return ToolResult("Working alone: write every file yourself.")
+        return ToolResult("Working as a team: write one file, then delegate a piece before each new one.")
+
+
 TEST_NAME = re.compile(r"^test_|_test\.|\.test\.|\.spec\.", re.IGNORECASE)
 CAMEL_TEST_NAME = re.compile(r"Tests?\.\w+$")  # LedgerTests.cs, ParserTest.java (capital T only)
 TEST_DIRS = {"test", "tests", "__tests__", "spec"}
@@ -176,13 +211,13 @@ def is_test_file(relative: Path) -> bool:
 
 
 class LeadWrite(Tool):
-    """The lead's write_file: a prompt alone does not make a model delegate, so the lead may create a new
-    file only while it has created no more files than it has delegated pieces, plus one (it may start with
-    the hard part). Files that exist stay free to change: integration and fixes are the lead's job, and so
-    are its own tests, which it may always write."""
+    """The lead's write_file. Its first new file waits for choose_mode. Working as a team, a prompt alone
+    does not make a model delegate, so the lead may create a new file only while it has created no more files
+    than it has delegated pieces, plus one (it may start with the hard part). Files that exist stay free to
+    change: integration and fixes are the lead's job, and so are its own tests, which it may always write."""
 
-    def __init__(self, inner: Tool, delegate: DelegateTool) -> None:
-        self.inner, self.delegate, self.created = inner, delegate, 0
+    def __init__(self, inner: Tool, delegate: DelegateTool, choice: ChooseModeTool) -> None:
+        self.inner, self.delegate, self.choice, self.created = inner, delegate, choice, 0
         self.name, self.description, self.parameters = inner.name, inner.description, inner.parameters
         self.mutating, self.changes_files = inner.mutating, inner.changes_files
 
@@ -192,7 +227,13 @@ class LeadWrite(Tool):
             new = not target.exists() and not is_test_file(target.relative_to(ctx.project_root))
         except OutsideProjectError, ValueError:
             new = False  # the inner tool reports it
-        if new and self.created > self.delegate.calls:
+        if new and self.choice.mode is None:
+            return ToolResult(
+                "Team mode: before you create files, decide with choose_mode whether this project needs the "
+                "team (several files, some of them simple) or you work alone (small or tightly coupled).",
+                True,
+            )
+        if new and self.choice.mode == "team" and self.created > self.delegate.calls:
             return ToolResult(
                 f"Team mode: you created {self.created} new file(s) yourself and delegated "
                 f"{self.delegate.calls} piece(s). Hand this file, or another simple piece, to the assistant "
@@ -206,12 +247,13 @@ class LeadWrite(Tool):
 
 
 def lead_registry(registry: ToolRegistry, worker: Worker) -> None:
-    """Turn a full registry into the lead's: the delegate tool, and write_file under LeadWrite."""
-    delegate = DelegateTool(worker)
+    """Turn a full registry into the lead's: choose_mode, delegate, and write_file under LeadWrite."""
+    delegate, choice = DelegateTool(worker), ChooseModeTool()
+    registry.register(choice)
     registry.register(delegate)
     write = registry.get("write_file")
     if write is not None:
-        registry.register(LeadWrite(write, delegate))
+        registry.register(LeadWrite(write, delegate, choice))
 
 
 def _last_tool_output(session: Session, name: str) -> str:

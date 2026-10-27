@@ -61,7 +61,14 @@ def test_a_run_keeps_its_transcript_for_later_reading(tmp_path):
     out.write_text(json.dumps(data), encoding="utf-8")
     keep = tmp_path / "transcripts" / "py_a-team.json"
     row = bench.read_result(out, keep)
-    assert row == {"passed": True, "seconds": 3.0, "tokens": 9, "stop_reason": None, "delegations": 0}
+    assert row == {
+        "passed": True,
+        "seconds": 3.0,
+        "tokens": 9,
+        "stop_reason": None,
+        "delegations": 0,
+        "team_choice": None,
+    }
     assert json.loads(keep.read_text(encoding="utf-8")) == data
 
 
@@ -69,6 +76,12 @@ def test_the_delegation_count_comes_from_the_result_when_it_has_one(tmp_path):
     out = tmp_path / "result.json"
     out.write_text(json.dumps({"passed": True, "delegations": 4, "messages": []}), encoding="utf-8")
     assert bench.read_result(out)["delegations"] == 4
+
+
+def test_a_run_reports_whether_the_lead_chose_the_team(tmp_path):
+    out = tmp_path / "result.json"
+    out.write_text(json.dumps({"passed": True, "team_choice": "solo", "messages": []}), encoding="utf-8")
+    assert bench.read_result(out)["team_choice"] == "solo"
 
 
 def test_a_finished_project_is_kept_without_its_build_output(tmp_path):
