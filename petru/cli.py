@@ -33,7 +33,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--model",
         default=None,
-        help=f"model tier: {', '.join(TIERS)} or tuned-<specialist> (default from config)",
+        help=f"model tier: {', '.join(TIERS)}, tuned-<specialist> or auto (default from config)",
     )
     parser.add_argument("--yolo", action="store_true", help="never ask for confirmation; build immediately")
     parser.add_argument("--project", default=".", help="project directory (default: current directory)")
@@ -311,6 +311,12 @@ def main(argv: list[str] | None = None) -> int:
     repo_root = find_repo_root(Path(__file__))
     cfg = load_config(repo_root)
     tier = ns.model or cfg.default_tier
+    if tier == "auto":  # the promoted language specialist for this project, else the general fine-tune
+        from petru.router import choose_tier
+
+        fallback = "tuned" if "tuned" in cfg.tiers else cfg.default_tier
+        tier = choose_tier(project, cfg.tiers, fallback, ns.prompt or "")
+        err.print(f"Model tier (auto): {tier}", markup=False)
     if tier not in cfg.tiers:
         err.print(f"Unknown tier {tier!r}. Tiers: {', '.join(cfg.tiers)}", markup=False)
         return 2
