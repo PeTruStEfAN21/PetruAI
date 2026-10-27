@@ -227,3 +227,19 @@ def test_cli_verify_needs_no_model_server(tmp_path, monkeypatch):
     )
     data = json.loads(out.read_text(encoding="utf-8"))
     assert code == 1 and data["passed"] is False and data["name"] == "py_two" and "check_output" in data
+
+
+def test_setup_commands_run_once_the_seed_is_in_place(tmp_path):
+    from petru.trajectory import verify_task
+
+    spec = seeded_task(tmp_path)
+    spec.setup = ["python -c \"open('installed.txt', 'w').write('deps')\""]
+    spec.checks = ["python check_two.py", "python -c \"assert open('installed.txt').read() == 'deps'\""]
+    solution = tmp_path / "solution"
+    solution.mkdir()
+    (solution / "two.py").write_text("def two():\n    return 2\n", encoding="utf-8")
+    ok, output = verify_task(spec, tmp_path / "p", solution)
+    assert ok, output
+    spec.setup = ['python -c "raise SystemExit(3)"']
+    ok, output = verify_task(spec, tmp_path / "q", solution)
+    assert not ok and "setup failed" in output

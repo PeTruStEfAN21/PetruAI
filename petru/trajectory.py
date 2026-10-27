@@ -48,6 +48,7 @@ class TaskSpec:
     tier: str = "quality"
     seed: Path | None = None  # files copied into the project and committed before the agent starts
     protect: list[str] = field(default_factory=list)  # seed files put back before the final checks
+    setup: list[str] = field(default_factory=list)  # commands run once the seed is in place (dependencies)
 
 
 def load_task(path: Path) -> TaskSpec:
@@ -61,6 +62,7 @@ def load_task(path: Path) -> TaskSpec:
         tier=str(data.get("tier", "quality")),
         seed=path.parent / data["seed"] if data.get("seed") else None,
         protect=[str(p) for p in data.get("protect", [])],
+        setup=[str(c) for c in data.get("setup", [])],
     )
 
 
@@ -69,6 +71,17 @@ def plant_seed(seed: Path, project: Path) -> None:
     shutil.copytree(seed, project, dirs_exist_ok=True)
     _run_git(["add", "-A"], project)
     _run_git(["commit", "-q", "-m", "Exercise scaffold"], project)
+
+
+def run_setup(spec: TaskSpec, project: Path) -> tuple[bool, str]:
+    """The task's setup commands (installing dependencies) in order; stops at the first that fails."""
+    reports = []
+    for cmd in spec.setup:
+        result = run_shell(cmd, project, timeout_s=CHECK_TIMEOUT_S)
+        reports.append(f"[{'FAIL' if result.is_error else 'OK'}] {cmd}\n{result.output}")
+        if result.is_error:
+            return False, "setup failed:\n" + "\n\n".join(reports)
+    return True, "\n\n".join(reports)
 
 
 def restore_protected(spec: TaskSpec, project: Path) -> None:
@@ -155,6 +168,9 @@ def verify_task(spec: TaskSpec, project: Path, solution: Path | None) -> tuple[b
     ensure_repo(project)
     if spec.seed is not None:
         plant_seed(spec.seed, project)
+    ready, setup_output = run_setup(spec, project)
+    if not ready:
+        return False, setup_output
     if solution is not None:
         shutil.copytree(solution, project, dirs_exist_ok=True)
     return run_checks_for(project, spec.checks)
@@ -182,6 +198,7 @@ def run_task(
     ensure_repo(project)
     if spec.seed is not None:
         plant_seed(spec.seed, project)
+    run_setup(spec, project)  # a failed install shows up in the agent's own check runs
     ui = TaskUI(list(spec.answers))
     session = Session(project, tier=spec.tier)
     registry = default_registry(online)
