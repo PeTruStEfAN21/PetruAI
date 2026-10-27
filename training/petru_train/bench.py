@@ -15,6 +15,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import tomllib
 from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
@@ -75,6 +76,16 @@ def keep_project(project: Path, dest: Path) -> None:
         shutil.copytree(project, dest, ignore=shutil.ignore_patterns(*BUILD_OUTPUT), dirs_exist_ok=True)
 
 
+def attempt_timeout(task: Path) -> float:
+    """Seconds an attempt at `task` may take: ATTEMPT_TIMEOUT_S, or the task's own bench_minutes when it is
+    large enough to need more."""
+    try:
+        minutes = tomllib.loads(task.read_text(encoding="utf-8")).get("bench_minutes")
+    except (OSError, tomllib.TOMLDecodeError):
+        minutes = None
+    return float(minutes * 60) if isinstance(minutes, int | float) else float(ATTEMPT_TIMEOUT_S)
+
+
 def run_mode(
     task: Path,
     mode: str,
@@ -100,16 +111,16 @@ def _attempt(task: Path, mode: str, lead_url: str, worker_url: str, keep: Path |
         if mode == "team":
             cmd += ["--team", "--worker-tier", "fast", "--worker-base-url", worker_url]
         proc = subprocess.Popen(cmd, cwd=str(REPO_ROOT), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        timed_out = False
+        timed_out, limit = False, attempt_timeout(task)
         try:
-            proc.wait(timeout=ATTEMPT_TIMEOUT_S)
+            proc.wait(timeout=limit)
         except subprocess.TimeoutExpired:
             kill_tree(proc.pid)
             timed_out = True
         if keep is not None:
             keep_project(Path(tmp) / "project", keep.with_suffix(""))
         if timed_out:
-            return {"passed": False, "seconds": float(ATTEMPT_TIMEOUT_S), "stop_reason": "timeout"}
+            return {"passed": False, "seconds": limit, "stop_reason": "timeout"}
         if not out.is_file():
             return {"passed": False, "seconds": None, "stop_reason": "runner error"}
         return read_result(out, keep)

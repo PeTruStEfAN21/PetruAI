@@ -35,3 +35,4 @@ checks = []
 tier = "quality"
 eval = false
 split = "bench"
+bench_minutes = 180

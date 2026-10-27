@@ -129,3 +129,25 @@ def test_a_team_run_names_its_assistant_model(tmp_path, monkeypatch):
     row = bench.run_mode(tmp_path / "task.toml", "team", "lead", "worker", assistant="Qwen3.5-4B-petru.gguf")
     assert row["assistant"] == "Qwen3.5-4B-petru.gguf"
     assert "assistant" not in bench.run_mode(tmp_path / "task.toml", "solo", "lead", "worker", assistant="x")
+
+
+BIG_TASK = """name = "big"
+bench_minutes = 180
+"""
+
+
+class TimedRun(FakeRun):
+    waited: list = []
+
+    def wait(self, timeout):
+        TimedRun.waited.append(timeout)
+        return 0
+
+
+def test_a_large_task_can_give_its_attempts_more_time(tmp_path, monkeypatch):
+    monkeypatch.setattr(bench.subprocess, "Popen", TimedRun)
+    task = tmp_path / "task.toml"
+    task.write_text(BIG_TASK, encoding="utf-8")
+    bench.run_mode(task, "solo", "lead", "worker")
+    bench.run_mode(tmp_path / "small.toml", "solo", "lead", "worker")
+    assert TimedRun.waited == [180 * 60, bench.ATTEMPT_TIMEOUT_S]
