@@ -5,4 +5,5 @@ out_dir = "data"
 max_commits_per_repo = 300
 eval_frac = 0.05
 max_share = 0.4
-extra_jsonl = ["data/trajectories.jsonl"]   # verified trajectories; missing file = ignored
+extra_jsonl = ["data/trajectories.jsonl", "data/trajectories-exercism.jsonl"]  # verified; missing = ignored
+commit_ratio = 0.0          # mined commits per trajectory: 0 since 2026-10-27, they taught skipping tests

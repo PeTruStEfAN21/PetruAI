@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import sys
 import tomllib
@@ -32,6 +33,7 @@ class DatasetConfig:
     eval_frac: float = 0.05
     max_share: float = 0.4
     extra_jsonl: list[Path] = field(default_factory=list)
+    commit_ratio: float | None = None  # mined commits kept per verified trajectory; None = all of them
 
 
 def load_dataset_config(path: Path = DEFAULT_CONFIG, base_dir: Path | None = None) -> DatasetConfig:
@@ -50,6 +52,7 @@ def load_dataset_config(path: Path = DEFAULT_CONFIG, base_dir: Path | None = Non
         eval_frac=float(data.get("eval_frac", 0.05)),
         max_share=float(data.get("max_share", 0.4)),
         extra_jsonl=[base / p for p in data.get("extra_jsonl", [])],
+        commit_ratio=float(data["commit_ratio"]) if "commit_ratio" in data else None,
     )
 
 
@@ -94,6 +97,15 @@ def _mine(entry: RepoEntry, cfg: DatasetConfig, tools: list[dict]) -> list[Sampl
     return samples
 
 
+def cap_commits(commits: list[Sample], trajectories: int, ratio: float | None) -> list[Sample]:
+    """At most `ratio` mined commits per verified trajectory, a stable pseudo-random choice. A replayed commit
+    shows edits with no plan, no test run and no reasoning: in bulk it teaches the agent to skip all three."""
+    if ratio is None:
+        return commits
+    keep = int(trajectories * ratio)
+    return sorted(commits, key=lambda s: hashlib.sha1(s.id.encode("utf-8")).hexdigest())[:keep]
+
+
 def build(cfg: DatasetConfig) -> dict:
     tools = load_tools()
     entries = _read_catalog(cfg.local_repos, "local") + _read_catalog(cfg.github_repos, "unknown")
@@ -106,13 +118,13 @@ def build(cfg: DatasetConfig) -> dict:
         mined = _mine(entry, cfg, tools)
         for sample in mined:  # the cache may predate a tool change; train on the schemas the agent uses now
             sample.tools = tools
-        sources["commit"] += len(mined)
         samples.extend(mined)
+    extras: list[Sample] = []
     for extra in cfg.extra_jsonl:
         if extra.is_file():
-            loaded = read_jsonl(extra)
-            sources["extra"] += len(loaded)
-            samples.extend(loaded)
+            extras.extend(read_jsonl(extra))
+    samples = cap_commits(samples, len(extras), cfg.commit_ratio) + extras
+    sources["commit"], sources["extra"] = len(samples) - len(extras), len(extras)
     deduped = minhash_dedup(samples)
     balanced = balance_by_language(deduped, max_share=cfg.max_share)
     train, eval_ = split(balanced, eval_frac=cfg.eval_frac)

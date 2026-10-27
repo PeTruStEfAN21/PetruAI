@@ -110,3 +110,14 @@ def test_stats_have_expected_fields(tmp_path, field):
         local_repos=catalog(tmp_path / "l.toml", []), github_repos=None, out_dir=tmp_path / "o"
     )
     assert field in build(cfg)
+
+
+def test_commit_samples_are_capped_relative_to_the_verified_trajectories():
+    from petru_train.build import cap_commits
+    from petru_train.samples import Sample
+
+    commits = [Sample(f"c{i}", "commit", "r", "MIT", "x", "python", [], []) for i in range(10)]
+    assert cap_commits(commits, trajectories=4, ratio=0.0) == []
+    assert len(cap_commits(commits, trajectories=4, ratio=0.5)) == 2
+    assert cap_commits(commits, trajectories=4, ratio=None) == commits  # no cap configured
+    assert cap_commits(commits, trajectories=4, ratio=0.5) == cap_commits(commits, trajectories=4, ratio=0.5)
