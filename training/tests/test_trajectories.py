@@ -518,3 +518,38 @@ def test_parallel_attempts_share_the_server_and_keep_the_counts_right(tmp_path):
     stats = generate(cfg, runner=runner, tasks=tasks)
     assert peak[0] == 3 and all(v == 1 for v in stats["kept"].values()) and len(read_jsonl(cfg.out)) == 6
     assert all(v == 2 for v in stats["attempts"].values())
+
+
+def test_a_broken_result_frees_its_task_and_the_worker_goes_on(tmp_path):
+    tasks = seeded_tasks(tmp_path / "pool", ["python_ex_a", "python_ex_b"])
+    calls = []
+
+    def runner(task_path, cfg, attempt):
+        calls.append((task_path.parent.name, attempt))
+        if len(calls) == 1:
+            return {"name": "python_ex_a", "passed": True, "messages": "not a list"}  # breaks the conversion
+        return good(task_path.parent.name)
+
+    cfg = TrajConfig(tasks_dir=tmp_path, out=tmp_path / "t.jsonl", samples_per_task=1, attempts_per_task=2)
+    stats = generate(cfg, runner=runner, tasks=tasks)
+    assert stats["kept"] == {"python_ex_a": 1, "python_ex_b": 1} and ("python_ex_a", 2) in calls
+
+
+def test_an_attempt_counts_on_disk_only_once_it_has_finished(tmp_path):
+    import time
+
+    tasks = seeded_tasks(tmp_path / "pool", ["python_ex_a", "python_ex_b"])
+    state_file = tmp_path / "state.json"
+    on_disk = []
+
+    def runner(task_path, cfg, attempt):
+        if task_path.parent.name == "python_ex_a":
+            time.sleep(0.3)  # python_ex_b finishes and saves the state meanwhile
+            on_disk.append(json.loads(state_file.read_text(encoding="utf-8"))["attempts"]["python_ex_a"])
+        return good(task_path.parent.name)
+
+    cfg = TrajConfig(
+        tasks_dir=tmp_path, out=tmp_path / "t.jsonl", samples_per_task=1, state_file=state_file, parallel=2
+    )
+    generate(cfg, runner=runner, tasks=tasks)
+    assert on_disk == [0]  # a stop now would not cost python_ex_a the attempt it was running

@@ -374,14 +374,16 @@ def generate(
                     return
                 name = names[task]
                 in_flight.add(name)
-                state["attempts"][name] = attempt = int(state["attempts"][name]) + 1
+                attempt = int(state["attempts"][name]) + 1  # recorded once finished: a stop does not burn it
             try:
                 result = runner(task, cfg, attempt)
-            except Exception as exc:  # one broken attempt must not end the generation
+                sample = result_to_sample(result, name, cfg.max_tokens)
+            except Exception as exc:  # a broken attempt or result must not end the generation
                 result = {"name": name, "passed": False, "stop_reason": f"runner error: {exc}"}
-            sample = result_to_sample(result, name, cfg.max_tokens)
+                sample = None
             with lock:
                 in_flight.discard(name)
+                state["attempts"][name] = attempt
                 if sample is not None:
                     _append_jsonl(cfg.out, sample)
                     state["kept"][name] = int(state["kept"][name]) + 1
