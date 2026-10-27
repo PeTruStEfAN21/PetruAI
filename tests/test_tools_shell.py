@@ -159,3 +159,21 @@ def test_python_programs_can_print_romanian_text(tmp_path):
     (tmp_path / "salut.py").write_text('print("Bună ziua, țară și șosea")\n', encoding="utf-8")
     r = run_shell("python salut.py", tmp_path)
     assert not r.is_error and "Bună ziua, țară și șosea" in r.output
+
+
+SPIN_TEST = """def test_spin():
+    while True:
+        pass
+"""
+
+
+def test_a_hanging_python_test_shows_where_it_hung(tmp_path, monkeypatch):
+    import sys
+
+    import petru.tools.shell as shell_module
+
+    monkeypatch.setattr(shell_module, "HANG_DUMP_S", 2)
+    (tmp_path / "test_spin.py").write_text(SPIN_TEST, encoding="utf-8")
+    result = run_shell(f'& "{sys.executable}" -m pytest -q -p no:cacheprovider', tmp_path, timeout_s=8)
+    assert "timed out" in result.output  # the model learns its code hung, and where
+    assert 'test_spin.py", line' in result.output

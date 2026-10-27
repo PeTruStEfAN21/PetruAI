@@ -121,6 +121,9 @@ def _belongs_to(venv: Path, cwd: Path) -> bool:
         return False
 
 
+HANG_DUMP_S = 60  # a Python test still running after this long dumps where it is stuck
+
+
 def project_env(cwd: Path, environ: Mapping[str, str] | None = None) -> dict[str, str]:
     """The environment for the user's commands. Virtual environments of other projects are removed, above
     all the agent's own (`uv run` puts it first on PATH and sets VIRTUAL_ENV, which the Windows `python` alias
@@ -139,6 +142,10 @@ def project_env(cwd: Path, environ: Mapping[str, str] | None = None) -> dict[str
     env.setdefault(
         "PYTHONUTF8", "1"
     )  # piped output is cp1252 otherwise: printing "ț" would crash the program
+    # A hanging test otherwise ends in a bare timeout: the model re-runs it without knowing its code loops.
+    addopts = env.get("PYTEST_ADDOPTS", "")
+    if "faulthandler_timeout" not in addopts:
+        env["PYTEST_ADDOPTS"] = f"{addopts} -o faulthandler_timeout={HANG_DUMP_S}".strip()
     return env
 
 
