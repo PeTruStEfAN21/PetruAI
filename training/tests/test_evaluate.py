@@ -1,4 +1,5 @@
 import json
+import math
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
@@ -275,3 +276,30 @@ def test_eval_tasks_are_taken_in_turn_from_every_stack(tmp_path):
     picked = [p.stem for p in select_eval_tasks(tmp_path, 6)]
     assert picked == ["flutter_a", "flutter_b", "python_a", "python_b", "ts_a", "ts_b"]
     assert len(select_eval_tasks(tmp_path, 100)) == 8
+
+
+def test_an_explicit_task_list_is_measured_and_signed(tmp_path):
+    from petru_train.evaluate import tasks_signature
+
+    for name in ["python_a", "python_b", "ts_a"]:
+        (tmp_path / f"{name}.toml").write_text('prompt = "p"\n', encoding="utf-8")
+    chosen = [tmp_path / "python_a.toml", tmp_path / "python_b.toml"]
+    seen = []
+    rate, _ = task_pass(
+        "http://x/v1",
+        tmp_path,
+        16384,
+        tasks=chosen,
+        runner=lambda t, u, c: seen.append(t.stem) or {"passed": True},
+    )
+    assert seen == ["python_a", "python_b"] and rate == 1.0
+    requests = tmp_path / "r.json"
+    assert tasks_signature(tmp_path, requests, 6, tasks=chosen) != tasks_signature(tmp_path, requests, 6)
+    assert math.isnan(task_pass("http://x/v1", tmp_path, 16384, tasks=[], runner=lambda t, u, c: {})[0])
+
+
+def test_the_gate_judges_a_specialist_without_tasks_on_loss_and_tools():
+    nan = float("nan")
+    ok, why = gate(EvalResult(1.0, 0.9, nan, {}), EvalResult(0.9, 0.9, nan, {}))
+    assert ok, why
+    assert not gate(EvalResult(1.0, 0.9, 0.5, {}), EvalResult(0.9, 0.9, nan, {}))[0]

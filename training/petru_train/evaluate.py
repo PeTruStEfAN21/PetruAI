@@ -64,11 +64,14 @@ def select_eval_tasks(tasks_dir: Path, limit: int = TASK_LIMIT) -> list[Path]:
     return sorted(picked)
 
 
-def tasks_signature(tasks_dir: Path, requests_file: Path, limit: int) -> str:
-    """Hash of exactly what tool_validity and task_pass measure, so a stale baseline is noticed."""
-    digest = hashlib.sha1(f"limit={limit} harness={HARNESS_VERSION}".encode())
+def tasks_signature(tasks_dir: Path, requests_file: Path, limit: int, tasks: list[Path] | None = None) -> str:
+    """Hash of exactly what tool_validity and task_pass measure, so a stale baseline is noticed. `tasks`, when
+    given (a specialist's own tasks), replaces the balanced selection."""
+    chosen = select_eval_tasks(tasks_dir, limit) if tasks is None else tasks
+    head = f"limit={limit}" if tasks is None else f"tasks={len(chosen)}"
+    digest = hashlib.sha1(f"{head} harness={HARNESS_VERSION}".encode())
     digest.update(requests_file.read_bytes() if requests_file.is_file() else b"")
-    for task in select_eval_tasks(tasks_dir, limit):
+    for task in chosen:
         digest.update(task.name.encode("utf-8"))
         digest.update(task.read_bytes())
     return digest.hexdigest()[:16]
@@ -84,7 +87,8 @@ def gate(base: EvalResult, cand: EvalResult) -> tuple[bool, str]:
         reasons.append(f"loss regressed: {cand.loss:.4f} > {base.loss:.4f}")
     if cand.tool_validity < base.tool_validity - TOOL_TOLERANCE:
         reasons.append(f"tool validity regressed: {cand.tool_validity:.2f} < {base.tool_validity:.2f} - 0.05")
-    if cand.task_pass < base.task_pass:
+    no_tasks = math.isnan(base.task_pass) and math.isnan(cand.task_pass)  # a specialist without harness tasks
+    if not no_tasks and not cand.task_pass >= base.task_pass:
         reasons.append(f"task pass rate regressed: {cand.task_pass:.2f} < {base.task_pass:.2f}")
     return (not reasons, "; ".join(reasons) or "candidate passes the gate")
 
@@ -182,8 +186,10 @@ def task_pass(
     ctx_tokens: int,
     limit: int = TASK_LIMIT,
     runner: TaskRunner = run_task_cli,
+    tasks: list[Path] | None = None,
 ) -> tuple[float, list[dict]]:
-    tasks = select_eval_tasks(tasks_dir, limit)
+    """Pass rate on the balanced selection, or on `tasks` when given; NaN when there is no task at all."""
+    tasks = select_eval_tasks(tasks_dir, limit) if tasks is None else tasks
     details = []
     for task in tasks:
         result = runner(task, base_url, ctx_tokens)
@@ -195,7 +201,7 @@ def task_pass(
                 "stop_reason": result.get("stop_reason"),
             }
         )
-    rate = round(sum(d["passed"] for d in details) / len(details), 4) if details else 0.0
+    rate = round(sum(d["passed"] for d in details) / len(details), 4) if details else float("nan")
     return rate, details
 
 
@@ -301,6 +307,7 @@ def evaluate(
     ctx: int = 16384,
     limit: int = TASK_LIMIT,
     log: Path | None = None,
+    tasks: list[Path] | None = None,
 ) -> EvalResult:
     """Tool validity and task pass rate of a GGUF served by llama-server; the loss comes from training."""
     loss = float("nan")
@@ -310,11 +317,12 @@ def evaluate(
             raise RuntimeError(f"llama-server did not become healthy for {gguf}")
         base_url = f"http://127.0.0.1:{port}/v1"
         validity, validity_details = tool_validity(base_url, requests_file)
-        passed, task_details = task_pass(base_url, tasks_dir, ctx, limit)
+        passed, task_details = task_pass(base_url, tasks_dir, ctx, limit, tasks=tasks)
     finally:
         stop(proc)
     details = {"tool_validity": validity_details, "task_pass": task_details}
-    return EvalResult(loss, validity, passed, details, tasks_signature(tasks_dir, requests_file, limit))
+    signature = tasks_signature(tasks_dir, requests_file, limit, tasks=tasks)
+    return EvalResult(loss, validity, passed, details, signature)
 
 
 def main(argv: list[str] | None = None) -> int:
