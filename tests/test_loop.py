@@ -348,3 +348,13 @@ def test_design_stops_offering_ask_user_after_two_turned_away_questions(tmp_path
     assert agent.run_turn("make it") == "ok"
     assert "ask_user" in tool_names(fake.calls[2]) and "ask_user" not in tool_names(fake.calls[3])
     assert len(ui.questions) == 1 and agent.session.turned_away_questions == 0  # reset when the task closed
+
+
+def test_unparseable_arguments_tell_the_model_where_the_json_broke(tmp_path):
+    broken = ToolCall("c1", "shell", None, '{"command": "python -c "print(1)""}')
+    fake = FakeProvider([result(tool_calls=[broken]), result(content="ok")])
+    agent = make_agent(fake, ScriptedUI(), tmp_path)
+    agent.run_turn("x")
+    content = fake.calls[1]["messages"][-1]["content"]
+    assert "line 1 column 25" in content and 'python -c "print(1)' in content
+    assert "write_file" in content  # long code goes in a file instead

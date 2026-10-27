@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from petru.agent.context import build_system_prompt, compact_if_needed
@@ -41,6 +42,17 @@ def _recordable(call: ToolCall) -> str:
     if call.arguments is not None:
         return call.raw_arguments
     return "{}"
+
+
+def _json_problem(raw: str) -> str:
+    """Where the arguments stopped being JSON: the model never sees its broken call again (it is recorded as
+    {}), so without this it repeats the same mistake."""
+    try:
+        json.loads(raw)
+    except json.JSONDecodeError as exc:
+        near = raw[max(0, exc.pos - 20) : exc.pos + 20]
+        return f"{exc.msg} at line {exc.lineno} column {exc.colno}, near {near!r}"
+    return "it is not an object"
 
 
 class Agent:
@@ -117,7 +129,12 @@ class Agent:
         if args is None:
             args = repair_json(call.raw_arguments)
         if args is None:
-            return self._invalid(f"arguments of {call.name} are not a JSON object", allowed), True
+            problem = _json_problem(call.raw_arguments)
+            reason = (
+                f"arguments of {call.name} are not a JSON object ({problem}). Escape quotes, backslashes and "
+                "newlines inside strings; put long code in a file with write_file and run that file instead"
+            )
+            return self._invalid(reason, allowed), True
         args = sanitize_arguments(args)
         errors = validate_arguments(tool.parameters, args)
         if errors:
