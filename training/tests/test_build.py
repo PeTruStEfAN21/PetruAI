@@ -121,3 +121,15 @@ def test_commit_samples_are_capped_relative_to_the_verified_trajectories():
     assert len(cap_commits(commits, trajectories=4, ratio=0.5)) == 2
     assert cap_commits(commits, trajectories=4, ratio=None) == commits  # no cap configured
     assert cap_commits(commits, trajectories=4, ratio=0.5) == cap_commits(commits, trajectories=4, ratio=0.5)
+
+
+def test_no_commit_is_mined_when_none_would_be_kept(tmp_path, monkeypatch):
+    repos = [tiny_repo(tmp_path, "alpha", 3)]
+    cfg = DatasetConfig(
+        local_repos=catalog(tmp_path / "local.toml", repos), github_repos=None, out_dir=tmp_path / "out"
+    )
+    monkeypatch.setattr(build_module, "_mine", lambda *a: (_ for _ in ()).throw(AssertionError("mined")))
+    extra = tmp_path / "extra.jsonl"
+    write_jsonl(extra, [sample_with_content("t1", "trajectory content", "dart")])
+    cfg.extra_jsonl, cfg.commit_ratio = [extra], 0.0
+    assert build(cfg)["sources"] == {"commit": 0, "extra": 1}

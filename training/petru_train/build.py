@@ -111,7 +111,7 @@ def build(cfg: DatasetConfig) -> dict:
     entries = _read_catalog(cfg.local_repos, "local") + _read_catalog(cfg.github_repos, "unknown")
     samples: list[Sample] = []
     sources: Counter[str] = Counter()
-    for entry in entries:
+    for entry in entries if cfg.commit_ratio != 0 else []:  # ratio 0 keeps no commit: nothing to mine
         if not (entry.path / ".git").exists():
             print(f"skipping {entry.name}: no git repository at {entry.path}")
             continue
