@@ -35,6 +35,14 @@ VERIFY_TIMEOUT_S = 1800
 IDLE_PRIORITY_CLASS = 0x40  # Windows: validation compiles while training has the machine
 DOC_DIRS = {".meta", ".docs", ".approaches", ".articles"}
 GRADLE_FILES = {"build.gradle", "settings.gradle", "gradlew", "gradlew.bat", "gradle"}
+# JavaScript/TypeScript: what jest needs (linters and type-test runners stay out), installed per project.
+JS_TEST_DEPS = {
+    "jest", "babel-jest", "@jest/globals", "expect", "core-js", "typescript", "@types/node",
+    "@exercism/babel-preset-javascript", "@exercism/babel-preset-typescript",
+}  # fmt: skip
+JS_LEFTOVERS = ("yarn.lock", ".yarnrc.yml", "pnpm-lock.yaml", "test-runner.mjs", "eslint.config.mjs")
+NPM_INSTALL = "npm install --no-audit --no-fund --prefer-offline --loglevel=error"
+SETUP = {"javascript": [NPM_INSTALL], "typescript": [NPM_INSTALL], "dart": ["dart pub get --offline"]}
 
 
 @dataclass(frozen=True)
@@ -241,6 +249,17 @@ def _adapt_build(ex: Exercise, seed: Path) -> list[str]:
     if ex.track == "java":
         (seed / "pom.xml").write_text(POM.format(artifact=ex.slug), encoding="utf-8")
         return ["pom.xml"]
+    if ex.track in ("javascript", "typescript") and (seed / "package.json").is_file():
+        package_file = seed / "package.json"
+        package = json.loads(package_file.read_text(encoding="utf-8"))
+        package.pop("packageManager", None)  # corepack would download pnpm/yarn; npm runs jest offline
+        package["scripts"] = {"test": "jest"}
+        deps = package.get("devDependencies", {})
+        package["devDependencies"] = {name: version for name, version in deps.items() if name in JS_TEST_DEPS}
+        package_file.write_text(json.dumps(package, indent=2) + "\n", encoding="utf-8")
+        for leftover in JS_LEFTOVERS:
+            (seed / leftover).unlink(missing_ok=True)
+        return ["package.json"]
     if ex.track == "cpp" and (seed / "CMakeLists.txt").is_file():
         cmake = seed / "CMakeLists.txt"
         text = cmake.read_text(encoding="utf-8")
@@ -279,6 +298,7 @@ def write_task(ex: Exercise, out_root: Path, commit: str = "") -> Path:
         "tier": "quality",
         "seed": "seed",
         "protect": [*ex.test, *ex.editor, *build_files],
+        "setup": SETUP.get(ex.track, []),
         "split": "eval" if held_out(ex.track, ex.slug) else "train",
         "difficulty": ex.difficulty,
         "source": f"exercism/{ex.track}@{commit}" if commit else f"exercism/{ex.track}",

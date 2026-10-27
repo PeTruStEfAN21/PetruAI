@@ -207,3 +207,37 @@ def test_c_projects_get_a_cmake_build_that_registers_the_unity_tests(tmp_path):
     text = (seed / "CMakeLists.txt").read_text(encoding="utf-8")
     assert not (seed / "makefile").exists() and "add_test(" in text and "test-framework/unity.c" in text
     assert "UNITY_INCLUDE_DOUBLE" in text and "UNITY_SUPPORT_64" in text
+
+
+def test_js_and_ts_projects_run_jest_through_npm_after_an_install(tmp_path):
+    package = {
+        "scripts": {"test": "corepack pnpm jest", "lint": "corepack pnpm eslint ."},
+        "packageManager": "pnpm@9.15.2",
+        "devDependencies": {
+            "jest": "^30.2.0",
+            "eslint": "^9.28.0",
+            "babel-jest": "^30.3.0",
+            "typescript": "^5",
+        },
+    }
+    files = {
+        "package.json": json.dumps(package),
+        "yarn.lock": "",
+        ".yarnrc.yml": "",
+        "test-runner.mjs": "",
+        "bob.ts": "",
+        "bob.test.ts": "xit('a', () => {})\n",
+        ".meta/proof.ci.ts": "",
+    }
+    track = make_exercise(
+        tmp_path, "typescript", "bob", files, ["bob.ts"], ["bob.test.ts"], [".meta/proof.ci.ts"]
+    )
+    [ex] = exercism.load_exercises(track)
+    task_toml = exercism.write_task(ex, tmp_path / "tasks")
+    data = tomllib.loads(task_toml.read_text(encoding="utf-8"))
+    seed = task_toml.parent / "seed"
+    rewritten = json.loads((seed / "package.json").read_text(encoding="utf-8"))
+    assert rewritten["scripts"] == {"test": "jest"} and "packageManager" not in rewritten
+    assert set(rewritten["devDependencies"]) == {"jest", "babel-jest", "typescript"}
+    assert not any((seed / name).exists() for name in ("yarn.lock", ".yarnrc.yml", "test-runner.mjs"))
+    assert data["setup"][0].startswith("npm install") and "package.json" in data["protect"]
