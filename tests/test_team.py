@@ -160,10 +160,10 @@ def test_a_new_task_lets_the_lead_choose_again():
     registry = default_registry(False)
     team.lead_registry(registry, team.Worker(provider=lambda tier: None, ctx_tokens=8192))
     registry.get("choose_mode").mode, registry.get("write_file").created = "solo", 3
-    registry.get("delegate").calls = 2
+    registry.get("delegate").calls, registry.get("delegate").unavailable = 2, True
     team.start_task(registry)
     assert registry.get("choose_mode").mode is None and registry.get("write_file").created == 0
-    assert registry.get("delegate").calls == 0
+    assert registry.get("delegate").calls == 0 and not registry.get("delegate").unavailable
     team.start_task(default_registry(False))  # a registry without the team's tools is left alone
 
 
@@ -194,3 +194,27 @@ def test_each_piece_goes_to_the_assistant_for_its_language(tmp_path):
     )
     agent.run_turn("build it")
     assert asked == ["tuned-go", "fast"]
+
+
+def test_a_delegation_whose_assistant_cannot_start_does_not_count(tmp_path):
+    def provider(tier):
+        raise RuntimeError("no VRAM left for the assistant")
+
+    registry = default_registry(False)
+    team.lead_registry(registry, team.Worker(provider=provider, ctx_tokens=8192))
+    lead = FakeProvider(
+        [
+            result(tool_calls=[call("plan", {"title": "T", "steps": ["delegate"]})]),
+            result(tool_calls=[choose("team")]),
+            result(tool_calls=[write("a.py")]),
+            result(tool_calls=[call("delegate", {"task": "Write b.py.", "files": ["b.py"]})]),
+            result(tool_calls=[write("b.py")]),
+            result(content="Done."),
+        ]
+    )
+    session = Session(tmp_path, role=team.LEAD_PROMPT)
+    Agent(lead, registry, ScriptedUI(), session, tmp_path, 8192, False).run_turn("build it")
+    [failed] = replies(session, "delegate")
+    assert "could not start" in failed and "no VRAM" in failed
+    assert registry.get("delegate").calls == 0
+    assert (tmp_path / "b.py").is_file()  # without an assistant the lead finishes alone

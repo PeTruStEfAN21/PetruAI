@@ -140,17 +140,23 @@ class DelegateTool(Tool):
     def __init__(self, worker: Worker) -> None:
         self.worker = worker
         self.calls = 0
+        self.unavailable = False  # its server would not start: the lead finishes alone
 
     def run(self, args: dict, ctx: ToolContext) -> ToolResult:
         from petru.agent.loop import Agent
 
-        self.calls += 1
         files = [str(f) for f in args.get("files") or []]
         read = [str(f) for f in args.get("read") or []]
         tier = self.worker.tier_for(files) if self.worker.tier_for else self.worker.tier
+        try:
+            provider = self.worker.provider(tier)
+        except Exception as exc:  # e.g. its model server would not start; nothing was delegated
+            self.unavailable = True
+            return ToolResult(f"The assistant could not start ({exc}). Work alone: write it yourself.", True)
+        self.calls += 1
         session = Session(ctx.project_root, tier=tier, role=WORKER_PROMPT)
         agent = Agent(
-            self.worker.provider(tier),
+            provider,
             worker_registry(ctx.project_root, files),
             ScriptedUI(),
             session,
@@ -237,7 +243,8 @@ class LeadWrite(Tool):
                 "team (several files, some of them simple) or you work alone (small or tightly coupled).",
                 True,
             )
-        if new and self.choice.mode == "team" and self.created > self.delegate.calls:
+        team = self.choice.mode == "team" and not self.delegate.unavailable
+        if new and team and self.created > self.delegate.calls:
             return ToolResult(
                 f"Team mode: you created {self.created} new file(s) yourself and delegated "
                 f"{self.delegate.calls} piece(s). Hand this file, or another simple piece, to the assistant "
@@ -266,7 +273,7 @@ def start_task(registry: ToolRegistry) -> None:
     if isinstance(choice, ChooseModeTool):
         choice.mode = None
     if isinstance(delegate, DelegateTool):
-        delegate.calls = 0
+        delegate.calls, delegate.unavailable = 0, False
     if isinstance(write, LeadWrite):
         write.created = 0
 
