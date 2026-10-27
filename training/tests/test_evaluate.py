@@ -265,3 +265,13 @@ def test_tasks_signature_changes_with_the_harness_pass_rule(tmp_path, monkeypatc
     before = evaluate.tasks_signature(tmp_path, tmp_path / "none.json", 6)
     monkeypatch.setattr(evaluate, "HARNESS_VERSION", evaluate.HARNESS_VERSION + 1)
     assert evaluate.tasks_signature(tmp_path, tmp_path / "none.json", 6) != before
+
+
+def test_eval_tasks_are_taken_in_turn_from_every_stack(tmp_path):
+    from petru_train.evaluate import select_eval_tasks
+
+    for name in ["flutter_a", "flutter_b", "flutter_c", "python_a", "python_b", "ts_a", "ts_b", "ts_c"]:
+        (tmp_path / f"{name}.toml").write_text('prompt = "p"\n', encoding="utf-8")
+    picked = [p.stem for p in select_eval_tasks(tmp_path, 6)]
+    assert picked == ["flutter_a", "flutter_b", "python_a", "python_b", "ts_a", "ts_b"]
+    assert len(select_eval_tasks(tmp_path, 100)) == 8

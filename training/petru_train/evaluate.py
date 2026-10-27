@@ -21,7 +21,7 @@ TRAINING_DIR = Path(__file__).resolve().parents[1]
 REPO_ROOT = TRAINING_DIR.parent
 REQUESTS_FILE = TRAINING_DIR / "eval" / "tool_requests.json"
 TASKS_DIR = TRAINING_DIR / "tasks"
-TASK_LIMIT = 6  # the first tasks by name are the evaluated ones
+TASK_LIMIT = 6  # evaluated harness tasks, taken in turn from every stack
 HARNESS_VERSION = 2  # bump when the harness changes what counts as a pass
 # 2 (2026-10-27): no checks = fail, plus that night's agent fixes (git log --since 2026-10-27 -- petru)
 BASE_GGUF = REPO_ROOT / "infra" / "llama.cpp" / "models" / "Qwen3.5-4B.IQ4_XS.gguf"
@@ -50,11 +50,25 @@ class EvalResult:
         return cls(**json.loads(path.read_text(encoding="utf-8")))
 
 
+def select_eval_tasks(tasks_dir: Path, limit: int = TASK_LIMIT) -> list[Path]:
+    """`limit` harness tasks taken in turn from every stack (the name prefix: python_, ts_, flutter_...), so
+    each language counts the same; sorted by name."""
+    stacks: dict[str, list[Path]] = {}
+    for task in sorted(tasks_dir.glob("*.toml")):
+        stacks.setdefault(task.stem.split("_")[0], []).append(task)
+    picked: list[Path] = []
+    for round_ in range(max((len(group) for group in stacks.values()), default=0)):
+        for stack in sorted(stacks):
+            if round_ < len(stacks[stack]) and len(picked) < limit:
+                picked.append(stacks[stack][round_])
+    return sorted(picked)
+
+
 def tasks_signature(tasks_dir: Path, requests_file: Path, limit: int) -> str:
     """Hash of exactly what tool_validity and task_pass measure, so a stale baseline is noticed."""
     digest = hashlib.sha1(f"limit={limit} harness={HARNESS_VERSION}".encode())
     digest.update(requests_file.read_bytes() if requests_file.is_file() else b"")
-    for task in sorted(tasks_dir.glob("*.toml"))[:limit]:
+    for task in select_eval_tasks(tasks_dir, limit):
         digest.update(task.name.encode("utf-8"))
         digest.update(task.read_bytes())
     return digest.hexdigest()[:16]
@@ -169,7 +183,7 @@ def task_pass(
     limit: int = TASK_LIMIT,
     runner: TaskRunner = run_task_cli,
 ) -> tuple[float, list[dict]]:
-    tasks = sorted(tasks_dir.glob("*.toml"))[:limit]
+    tasks = select_eval_tasks(tasks_dir, limit)
     details = []
     for task in tasks:
         result = runner(task, base_url, ctx_tokens)
