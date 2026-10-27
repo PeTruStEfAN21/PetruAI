@@ -84,6 +84,8 @@ def load_config(repo_root: Path | None = None) -> Config:
     )
     if (cfg.models_dir / TUNED_FILE).is_file():  # a promoted fine-tune (training pipeline)
         cfg.tiers["tuned"] = Tier("tuned", TUNED_FILE, ctx=32768)
+    for gguf in sorted((cfg.models_dir / "specialists").glob("*.gguf")):  # promoted language specialists
+        cfg.tiers[f"tuned-{gguf.stem}"] = Tier(f"tuned-{gguf.stem}", f"specialists/{gguf.name}", ctx=32768)
     user = _user_config()
     server = user.get("server", {})
     if "port" in server:

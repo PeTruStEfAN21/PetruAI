@@ -30,7 +30,11 @@ def make_provider(base_url: str) -> OpenAICompatProvider:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="petru", description="Local coding agent in your terminal.")
-    parser.add_argument("--model", choices=TIERS, default=None, help="model tier (default from config)")
+    parser.add_argument(
+        "--model",
+        default=None,
+        help=f"model tier: {', '.join(TIERS)} or tuned-<specialist> (default from config)",
+    )
     parser.add_argument("--yolo", action="store_true", help="never ask for confirmation; build immediately")
     parser.add_argument("--project", default=".", help="project directory (default: current directory)")
     parser.add_argument("-p", "--prompt", default=None, help="run one prompt non-interactively and exit")
