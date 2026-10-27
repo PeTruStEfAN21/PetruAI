@@ -95,3 +95,13 @@ def test_not_enough_time_left_stops_the_night(tmp_path):
     fakes = Fakes()
     assert run(tmp_path, PY, fakes, remaining=night.RESERVE_MIN + 5)["status"] == "no time"
     assert not fakes.calls
+
+
+def test_one_specialist_cannot_take_the_whole_night(tmp_path):
+    (tmp_path / "tasks").mkdir()
+    budgets = []
+    fakes = Fakes()
+    original = fakes.train
+    fakes.train = lambda cfg, out_dir: budgets.append(cfg.time_budget_min) or original(cfg, out_dir)
+    run(tmp_path, PY, fakes, remaining=1000.0)
+    assert budgets == [night.MAX_TRAIN_MIN]

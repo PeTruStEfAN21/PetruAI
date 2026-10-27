@@ -30,6 +30,7 @@ STATE_FILE = RUNS_DIR / "specialists.json"  # rotation: specialist -> the last r
 MIN_TRAIN = 40  # fewer samples cannot teach a specialist anything reliable
 MIN_TRAIN_MINUTES = 30
 RESERVE_MIN = 90  # export, and the base and candidate evaluations on its tasks
+MAX_TRAIN_MIN = 120  # training time per specialist and night, so the rotation reaches several of them
 
 
 def rotation(specialists: list[Specialist], state: dict[str, str]) -> list[Specialist]:
@@ -91,7 +92,7 @@ def run_one(
         cfg = load_train_config()
         cfg.train_file, cfg.eval_file = out / "data" / "train.jsonl", out / "data" / "eval.jsonl"
         cfg.out_dir, cfg.epochs = out, specialist.epochs
-        cfg.time_budget_min = max(MIN_TRAIN_MINUTES, int(remaining_min) - RESERVE_MIN)
+        cfg.time_budget_min = max(MIN_TRAIN_MINUTES, min(int(remaining_min) - RESERVE_MIN, MAX_TRAIN_MIN))
         report = train_fn(cfg, out)
         _write(report_file, asdict(report))
 
