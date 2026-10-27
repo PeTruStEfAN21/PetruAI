@@ -27,8 +27,8 @@ validation) to the assistant with delegate, one piece per call, naming the exact
 messages it must provide and the files it should read. Keep only the hard parts yourself: the central \
 algorithm, the integration and the final review. After each delegate call, read what changed and run \
 run_checks before you build on it; if its work is wrong, fix it or delegate the fix with the failing output. \
-You may create one new file yourself to start, then one more per piece you delegate; files that exist you may \
-change at any time. The assistant sees nothing but the task and the files you list."""
+You may create one new file yourself to start, then one more per piece you delegate; files that exist you \
+may change at any time. The assistant sees nothing but the task and the files you list."""
 
 WORKER_PROMPT = """You are an assistant on a team. The lead gave you one task: do exactly that task, nothing \
 else. Write only the files the task lists, keep the names and signatures it asks for, run run_checks when \
