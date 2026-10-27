@@ -136,3 +136,30 @@ def test_held_out_is_stable_and_about_one_in_ten():
     held = [s for s in slugs if exercism.held_out("go", s)]
     assert held == [s for s in slugs if exercism.held_out("go", s)]
     assert 20 <= len(held) <= 60
+
+
+def test_build_writes_every_known_track_and_validate_keeps_what_passes(tmp_path):
+    tracks = rust_track(tmp_path).parent
+    files = {"two_fer.py": "", "two_fer_test.py": "", ".meta/example.py": "def two_fer(): ..."}
+    make_exercise(
+        tracks, "python", "two-fer", files, ["two_fer.py"], ["two_fer_test.py"], [".meta/example.py"]
+    )
+    out = tmp_path / "tasks"
+    built = exercism.build(["rust", "python"], tracks_dir=tracks, out_dir=out)
+    assert sorted(built) == ["python_ex_two_fer", "rust_ex_isogram"]
+
+    seen = []
+
+    def runner(task_toml, solution_dir):
+        seen.append(task_toml.parent.name)
+        assert any(solution_dir.rglob("*.*"))  # the reference solution, laid out on the solution files
+        return task_toml.parent.name.startswith("rust"), 1.0, "output"
+
+    manifest = exercism.validate(["rust", "python"], tracks_dir=tracks, out_dir=out, runner=runner)
+    assert manifest["rust_ex_isogram"]["passed"] and not manifest["python_ex_two_fer"]["passed"]
+    exercism.validate(["rust", "python"], tracks_dir=tracks, out_dir=out, runner=runner)
+    assert len(seen) == 2  # resumable: a task already validated is not run again
+    assert [p.parent.name for p in exercism.validated_tasks(out)] == ["rust_ex_isogram"]
+    split = exercism.held_out("rust", "isogram")
+    assert exercism.validated_tasks(out, split="eval" if split else "train")
+    assert not exercism.validated_tasks(out, split="train" if split else "eval")

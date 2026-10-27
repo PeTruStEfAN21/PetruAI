@@ -20,6 +20,7 @@ infra/offline/docs/
 infra/offline/flutter-template/.dart_tool/
 infra/offline/flutter-template/build/
 training/corpus/raw/
+training/corpus/tasks/
 training/.venv/
 *.whl
 

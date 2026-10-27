@@ -10,10 +10,16 @@ the protected tests before the final check). One exercise in ten is held out for
 
 from __future__ import annotations
 
+import argparse
 import json
 import re
 import shutil
+import subprocess
+import sys
+import tempfile
+import time
 import zlib
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -21,7 +27,12 @@ TRAINING_DIR = Path(__file__).resolve().parents[1]
 REPO_ROOT = TRAINING_DIR.parent
 TRACKS_DIR = TRAINING_DIR / "corpus" / "raw" / "exercism"
 TASKS_DIR = TRAINING_DIR / "corpus" / "tasks"
+MANIFEST = (
+    "validated.json"  # in the tasks folder: which tasks the reference solution passes, per track commit
+)
 HELD_OUT_EVERY = 10
+VERIFY_TIMEOUT_S = 1800
+IDLE_PRIORITY_CLASS = 0x40  # Windows: validation compiles while training has the machine
 DOC_DIRS = {".meta", ".docs", ".approaches", ".articles"}
 GRADLE_FILES = {"build.gradle", "settings.gradle", "gradlew", "gradlew.bat", "gradle"}
 
@@ -259,3 +270,141 @@ def solution_overlay(ex: Exercise, dest: Path) -> None:
         target = dest / _target_for(example, ex.solution)
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(ex.dir / example, target)
+
+
+Runner = Callable[[Path, Path], tuple[bool, float, str]]
+
+
+def _commit(track_dir: Path) -> str:
+    proc = subprocess.run(["git", "-C", str(track_dir), "rev-parse", "HEAD"], capture_output=True, text=True)
+    return proc.stdout.strip() if proc.returncode == 0 else ""
+
+
+def build(tracks: list[str], tracks_dir: Path = TRACKS_DIR, out_dir: Path = TASKS_DIR) -> list[str]:
+    """Write the tasks of these tracks; returns their names."""
+    names = []
+    for track in tracks:
+        commit = _commit(tracks_dir / track)
+        for ex in load_exercises(tracks_dir / track):
+            write_task(ex, out_dir, commit)
+            names.append(ex.task_name)
+    return names
+
+
+def run_verify(task_toml: Path, solution_dir: Path) -> tuple[bool, float, str]:
+    """`petru.trajectory --verify-with` in the agent's environment at idle priority; past the timeout, the
+    whole process tree is killed."""
+    from petru_train.trajectories import kill_tree
+
+    with tempfile.TemporaryDirectory(prefix="petru-validate-", ignore_cleanup_errors=True) as tmp:
+        out = Path(tmp) / "result.json"
+        cmd = [
+            "py", "-3.14", "-m", "uv", "run", "python", "-m", "petru.trajectory", str(task_toml),
+            "--verify-with", str(solution_dir), "--out", str(out), "--project", str(Path(tmp) / "project"),
+        ]  # fmt: skip
+        flags = IDLE_PRIORITY_CLASS if sys.platform == "win32" else 0
+        started = time.monotonic()
+        proc = subprocess.Popen(
+            cmd, cwd=str(REPO_ROOT), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, creationflags=flags
+        )
+        try:
+            proc.wait(timeout=VERIFY_TIMEOUT_S)
+        except subprocess.TimeoutExpired:
+            kill_tree(proc.pid)
+            return False, time.monotonic() - started, f"timeout after {VERIFY_TIMEOUT_S}s"
+        if not out.is_file():
+            return False, time.monotonic() - started, "runner error: no result"
+        data = json.loads(out.read_text(encoding="utf-8"))
+        return bool(data["passed"]), float(data["seconds"]), str(data["check_output"])
+
+
+def _load_manifest(out_dir: Path) -> dict:
+    path = out_dir / MANIFEST
+    return json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
+
+
+def _save_manifest(out_dir: Path, manifest: dict) -> None:
+    out_dir.mkdir(parents=True, exist_ok=True)
+    tmp = out_dir / (MANIFEST + ".tmp")
+    tmp.write_text(json.dumps(manifest, indent=1, sort_keys=True), encoding="utf-8")
+    tmp.replace(out_dir / MANIFEST)
+
+
+def validate(
+    tracks: list[str],
+    tracks_dir: Path = TRACKS_DIR,
+    out_dir: Path = TASKS_DIR,
+    runner: Runner = run_verify,
+    force: bool = False,
+) -> dict:
+    """The reference solution of every exercise against its task; the manifest records what passes, per track
+    commit, after each task (resumable)."""
+    manifest = _load_manifest(out_dir)
+    for track in tracks:
+        commit = _commit(tracks_dir / track)
+        for ex in load_exercises(tracks_dir / track):
+            name = ex.task_name
+            if not force and manifest.get(name, {}).get("commit") == commit:
+                continue
+            task_toml = out_dir / name / "task.toml"
+            if not task_toml.is_file():
+                write_task(ex, out_dir, commit)
+            tests = [task_toml.parent / "seed" / rel for rel in ex.test]
+            if any(
+                has_skips(track, t.read_text(encoding="utf-8", errors="replace"))
+                for t in tests
+                if t.is_file()
+            ):
+                passed, seconds, output = False, 0.0, "skipped tests remain after unskip"
+            else:
+                with tempfile.TemporaryDirectory(prefix="petru-solution-", ignore_cleanup_errors=True) as tmp:
+                    solution_overlay(ex, Path(tmp))
+                    passed, seconds, output = runner(task_toml, Path(tmp))
+            manifest[name] = {
+                "track": track,
+                "commit": commit,
+                "split": "eval" if held_out(track, ex.slug) else "train",
+                "passed": passed,
+                "seconds": round(seconds, 1),
+                "reason": "" if passed else output[-1500:],
+            }
+            _save_manifest(out_dir, manifest)
+            print(f"{name}: {'PASS' if passed else 'FAIL'} {seconds:.0f}s", flush=True)
+    return manifest
+
+
+def validated_tasks(out_dir: Path = TASKS_DIR, split: str | None = None) -> list[Path]:
+    """task.toml of every task whose reference solution passed (optionally only the train or eval split)."""
+    manifest = _load_manifest(out_dir)
+    return sorted(
+        out_dir / name / "task.toml"
+        for name, entry in manifest.items()
+        if entry.get("passed")
+        and (split is None or entry.get("split") == split)
+        and (out_dir / name / "task.toml").is_file()
+    )
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Exercism exercises as seeded, validated agent tasks.")
+    parser.add_argument("command", choices=["build", "validate"])
+    parser.add_argument("--tracks", default=",".join(TRACKS), help="comma-separated Exercism track names")
+    parser.add_argument("--force", action="store_true", help="validate again what the manifest already has")
+    args = parser.parse_args(argv)
+    tracks = [t.strip() for t in args.tracks.split(",") if t.strip()]
+    unknown = [t for t in tracks if t not in TRACKS]
+    if unknown:
+        print(f"unknown tracks: {', '.join(unknown)}", file=sys.stderr)
+        return 2
+    if args.command == "build":
+        print(f"{len(build(tracks))} tasks written to {TASKS_DIR}")
+        return 0
+    manifest = validate(tracks, force=args.force)
+    for track in tracks:
+        entries = [e for e in manifest.values() if e["track"] == track]
+        print(f"{track}: {sum(e['passed'] for e in entries)}/{len(entries)} validated")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
