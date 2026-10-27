@@ -41,6 +41,8 @@ def render_plan(plan: Plan) -> str:
 
 def build_system_prompt(session: Session, repo_root: Path, online: bool) -> str:
     parts = [BASE_SYSTEM_PROMPT, DESIGN_PHASE_PROMPT if session.phase is Phase.DESIGN else BUILD_PHASE_PROMPT]
+    if session.role:
+        parts.append(session.role)
     if session.plan is not None and session.plan.confirmed:
         parts.append(render_plan(session.plan))
     agents = session.project_root / "AGENTS.md"

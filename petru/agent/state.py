@@ -35,6 +35,7 @@ class Session:
     turned_away_questions: int = 0  # ask_user calls refused as repeated or excess in this DESIGN phase
     unverified_changes: bool = False  # files changed since the last green run_checks
     completion_refusals: int = 0  # task_complete calls refused this turn for unverified changes
+    role: str = ""  # team mode: the lead's or an assistant's role, added to the system prompt
 
     def start_turn(self, text: str, quick: bool = False) -> None:
         """Record the user's prompt and arm the right phase for it."""

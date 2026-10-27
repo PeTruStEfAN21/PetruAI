@@ -1,0 +1,93 @@
+"""Team mode: the lead delegates small, self-contained tasks to a faster assistant model."""
+
+from petru.agent import team
+from petru.agent.loop import Agent
+from petru.agent.state import Session
+from petru.tools import checks
+from petru.tools.registry import default_registry
+from petru.tui.port import ScriptedUI
+from tests.fakes import FakeProvider, call, result
+
+TASK = "Write a.py with x = 1. Only a.py."
+
+
+def lead_with(tmp_path, lead_steps, worker_steps):
+    worker = FakeProvider([result(tool_calls=[c]) for c in worker_steps] + [result(content="ok")])
+    registry = default_registry(False)
+    registry.register(team.DelegateTool(team.Worker(provider=lambda: worker, ctx_tokens=8192)))
+    lead = FakeProvider(
+        [result(tool_calls=[call("plan", {"title": "T", "steps": ["delegate a.py"]})])]
+        + [result(tool_calls=[c]) for c in lead_steps]
+        + [result(content="Done.")]
+    )
+    session = Session(tmp_path, role=team.LEAD_PROMPT)
+    agent = Agent(lead, registry, ScriptedUI(), session, tmp_path, 8192, False)
+    agent.run_turn("build it")
+    return session, worker
+
+
+def replies(session, name):
+    ids = {
+        tc["id"]
+        for m in session.messages
+        if m.get("tool_calls")
+        for tc in m["tool_calls"]
+        if tc["function"]["name"] == name
+    }
+    return [
+        m["content"] for m in session.messages if m.get("role") == "tool" and m.get("tool_call_id") in ids
+    ]
+
+
+def test_the_assistant_writes_only_the_files_it_was_given(tmp_path):
+    delegate = call("delegate", {"task": TASK, "files": ["a.py"]})
+    worker_steps = [
+        call("write_file", {"path": "b.py", "content": "y = 2\n"}),
+        call("write_file", {"path": "a.py", "content": "x = 1\n"}),
+        call("task_complete", {"summary": "a.py written"}),
+    ]
+    session, _ = lead_with(tmp_path, [delegate, call("task_complete", {"summary": "done"})], worker_steps)
+    assert (tmp_path / "a.py").read_text(encoding="utf-8") == "x = 1\n" and not (tmp_path / "b.py").exists()
+    [report] = replies(session, "delegate")
+    assert "a.py written" in report and "a.py" in report
+
+
+def test_the_assistant_works_in_its_own_context_on_the_task_alone(tmp_path):
+    delegate = call("delegate", {"task": TASK, "files": ["a.py"]})
+    worker_steps = [
+        call("write_file", {"path": "a.py", "content": "x = 1\n"}),
+        call("task_complete", {"summary": "ok"}),
+    ]
+    _, worker = lead_with(tmp_path, [delegate, call("task_complete", {"summary": "done"})], worker_steps)
+    first = worker.calls[0]["messages"]
+    assert first[0]["role"] == "system" and team.WORKER_PROMPT.split(".")[0] in first[0]["content"]
+    assert first[1] == {"role": "user", "content": team.worker_request(TASK, ["a.py"], [])}
+    assert not any("build it" in str(m.get("content")) for m in first)  # nothing of the lead's conversation
+    tools = {t["function"]["name"] for t in worker.calls[0]["tools"]}
+    assert (
+        "delegate" not in tools and "shell" not in tools and "ask_user" not in tools and "write_file" in tools
+    )
+
+
+def test_the_lead_prompt_and_the_delegate_tool_reach_the_lead(tmp_path):
+    session, _ = lead_with(tmp_path, [call("task_complete", {"summary": "done"})], [])
+    assert team.LEAD_PROMPT in session.messages[0]["content"]
+
+
+def test_delegated_changes_must_pass_the_leads_checks_before_completion(tmp_path, monkeypatch):
+    monkeypatch.setattr(checks, "detect_checks", lambda root: ["python -c \"print('ok')\""])
+    delegate = call("delegate", {"task": TASK, "files": ["a.py"]})
+    worker_steps = [
+        call("write_file", {"path": "a.py", "content": "x = 1\n"}),
+        call("run_checks", {}),
+        call("task_complete", {"summary": "ok"}),
+    ]
+    lead_steps = [
+        delegate,
+        call("task_complete", {"summary": "done"}),
+        call("run_checks", {}),
+        call("task_complete", {"summary": "done"}),
+    ]
+    session, _ = lead_with(tmp_path, lead_steps, worker_steps)
+    first, second = replies(session, "task_complete")
+    assert "not verified" in first and second == "done"
