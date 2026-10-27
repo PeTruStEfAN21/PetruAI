@@ -81,3 +81,14 @@ def test_is_trivial_message():
     assert is_trivial_message("x")
     assert not is_trivial_message("Add JSON storage for todos")
     assert not is_trivial_message("fix: handle empty input in parser")
+
+
+def test_every_in_demand_language_has_a_label():
+    from petru_train.filters import language_of
+
+    expected = {
+        "a.php": "php", "a.rb": "ruby", "a.swift": "swift", "a.scala": "scala", "a.R": "r", "a.kts": "kotlin",
+        "a.cxx": "cpp", "a.hh": "cpp", "a.vue": "javascript", "a.svelte": "javascript", "a.bash": "shell",
+        "a.psm1": "powershell", "a.lua": "lua", "a.ex": "elixir", "a.exs": "elixir",
+    }  # fmt: skip
+    assert {path: language_of(path) for path in expected} == expected
