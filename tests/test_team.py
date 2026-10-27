@@ -1,5 +1,7 @@
 """Team mode: the lead delegates small, self-contained tasks to a faster assistant model."""
 
+from pathlib import Path
+
 from petru.agent import team
 from petru.agent.loop import Agent
 from petru.agent.state import Session
@@ -112,3 +114,14 @@ def test_the_lead_may_always_rewrite_a_file_that_exists(tmp_path):
     lead_steps = [write("a.py"), write("a.py", "x = 2\n"), call("task_complete", {"summary": "done"})]
     lead_with(tmp_path, lead_steps, [])
     assert (tmp_path / "a.py").read_text(encoding="utf-8") == "x = 2\n"
+
+
+def test_the_lead_may_write_test_files_of_its_own_at_any_time(tmp_path):
+    names = ["a.py", "test_b.py", "b_test.go", "BTests.cs", "c.test.ts", "tests/helpers.py"]
+    session, _ = lead_with(tmp_path, [*map(write, names), call("task_complete", {"summary": "done"})], [])
+    assert not any("Team mode" in reply for reply in replies(session, "write_file"))
+    assert all((tmp_path / name).is_file() for name in names)
+
+
+def test_a_name_that_only_contains_test_is_not_a_test_file():
+    assert not team.is_test_file(Path("latest.go")) and not team.is_test_file(Path("contest/rules.py"))

@@ -8,6 +8,7 @@ Its changes leave the lead's project unverified: the lead runs the checks before
 
 from __future__ import annotations
 
+import re
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
@@ -162,10 +163,23 @@ class DelegateTool(Tool):
         )
 
 
+TEST_NAME = re.compile(r"^test_|_test\.|\.test\.|\.spec\.", re.IGNORECASE)
+CAMEL_TEST_NAME = re.compile(r"Tests?\.\w+$")  # LedgerTests.cs, ParserTest.java (capital T only)
+TEST_DIRS = {"test", "tests", "__tests__", "spec"}
+
+
+def is_test_file(relative: Path) -> bool:
+    name = relative.name
+    return bool(TEST_NAME.search(name) or CAMEL_TEST_NAME.search(name)) or any(
+        part.lower() in TEST_DIRS for part in relative.parts[:-1]
+    )
+
+
 class LeadWrite(Tool):
     """The lead's write_file: a prompt alone does not make a model delegate, so the lead may create a new
     file only while it has created no more files than it has delegated pieces, plus one (it may start with
-    the hard part). Files that exist stay free to change: integration and fixes are the lead's job."""
+    the hard part). Files that exist stay free to change: integration and fixes are the lead's job, and so
+    are its own tests, which it may always write."""
 
     def __init__(self, inner: Tool, delegate: DelegateTool) -> None:
         self.inner, self.delegate, self.created = inner, delegate, 0
@@ -174,8 +188,9 @@ class LeadWrite(Tool):
 
     def run(self, args: dict, ctx: ToolContext) -> ToolResult:
         try:
-            new = not resolve_in_project(str(args.get("path", "")), ctx.project_root).exists()
-        except OutsideProjectError:
+            target = resolve_in_project(str(args.get("path", "")), ctx.project_root)
+            new = not target.exists() and not is_test_file(target.relative_to(ctx.project_root))
+        except OutsideProjectError, ValueError:
             new = False  # the inner tool reports it
         if new and self.created > self.delegate.calls:
             return ToolResult(

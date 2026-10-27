@@ -63,3 +63,9 @@ def test_a_run_keeps_its_transcript_for_later_reading(tmp_path):
     row = bench.read_result(out, keep)
     assert row == {"passed": True, "seconds": 3.0, "tokens": 9, "stop_reason": None, "delegations": 0}
     assert json.loads(keep.read_text(encoding="utf-8")) == data
+
+
+def test_the_delegation_count_comes_from_the_result_when_it_has_one(tmp_path):
+    out = tmp_path / "result.json"
+    out.write_text(json.dumps({"passed": True, "delegations": 4, "messages": []}), encoding="utf-8")
+    assert bench.read_result(out)["delegations"] == 4

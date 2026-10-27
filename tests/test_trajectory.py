@@ -307,3 +307,4 @@ def test_a_task_can_run_as_a_team(tmp_path):
     )
     assert res.passed and team.LEAD_PROMPT in res.messages[0]["content"]
     assert "delegate" in {t["function"]["name"] for t in res.tools}
+    assert res.delegations == 1  # counted by the tool: a summarised transcript may lose the call

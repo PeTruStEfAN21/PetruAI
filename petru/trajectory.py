@@ -115,6 +115,7 @@ class TaskResult:
     tools: list[dict]
     check_output: str
     extra_turns: int
+    delegations: int = 0  # team mode: delegate calls, counted by the tool itself
 
     def save(self, path: Path) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -263,6 +264,7 @@ def run_task(
         tools=registry.schemas(),
         check_output=output,
         extra_turns=extra,
+        delegations=getattr(registry.get("delegate"), "calls", 0),
     )
 
 
