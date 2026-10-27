@@ -18,7 +18,7 @@ Remove-Item Env:VIRTUAL_ENV -ErrorAction SilentlyContinue
 $log = Join-Path $training "runs\continuous.log"
 New-Item -ItemType Directory -Force (Split-Path $log) | Out-Null
 function Count-Trajectories {
-    $file = Join-Path $training "data	rajectories-exercism.jsonl"
+    $file = Join-Path (Join-Path $training "data") "trajectories-exercism.jsonl"
     if (Test-Path $file) { return ([System.IO.File]::ReadLines($file) | Measure-Object).Count }
     return 0
 }
