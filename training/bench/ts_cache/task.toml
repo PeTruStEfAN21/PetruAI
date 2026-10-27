@@ -1,0 +1,22 @@
+name = "ts_cache"
+prompt = """Build a small caching and rate-limiting library in TypeScript (no runtime dependencies) under src/, exported from src/index.ts. The acceptance tests are tests/lruCache.test.ts, tests/limiters.test.ts and tests/memoize.test.ts (jest through ts-jest); do not change them, package.json or tsconfig.json. `npm test` and `npx tsc --noEmit -p .` must both pass.
+
+Modules (one per class) and API:
+- src/clock.ts: `Clock` {now(): ms}, `systemClock`, `ManualClock(start = 0)` with advance(ms). Every time-based class takes an optional clock.
+- src/lruCache.ts: `LruCache<K, V>(capacity, {ttlMs?, clock?, onEvict?(key, value)})`: get (refreshes recency), peek (does not), has, set(key, value, ttlMs?) returning this, delete, clear, `size` getter, keys() most recent first, stats() {hits, misses, evictions}. Capacity < 1 throws. Expired entries are invisible and removed; expiry is not an eviction; onEvict is called only for capacity evictions.
+- src/tokenBucket.ts: `TokenBucket(capacity, refillPerSecond, clock?)`, starts full, refills continuously: tryRemove(n = 1) (a failed removal takes nothing; negative throws), available() (whole tokens), msUntil(n) (0 if available now, Infinity above capacity).
+- src/slidingWindow.ts: `SlidingWindowLimiter(limit, windowMs, clock?)`: tryAcquire(key) -> {allowed, remaining, retryAfterMs}; a request at time t stays in the window until t + windowMs; rejected requests are not counted; reset(key).
+- src/memoize.ts: `memoize(fn, {capacity?, ttlMs?, clock?, key?})` -> a function with a `cache` property (an LruCache); the default key is JSON.stringify of the arguments; thrown errors are not cached, undefined results are."""
+answers = [
+    "Keep the API exactly as the tests use it; one module per class under src/ and re-export everything from src/index.ts.",
+    "No dependencies; the LRU can rely on Map insertion order, and every time-based class takes a Clock so tests stay deterministic.",
+    "Work test-first against the three test files and run run_checks until npm test and tsc both pass.",
+]
+seed = "seed"
+protect = ["tests/lruCache.test.ts", "tests/limiters.test.ts", "tests/memoize.test.ts", "package.json", "tsconfig.json"]
+forbid = ["conftest.py", "**/conftest.py", "pytest.ini", "tox.ini", "setup.cfg", "jest.config.*", "babel.config.*", "Directory.Build.*"]
+setup = ["npm install --no-audit --no-fund --prefer-offline --loglevel=error"]
+checks = []
+tier = "quality"
+eval = false
+split = "bench"
