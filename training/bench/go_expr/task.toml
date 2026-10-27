@@ -1,0 +1,25 @@
+name = "go_expr"
+prompt = """Build an arithmetic expression parser and evaluator in Go (standard library only) as package `expr` at the module root (go.mod: module expr). The acceptance tests are in expr_test.go; do not change it or go.mod. `go test ./...` must pass.
+
+API:
+- `Parse(src string) (Node, error)`; `Node` has String() printing the expression fully parenthesized: binary "(a + b)", unary "(-x)", calls "max(1, (a / 2.5))", numbers with strconv 'g' formatting; redundant parentheses disappear.
+- `Eval(src string, env map[string]float64) (float64, error)`: variables come from env, then from the constants pi and e.
+- Grammar: numbers (123, 1.5, .5, 1.5e2), identifiers (letters, digits, _), + - * / % ^, unary minus, parentheses, calls. Precedence: + - < * / % < unary minus < ^ ; ^ is right associative and binds tighter than a leading minus (-2 ^ 2 = -4, 2 ^ 3 ^ 2 = 512).
+- Functions: sqrt, abs, floor (1 argument), pow (2), min and max (1 or more). Errors: "unknown function: nope", "sqrt: want 1 argument, got 2", "min: want at least 1 argument, got 0".
+- Errors: `*SyntaxError{Pos, Msg}` (Pos is the byte offset of the offending token; end of input is len(src)) with Error() "syntax error at <pos>: <msg>" and the messages in the tests; `*UndefinedError{Name}` ("undefined variable: y"); `ErrDivisionByZero` for / and % by zero (use errors.Is).
+- `NewInterpreter()` with a `Vars` map (pre-filled with pi and e) and `Exec(line) (float64, error)`: "name = expr" assigns and returns the value, other lines evaluate; a failed assignment defines nothing; assigning pi or e fails with "cannot assign to constant pi".
+
+Split the code into files: lexer, ast, parser, builtins, eval, interpreter."""
+answers = [
+    "Keep the API exactly as the tests use it; use a hand-written lexer and a recursive-descent parser, one file per part.",
+    "Standard library only (strconv, math, errors, fmt); positions are byte offsets.",
+    "Work test-first against expr_test.go and run run_checks until go test passes.",
+]
+seed = "seed"
+protect = ["expr_test.go", "go.mod"]
+forbid = ["conftest.py", "**/conftest.py", "pytest.ini", "tox.ini", "setup.cfg", "jest.config.*", "babel.config.*", "Directory.Build.*"]
+setup = []
+checks = []
+tier = "quality"
+eval = false
+split = "bench"

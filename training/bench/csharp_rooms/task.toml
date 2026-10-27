@@ -1,0 +1,27 @@
+name = "csharp_rooms"
+prompt = """Build a meeting-room booking system in C# (.NET 10, no extra packages) in namespace `Rooms`, with the source files under src/. The acceptance tests are Tests/SchedulerTests.cs and Tests/AgendaTests.cs (xunit), compiled by Rooms.csproj; do not change them or Rooms.csproj, and do not add Directory.Build files. `dotnet test` must pass.
+
+API (exact messages are in the tests):
+- `TimeSlot(DateTime start, DateTime end)` (a record; end must be after start, else ArgumentException) with Duration and Overlaps(other), half-open: 9-10 and 10-11 do not overlap. Equal slots compare equal.
+- `record Room(Name, Capacity)`, `record Reservation(Id, Room, Organizer, Slot, Attendees, SeriesId)`, `BookingException : Exception`.
+- `Scheduler`: AddRoom(name, capacity) (duplicate -> ArgumentException, capacity < 1 -> ArgumentOutOfRangeException); Rooms sorted by name.
+  - Book(room, organizer, slot, attendees) -> ids "R1", "R2", ... Checks in this order: unknown room ("unknown room Zed"), attendees < 1 (ArgumentOutOfRangeException), capacity ("room Bolt holds 4 people, 5 requested"), opening hours 08:00-20:00 within one day ("bookings must be between 08:00 and 20:00 on one day"), overlap with an existing reservation of that room ("room Atlas is taken from 10:00 to 11:00 by R1").
+  - BookWeekly(room, organizer, firstSlot, weeks, attendees): the same slot on `weeks` consecutive weeks with one SeriesId ("S1", ...); if any week fails nothing is booked and the first failure is thrown; weeks < 1 -> ArgumentOutOfRangeException.
+  - Cancel(id) ("unknown reservation R1"), CancelSeries(seriesId) -> how many were removed (unknown series -> BookingException).
+  - ReservationsFor(room, day) sorted by start; FreeSlots(room, day, minLength): the gaps inside opening hours at least minLength long; FindRoom(slot, attendees) -> the name of the smallest free room that fits (ties by name), or null.
+- `Agenda.Render(scheduler, day)`: "Agenda for 2026-11-02" then one line per room by name, "Atlas: 09:00-10:00 ana (4), 13:00-14:30 bob (2)" or "Bolt: free"; lines joined with "\\n", invariant culture.
+
+Split the code into files: TimeSlot, Room (with Reservation and BookingException), OpeningHours, Scheduler, Agenda."""
+answers = [
+    "Keep the API exactly as the tests use it; files under src/ in namespace Rooms, with the 08:00-20:00 rule in OpeningHours.",
+    "No extra packages; validate a whole weekly series before booking any of it.",
+    "Work test-first against the two test files and run run_checks until dotnet test passes.",
+]
+seed = "seed"
+protect = ["Tests/SchedulerTests.cs", "Tests/AgendaTests.cs", "Rooms.csproj"]
+forbid = ["conftest.py", "**/conftest.py", "pytest.ini", "tox.ini", "setup.cfg", "jest.config.*", "babel.config.*", "Directory.Build.*"]
+setup = []
+checks = []
+tier = "quality"
+eval = false
+split = "bench"
