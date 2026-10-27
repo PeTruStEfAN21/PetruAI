@@ -71,3 +71,17 @@ def test_committing_after_green_checks_needs_no_new_run(tmp_path, monkeypatch):
     commit = call("git", {"action": "commit", "message": "add a"})
     res = agent_run(tmp_path, WRITE, call("run_checks", {}), commit, DONE)
     assert tool_replies(res, "task_complete") == ["done"]
+
+
+def test_a_read_only_shell_command_after_green_checks_needs_no_new_run(tmp_path, monkeypatch):
+    detected(monkeypatch, [PASSING])
+    look = call("shell", {"command": "git status"})
+    res = agent_run(tmp_path, WRITE, call("run_checks", {}), look, DONE)
+    assert tool_replies(res, "task_complete") == ["done"]
+
+
+def test_a_shell_command_that_changes_files_needs_a_new_run(tmp_path, monkeypatch):
+    detected(monkeypatch, [PASSING])
+    change = call("shell", {"command": "Set-Content -Path a.py -Value 'x = 2'"})
+    res = agent_run(tmp_path, WRITE, call("run_checks", {}), change, DONE)
+    assert "not verified" in tool_replies(res, "task_complete")[0]

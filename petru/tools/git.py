@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import subprocess
 from pathlib import Path
 
@@ -82,6 +83,25 @@ def unstage_ignored(root: Path) -> int:
             creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
         )
     return len(fresh)
+
+
+def tree_fingerprint(root: Path) -> str | None:
+    """What a command could have changed in the working tree: status, staged and unstaged diffs, and the size
+    and time of untracked files. None outside a git repository (then every command counts as a change)."""
+    if not (root / ".git").exists():
+        return None
+    digest = hashlib.sha1()
+    status = _run_git(["status", "--porcelain=v1", "-uall"], root).output
+    digest.update(status.encode("utf-8", "replace"))
+    for args in (["diff"], ["diff", "--cached"]):
+        digest.update(_run_git(args, root).output.encode("utf-8", "replace"))
+    for line in status.splitlines():
+        if line.startswith("?? "):
+            path = root / line[3:].strip().strip('"')
+            if path.is_file():
+                stat = path.stat()
+                digest.update(f"{line}:{stat.st_size}:{stat.st_mtime_ns}".encode())
+    return digest.hexdigest()
 
 
 def ensure_repo(root: Path) -> None:

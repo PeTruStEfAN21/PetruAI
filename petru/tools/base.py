@@ -28,6 +28,7 @@ class Tool(ABC):
     parameters: dict = {"type": "object", "properties": {}}
     mutating: bool = False
     changes_files: bool = False  # its success leaves the project unverified until run_checks is green
+    may_change_files: bool = False  # a command: the project counts as changed if the tree differs after it
 
     @abstractmethod
     def run(self, args: dict, ctx: ToolContext) -> ToolResult: ...

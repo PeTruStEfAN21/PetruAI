@@ -17,6 +17,7 @@ from petru.agent.toolcalls import (
 )
 from petru.providers.base import ChatProvider, ToolCall
 from petru.tools.base import ToolContext, ToolResult
+from petru.tools.git import tree_fingerprint
 from petru.tools.registry import ToolRegistry
 from petru.tools.shell import truncate_output
 from petru.tui.port import UIPort
@@ -135,6 +136,7 @@ class Agent:
                 self.session.always_allow.add(call.name)
 
         ctx = ToolContext(self.session.project_root, self.online, self.ui, self.session)
+        before = tree_fingerprint(self.session.project_root) if tool.may_change_files else None
         self.ui.tool_started(call.name, args)
         try:
             result = tool.run(args, ctx)
@@ -144,6 +146,10 @@ class Agent:
         if call.name == "run_checks":
             self.session.unverified_changes = result.is_error
         elif tool.changes_files and not result.is_error:
+            self.session.unverified_changes = True
+        elif tool.may_change_files and (
+            before is None or tree_fingerprint(self.session.project_root) != before
+        ):
             self.session.unverified_changes = True
         output = truncate_output(result.output, MAX_TOOL_RESULT_CHARS)  # one result must not fill the context
         return (f"ERROR: {output}" if result.is_error else output), False
