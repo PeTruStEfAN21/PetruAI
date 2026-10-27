@@ -1,0 +1,24 @@
+name = "rust_kvstore"
+prompt = """Build an in-memory key-value store in Rust (edition 2021, no external crates) as the library crate `kvstore`. The acceptance tests are tests/store_test.rs and tests/shell_test.rs; do not change them or Cargo.toml. `cargo test` must pass.
+
+Public API (re-exported from src/lib.rs; exact strings are in the tests):
+- `Store::new()`, set(key, value), get(key) -> Option<&str>, delete(key) -> bool (whether it existed), len(), is_empty(), count_value(value), keys_with_prefix(prefix) -> Vec<String> sorted.
+- Nested transactions: begin(); commit() folds the innermost transaction into its parent (or into the committed data); rollback() discards the innermost one; both return Err(StoreError::NoTransaction) with none open; depth(). Every query sees the uncommitted changes.
+- Snapshots: save(&mut impl Write) writes one "key<TAB>value" line per committed entry sorted by key, escaping backslash, tab and newline (\\\\, \\t, \\n); saving with an open transaction -> Err(StoreError::InTransaction). Store::load(&mut impl Read) reads it back; a line without a tab or with a bad escape -> Err(StoreError::Corrupt(line_number)).
+- `StoreError` { NoTransaction, InTransaction, Corrupt(usize), Io(String) } with Display "no transaction", "cannot save inside a transaction", "corrupt snapshot at line 2"; derives PartialEq and Debug.
+- `Shell::new(store)`, store(), exec(line) -> String. Command names are case-insensitive: SET key value (the value is the rest of the line, inner spaces kept) -> "OK"; GET key -> the value or "NULL"; DELETE key -> "1"/"0"; COUNT value; KEYS [prefix] -> keys joined by spaces or "(empty)"; INCR key -> the new integer (missing = 0; "ERROR value is not an integer"); BEGIN, COMMIT, ROLLBACK -> "OK" or "ERROR no transaction". Errors: "ERROR unknown command FLY", "ERROR wrong number of arguments for SET", "ERROR empty command".
+
+Split the code into modules: error, layers (committed data plus the transaction stack), store, snapshot, shell."""
+answers = [
+    "Keep the API exactly as the tests use it; modules error.rs, layers.rs, store.rs, snapshot.rs and shell.rs, re-exported from lib.rs.",
+    "No external crates; a BTreeMap for committed data and a stack of change maps (Some = set, None = delete) for transactions.",
+    "Work test-first against the two test files and run run_checks until cargo test passes.",
+]
+seed = "seed"
+protect = ["tests/store_test.rs", "tests/shell_test.rs", "Cargo.toml"]
+forbid = ["conftest.py", "**/conftest.py", "pytest.ini", "tox.ini", "setup.cfg", "jest.config.*", "babel.config.*", "Directory.Build.*"]
+setup = []
+checks = []
+tier = "quality"
+eval = false
+split = "bench"
