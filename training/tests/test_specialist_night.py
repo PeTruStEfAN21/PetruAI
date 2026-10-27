@@ -105,3 +105,19 @@ def test_one_specialist_cannot_take_the_whole_night(tmp_path):
     fakes.train = lambda cfg, out_dir: budgets.append(cfg.time_budget_min) or original(cfg, out_dir)
     run(tmp_path, PY, fakes, remaining=1000.0)
     assert budgets == [night.MAX_TRAIN_MIN]
+
+
+def test_a_failing_specialist_does_not_stop_the_others(tmp_path, monkeypatch):
+    monkeypatch.setattr(night, "stop_llama_servers", lambda: None)
+    web = Specialist("web", ["typescript"], ["ts"])
+
+    def one(specialist, run_dir, remaining):
+        if specialist.name == "python":
+            raise RuntimeError("petru_train.train:train_from_json failed in a subprocess (exit code 1)")
+        return {"status": "rejected", "name": specialist.name, "reason": "loss"}
+
+    results = night.run_specialists("r", night.datetime(2030, 1, 1), [PY, web], runs_dir=tmp_path, one=one)
+    assert [(r["name"], r["status"]) for r in results] == [("python", "failed"), ("web", "rejected")]
+    assert "exit code 1" in results[0]["reason"]
+    state = json.loads((tmp_path / "specialists.json").read_text(encoding="utf-8"))
+    assert state == {"web": "r"}  # the failed one stays first in the rotation for the next night

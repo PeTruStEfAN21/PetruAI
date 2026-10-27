@@ -13,6 +13,7 @@ import argparse
 import json
 import shutil
 import sys
+import traceback
 from collections.abc import Callable
 from dataclasses import asdict
 from datetime import datetime
@@ -150,7 +151,11 @@ def run_specialists(
     for specialist in rotation(specialists if specialists is not None else load_specialists(), state):
         remaining = (deadline - clock()).total_seconds() / 60
         stop_llama_servers()
-        result = one(specialist, runs_dir / run, remaining)
+        try:
+            result = one(specialist, runs_dir / run, remaining)
+        except Exception as exc:  # one broken specialist must not cost the others their night
+            traceback.print_exc()
+            result = {"status": "failed", "name": specialist.name, "reason": str(exc)[-500:]}
         results.append(result)
         print(
             f"specialist {specialist.name}: {result['status']} {result.get('reason', '')}".strip(), flush=True
