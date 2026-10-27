@@ -50,6 +50,7 @@ def test_an_exercise_becomes_a_seeded_task_with_every_test_enabled(tmp_path):
     data = tomllib.loads(task_toml.read_text(encoding="utf-8"))
     assert task_toml.parent.name == "rust_ex_isogram" and data["name"] == "rust_ex_isogram"
     assert data["seed"] == "seed" and data["protect"] == ["tests/isogram.rs"]
+    assert data["solution"] == ["src/lib.rs", "Cargo.toml"]  # all that leaves the agent's project
     assert "Determine if a word is an isogram." in data["prompt"] and "Rust" in data["prompt"]
     assert "src/lib.rs" in data["prompt"] and data["answers"]
     seed = task_toml.parent / "seed"

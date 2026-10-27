@@ -306,6 +306,7 @@ def write_task(ex: Exercise, out_root: Path, commit: str = "") -> Path:
         "seed": "seed",
         "protect": [*ex.test, *ex.editor, *build_files],
         "setup": SETUP.get(ex.track, []),
+        "solution": list(ex.solution),
         "split": "eval" if held_out(ex.track, ex.slug) else "train",
         "difficulty": ex.difficulty,
         "source": f"exercism/{ex.track}@{commit}" if commit else f"exercism/{ex.track}",
