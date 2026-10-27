@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -43,7 +44,22 @@ def delegations(messages: list[dict]) -> int:
     )
 
 
-def run_mode(task: Path, mode: str, lead_url: str, worker_url: str) -> dict:
+def read_result(out: Path, keep: Path | None = None) -> dict:
+    """The row of one finished attempt; its full transcript is copied to `keep` for later reading."""
+    data = json.loads(out.read_text(encoding="utf-8"))
+    if keep is not None:
+        keep.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(out, keep)
+    return {
+        "passed": bool(data.get("passed")),
+        "seconds": data.get("seconds"),
+        "tokens": data.get("tokens"),
+        "stop_reason": data.get("stop_reason"),
+        "delegations": delegations(data.get("messages") or []),
+    }
+
+
+def run_mode(task: Path, mode: str, lead_url: str, worker_url: str, keep: Path | None = None) -> dict:
     """One attempt through petru.trajectory (agent env); past the timeout, its tree is killed."""
     with tempfile.TemporaryDirectory(prefix="petru-bench-", ignore_cleanup_errors=True) as tmp:
         out = Path(tmp) / "result.json"
@@ -62,14 +78,7 @@ def run_mode(task: Path, mode: str, lead_url: str, worker_url: str) -> dict:
             return {"passed": False, "seconds": float(ATTEMPT_TIMEOUT_S), "stop_reason": "timeout"}
         if not out.is_file():
             return {"passed": False, "seconds": None, "stop_reason": "runner error"}
-        data = json.loads(out.read_text(encoding="utf-8"))
-        return {
-            "passed": bool(data.get("passed")),
-            "seconds": data.get("seconds"),
-            "tokens": data.get("tokens"),
-            "stop_reason": data.get("stop_reason"),
-            "delegations": delegations(data.get("messages") or []),
-        }
+        return read_result(out, keep)
 
 
 def _summary(results: list[dict]) -> dict:
@@ -133,7 +142,13 @@ def main(argv: list[str] | None = None) -> int:
         if not (wait_healthy(LEAD_PORT, timeout_s=900, proc=lead) and wait_healthy(WORKER_PORT, proc=worker)):
             raise RuntimeError("a model server did not start; see the logs next to the report")
         lead_url, worker_url = f"http://127.0.0.1:{LEAD_PORT}/v1", f"http://127.0.0.1:{WORKER_PORT}/v1"
-        result = compare(tasks, lambda task, mode: run_mode(task, mode, lead_url, worker_url), report)
+        transcripts = report.with_suffix("")  # one <task>-<mode>.json per attempt, next to the report
+
+        def runner(task: Path, mode: str) -> dict:
+            keep = transcripts / f"{task_name(task)}-{mode}.json"
+            return run_mode(task, mode, lead_url, worker_url, keep)
+
+        result = compare(tasks, runner, report)
     finally:
         stop(lead)
         stop(worker)

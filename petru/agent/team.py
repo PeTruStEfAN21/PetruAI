@@ -20,11 +20,14 @@ from petru.tools.paths import OutsideProjectError, resolve_in_project
 from petru.tools.registry import ToolRegistry
 from petru.tui.port import ScriptedUI
 
-LEAD_PROMPT = """You lead a small team. Keep the hard parts yourself: the design, tricky algorithms, the \
-integration and the final review. Hand each small, self-contained piece (one module or file and its tests, \
-with the exact names and signatures it must provide) to an assistant with delegate, one piece per call, then \
-read what it changed and run run_checks before you build on it. Write precise tasks: the assistant sees \
-nothing but the task and the files you list."""
+LEAD_PROMPT = """You lead a small team and you are expected to use it. Before you write code, read the \
+tests and split the work into pieces of one file each. Hand every piece with a clear interface and little \
+logic of its own (records and value types, exceptions, formatting and rendering, parsing helpers, simple \
+validation) to the assistant with delegate, one piece per call, naming the exact types, signatures and \
+messages it must provide and the files it should read. Keep only the hard parts yourself: the central \
+algorithm, the integration and the final review. After each delegate call, read what changed and run \
+run_checks before you build on it; if its work is wrong, fix it or delegate the fix with the failing output. \
+The assistant sees nothing but the task and the files you list."""
 
 WORKER_PROMPT = """You are an assistant on a team. The lead gave you one task: do exactly that task, nothing \
 else. Write only the files the task lists, keep the names and signatures it asks for, run run_checks when \
