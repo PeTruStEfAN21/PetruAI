@@ -23,8 +23,9 @@ REPO_ROOT = TRAINING_DIR.parent
 REQUESTS_FILE = TRAINING_DIR / "eval" / "tool_requests.json"
 TASKS_DIR = TRAINING_DIR / "tasks"
 TASK_LIMIT = 6  # evaluated harness tasks, taken in turn from every stack
-HARNESS_VERSION = 2  # bump when the harness changes what counts as a pass
+HARNESS_VERSION = 3  # bump when the harness changes what counts as a pass
 # 2 (2026-10-27): no checks = fail, plus that night's agent fixes (git log --since 2026-10-27 -- petru)
+# 3 (2026-10-27): test-first prompts; task_complete waits for green checks after the last change
 BASE_GGUF = REPO_ROOT / "infra" / "llama.cpp" / "models" / "Qwen3.5-4B.IQ4_XS.gguf"
 TOOL_TOLERANCE = 0.05
 EVAL_SYSTEM = (
