@@ -1,5 +1,7 @@
 import json
 
+import pytest
+
 from petru_train import bench
 
 
@@ -151,3 +153,9 @@ def test_a_large_task_can_give_its_attempts_more_time(tmp_path, monkeypatch):
     bench.run_mode(task, "solo", "lead", "worker")
     bench.run_mode(tmp_path / "small.toml", "solo", "lead", "worker")
     assert TimedRun.waited == [180 * 60, bench.ATTEMPT_TIMEOUT_S]
+
+
+def test_a_single_bench_project_can_be_run_by_name():
+    assert bench.bench_tasks(["python_tracker"], 2) == [bench.BENCH_DIR / "python_tracker" / "task.toml"]
+    with pytest.raises(SystemExit):
+        bench.bench_tasks(["no_such_project"], 2)

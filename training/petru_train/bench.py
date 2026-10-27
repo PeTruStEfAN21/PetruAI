@@ -166,13 +166,20 @@ def bench_tasks(kinds: list[str], per_language: int) -> list[Path]:
         tasks += sorted(BENCH_DIR.glob("*/task.toml"))
     if "heldout" in kinds:
         tasks += held_out_tasks(EXERCISM_TASKS, per_language=per_language)
+    for name in (k for k in kinds if k not in ("bench", "heldout")):  # one bench project, by name
+        task = BENCH_DIR / name / "task.toml"
+        if not task.is_file():
+            raise SystemExit(f"no bench project {name!r} in {BENCH_DIR}")
+        tasks.append(task)
     return tasks
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="The team against the 35B alone, on the same tasks.")
     parser.add_argument(
-        "--tasks", default="bench,heldout", help="bench (multi-file projects), heldout (Exercism)"
+        "--tasks",
+        default="bench,heldout",
+        help="bench (multi-file projects), heldout (Exercism) or a bench project's name",
     )
     parser.add_argument("--per-language", type=int, default=2, help="held-out Exercism tasks per language")
     parser.add_argument("--report", type=Path, default=None, help="resume this report")
