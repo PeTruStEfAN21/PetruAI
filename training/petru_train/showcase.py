@@ -2,9 +2,10 @@
 
     py -3.14 -m uv run python -m petru_train.showcase runs/bench/bench-2026-10-27.json ../showcase
 
-Each kept team project is copied to <out>/<task>/ with a SHOWCASE.md: the task, the result against the 35B
-alone, and every file credited to the lead, the assistant or the given acceptance tests. <out>/README.md is
-the index.
+Each kept team project of a bench task is copied to <out>/<task>/ with a SHOWCASE.md: the task, the result
+against the 35B alone, and every file credited to the lead, the assistant or the task itself. <out>/README.md
+is the index. The credits come from the run's result (the tools record them); for older runs they are read
+from the transcript, in order, but only when it still holds every delegation (a summarised one does not).
 """
 
 from __future__ import annotations
@@ -14,10 +15,13 @@ import json
 import shutil
 import sys
 import tomllib
-from collections.abc import Callable
+from functools import partial
 from pathlib import Path, PurePosixPath
 
 from petru_train.bench import BENCH_DIR
+
+LEAD_MODEL = "Qwen3.6-35B-A3B"
+NOT_RECORDED = "not recorded"
 
 
 def _calls(messages: list[dict]) -> list[tuple[str, dict]]:
@@ -39,34 +43,60 @@ def _norm(path: str) -> str:
     return PurePosixPath(path.replace("\\", "/")).as_posix().removeprefix("./")
 
 
-def authors(messages: list[dict], given: set[str]) -> Callable[[str], str]:
-    """Who wrote a file: the lead, the assistant (the files it was handed), or the given acceptance tests."""
-    delegated, lead = set(), set()
+def infer_authors(messages: list[dict]) -> dict[str, str]:
+    """Who created each file and who changed it after, from the lead's calls in order (the same credits the
+    team's tools record): a file first named in a delegation is the assistant's."""
+    creators: dict[str, str] = {}
+    changers: dict[str, set[str]] = {}
     for name, args in _calls(messages):
         if name == "delegate":
-            delegated |= {_norm(str(f)) for f in args.get("files") or []}
+            touched = [("assistant", _norm(str(f))) for f in args.get("files") or []]
         elif name in ("write_file", "edit_file") and args.get("path"):
-            lead.add(_norm(str(args["path"])))
+            touched = [("lead", _norm(str(args["path"])))]
+        else:
+            continue
+        for who, path in touched:
+            if path not in creators:
+                creators[path], changers[path] = who, set()
+            elif who != creators[path]:
+                changers[path].add(who)
+    later = {"lead": "extended by the assistant", "assistant": "revised by the lead"}
+    return {path: f"{who}, {later[who]}" if changers[path] else who for path, who in sorted(creators.items())}
 
-    def credit(path: str) -> str:
-        if path in given:
-            return "given (acceptance tests)"
-        if path in delegated:
-            return "assistant, revised by the lead" if path in lead else "assistant"
-        return "lead"
 
-    return credit
+def run_authors(data: dict, row: dict) -> dict[str, str] | None:
+    """The run's credits: recorded by the tools, else read from a transcript that kept every delegation."""
+    if "authors" in data:
+        return data["authors"]
+    messages = data.get("messages") or []
+    kept = sum(1 for name, _ in _calls(messages) if name == "delegate")
+    return infer_authors(messages) if kept == row.get("delegations", 0) else None
 
 
 def _minutes(seconds) -> str:
     return f"{round(seconds / 60)} min" if isinstance(seconds, int | float) else "-"
 
 
+def _byline(row: dict) -> str:
+    if row.get("team_choice") == "solo":
+        return f"Built by the PetruAI lead ({LEAD_MODEL}), which chose to work alone on this one."
+    assistant = Path(row.get("assistant") or "Qwen3.5-4B").stem
+    return f"Built by the PetruAI team: {LEAD_MODEL} leading, {assistant} assisting, both run locally."
+
+
+def _credit(path: str, given: set[str], authors: dict[str, str] | None) -> str:
+    if path in given:
+        return "given with the task"
+    if authors is None:
+        return NOT_RECORDED
+    return authors.get(path, "lead")  # what no write recorded, the lead's shell commands made
+
+
 def _project_page(task: str, spec: dict, row: dict, solo: dict, files: list[str], credit) -> str:
     lines = [
         f"# {task}",
         "",
-        "Built by the PetruAI team: Qwen3.6-35B-A3B leading, Qwen3.5-4B assisting, both run locally.",
+        _byline(row),
         "",
         "## Task",
         "",
@@ -86,11 +116,13 @@ def _project_page(task: str, spec: dict, row: dict, solo: dict, files: list[str]
         *(f"| `{path}` | {credit(path)} |" for path in files),
         "",
     ]
+    if any(credit(path) == NOT_RECORDED for path in files):
+        lines.append("Who wrote the other files was not recorded: this run's conversation was summarised.\n")
     return "\n".join(lines)
 
 
 def export(report: Path, out: Path, bench_dir: Path = BENCH_DIR) -> list[str]:
-    """Copy every kept team project of `report` to `out` with its page; returns the tasks exported."""
+    """Copy every kept team project of a bench task in `report` to `out` with its page; returns the tasks."""
     results = json.loads(report.read_text(encoding="utf-8")).get("results", [])
     runs = report.with_suffix("")
     solo = {r["task"]: r for r in results if r.get("mode") == "solo"}
@@ -106,11 +138,10 @@ def export(report: Path, out: Path, bench_dir: Path = BENCH_DIR) -> list[str]:
     exported = []
     for row in (r for r in results if r.get("mode") == "team"):
         task = row["task"]
-        project = runs / f"{task}-team"
-        if not project.is_dir():
+        project, spec_file = runs / f"{task}-team", bench_dir / task / "task.toml"
+        if not (project.is_dir() and spec_file.is_file()):
             continue
-        spec_file = bench_dir / task / "task.toml"
-        spec = tomllib.loads(spec_file.read_text(encoding="utf-8")) if spec_file.is_file() else {}
+        spec = tomllib.loads(spec_file.read_text(encoding="utf-8"))
         seed = bench_dir / task / spec.get("seed", "seed")
         given = (
             {p.relative_to(seed).as_posix() for p in seed.rglob("*") if p.is_file()}
@@ -118,15 +149,15 @@ def export(report: Path, out: Path, bench_dir: Path = BENCH_DIR) -> list[str]:
             else set()
         )
         transcript = runs / f"{task}-team.json"
-        messages = (
-            json.loads(transcript.read_text(encoding="utf-8")).get("messages", [])
-            if transcript.is_file()
-            else []
-        )
+        data = json.loads(transcript.read_text(encoding="utf-8")) if transcript.is_file() else {}
+        authors = run_authors(data, row)
         dest = out / task
-        shutil.copytree(project, dest, dirs_exist_ok=True)
+        shutil.rmtree(dest, ignore_errors=True)  # no files left over from an earlier export
+        shutil.copytree(project, dest)
         files = sorted(p.relative_to(project).as_posix() for p in project.rglob("*") if p.is_file())
-        page = _project_page(task, spec, row, solo.get(task, {}), files, authors(messages, given))
+        page = _project_page(
+            task, spec, row, solo.get(task, {}), files, partial(_credit, given=given, authors=authors)
+        )
         (dest / "SHOWCASE.md").write_text(page, encoding="utf-8")
         tests = "passed" if row.get("passed") else "failed"
         minutes = (_minutes(row.get("seconds")), _minutes(solo.get(task, {}).get("seconds")))

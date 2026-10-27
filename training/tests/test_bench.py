@@ -122,3 +122,10 @@ def test_the_assistant_is_the_promoted_fine_tune_once_there_is_one(tmp_path):
     assert bench.assistant_gguf(tmp_path) == bench.BASE_GGUF
     (tmp_path / bench.TUNED_FILE).write_bytes(b"gguf")
     assert bench.assistant_gguf(tmp_path) == tmp_path / bench.TUNED_FILE
+
+
+def test_a_team_run_names_its_assistant_model(tmp_path, monkeypatch):
+    monkeypatch.setattr(bench.subprocess, "Popen", FakeRun)
+    row = bench.run_mode(tmp_path / "task.toml", "team", "lead", "worker", assistant="Qwen3.5-4B-petru.gguf")
+    assert row["assistant"] == "Qwen3.5-4B-petru.gguf"
+    assert "assistant" not in bench.run_mode(tmp_path / "task.toml", "solo", "lead", "worker", assistant="x")

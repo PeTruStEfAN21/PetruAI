@@ -75,8 +75,21 @@ def keep_project(project: Path, dest: Path) -> None:
         shutil.copytree(project, dest, ignore=shutil.ignore_patterns(*BUILD_OUTPUT), dirs_exist_ok=True)
 
 
-def run_mode(task: Path, mode: str, lead_url: str, worker_url: str, keep: Path | None = None) -> dict:
-    """One attempt through petru.trajectory (agent env); past the timeout, its tree is killed."""
+def run_mode(
+    task: Path,
+    mode: str,
+    lead_url: str,
+    worker_url: str,
+    keep: Path | None = None,
+    assistant: str | None = None,
+) -> dict:
+    """One attempt through petru.trajectory (agent env); past the timeout, its tree is killed. A team row names
+    its `assistant` model, so a report resumed after a promotion shows which runs had which."""
+    row = _attempt(task, mode, lead_url, worker_url, keep)
+    return {**row, "assistant": assistant} if mode == "team" and assistant else row
+
+
+def _attempt(task: Path, mode: str, lead_url: str, worker_url: str, keep: Path | None) -> dict:
     with tempfile.TemporaryDirectory(prefix="petru-bench-", ignore_cleanup_errors=True) as tmp:
         out = Path(tmp) / "result.json"
         cmd = [
@@ -169,7 +182,7 @@ def main(argv: list[str] | None = None) -> int:
 
         def runner(task: Path, mode: str) -> dict:
             keep = transcripts / f"{task_name(task)}-{mode}.json"
-            return run_mode(task, mode, lead_url, worker_url, keep)
+            return run_mode(task, mode, lead_url, worker_url, keep, assistant.name)
 
         result = compare(tasks, runner, report)
     finally:
