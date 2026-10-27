@@ -58,7 +58,10 @@ def test_one_shot_runs_single_turn(tmp_path, monkeypatch, capsys):
 
 def test_one_shot_exit_code_1_when_turn_hits_a_limit(tmp_path, monkeypatch, capsys):
     (tmp_path / "a.txt").write_text("x", encoding="utf-8")
-    patch_runtime(monkeypatch, tmp_path, [result(tool_calls=[call("read_file", {"path": "a.txt"})])] * 41)
+    limit = default_tiers()["default"].max_iterations
+    patch_runtime(
+        monkeypatch, tmp_path, [result(tool_calls=[call("read_file", {"path": "a.txt"})])] * (limit + 1)
+    )
     assert cli.main(["-p", "x", "--project", str(tmp_path)]) == 1
 
 

@@ -25,6 +25,7 @@ class Tier:
     model_file: str
     ctx: int
     extra_args: list[str] = field(default_factory=list)
+    max_iterations: int = 60  # tool calls per turn; the limit costs time, not memory
 
 
 @dataclass
@@ -40,7 +41,13 @@ class Config:
 def default_tiers() -> dict[str, Tier]:
     return {
         "default": Tier("default", "Qwen3.5-9B.IQ4_XS.gguf", ctx=16384),
-        "quality": Tier("quality", "Qwen3.6-35B-A3B-UD-IQ4_XS.gguf", ctx=32768, extra_args=["--cpu-moe"]),
+        "quality": Tier(
+            "quality",
+            "Qwen3.6-35B-A3B-UD-IQ4_XS.gguf",
+            ctx=32768,
+            extra_args=["--cpu-moe"],
+            max_iterations=100,
+        ),
         "fast": Tier("fast", "Qwen3.5-4B.IQ4_XS.gguf", ctx=32768),
     }
 

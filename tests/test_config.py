@@ -34,3 +34,10 @@ def test_find_repo_root_walks_up(tmp_path):
     start = tmp_path / "a" / "b"
     start.mkdir(parents=True)
     assert find_repo_root(start) == tmp_path
+
+
+def test_the_quality_tier_may_work_longer_per_turn():
+    from petru.config import default_tiers
+
+    tiers = default_tiers()
+    assert tiers["quality"].max_iterations > tiers["default"].max_iterations >= 40

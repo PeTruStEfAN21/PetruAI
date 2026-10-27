@@ -329,6 +329,7 @@ def main(argv: list[str] | None = None) -> int:
             session=session,
             repo_root=repo_root,
             ctx_tokens=cfg.tiers[tier].ctx,
+            max_iterations=cfg.tiers[tier].max_iterations,
             online=online,
         )
         if ns.prompt is not None:

@@ -139,6 +139,7 @@ def run_task(
     provider: ChatProvider | None = None,
     max_extra_turns: int = 10,
     online: bool = False,
+    max_iterations: int = 60,
 ) -> TaskResult:
     """One task as a user would live it: the prompt, answers to questions the model wrote as plain text
     instead of calling ask_user, and 'continue' while it stops talking in BUILD before task_complete."""
@@ -151,7 +152,9 @@ def run_task(
     ui = TaskUI(list(spec.answers))
     session = Session(project, tier=spec.tier)
     registry = default_registry(online)
-    agent = Agent(provider, registry, ui, session, repo_root, ctx_tokens, online)
+    agent = Agent(
+        provider, registry, ui, session, repo_root, ctx_tokens, online, max_iterations=max_iterations
+    )
     started = time.monotonic()
     extra = 0
     with isolated_home():  # scripted runs must never write into the user's real global memory
@@ -211,6 +214,7 @@ def main(argv: list[str] | None = None) -> int:
             repo_root=repo_root,
             project=project,
             ctx_tokens=cfg.tiers[tier].ctx,
+            max_iterations=cfg.tiers[tier].max_iterations,
             base_url=base_url,
             max_extra_turns=args.max_extra_turns,
         )
