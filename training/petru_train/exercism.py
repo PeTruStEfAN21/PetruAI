@@ -98,6 +98,21 @@ POM = """<project xmlns="http://maven.apache.org/POM/4.0.0">
 """
 
 
+C_CMAKE = """cmake_minimum_required(VERSION 3.10)
+project(exercise C)
+set(CMAKE_C_STANDARD 99)
+file(GLOB sources ${{CMAKE_CURRENT_SOURCE_DIR}}/*.c)
+add_executable(tests ${{sources}} test-framework/unity.c)
+target_compile_definitions(tests PRIVATE {defines})
+target_compile_options(tests PRIVATE -Wall -Wextra -pedantic -Werror -Wmissing-declarations)
+if(UNIX)
+  target_link_libraries(tests m)
+endif()
+enable_testing()
+add_test(NAME tests COMMAND tests)
+"""
+
+
 @dataclass(frozen=True)
 class Exercise:
     track: str
@@ -219,6 +234,32 @@ def _ignore(ex: Exercise):
     return ignore
 
 
+def _adapt_build(ex: Exercise, seed: Path) -> list[str]:
+    """Builds that run offline here, whatever the project folder is called: Maven for Java, CMake for C
+    (Exercism's makefile needs a POSIX shell), C++ named after the exercise. Returns the build files written,
+    which are protected like the tests."""
+    if ex.track == "java":
+        (seed / "pom.xml").write_text(POM.format(artifact=ex.slug), encoding="utf-8")
+        return ["pom.xml"]
+    if ex.track == "cpp" and (seed / "CMakeLists.txt").is_file():
+        cmake = seed / "CMakeLists.txt"
+        text = cmake.read_text(encoding="utf-8")
+        text = re.sub(
+            r"get_filename_component\(exercise \$\{CMAKE_CURRENT_SOURCE_DIR\} NAME\)",
+            f"set(exercise {ex.slug})",
+            text,
+        )
+        cmake.write_text(text, encoding="utf-8")
+        return ["CMakeLists.txt"]
+    if ex.track == "c" and (seed / "makefile").is_file():
+        makefile = seed / "makefile"
+        defines = re.findall(r"-D(\w+)", makefile.read_text(encoding="utf-8"))
+        makefile.unlink()
+        (seed / "CMakeLists.txt").write_text(C_CMAKE.format(defines=" ".join(defines)), encoding="utf-8")
+        return ["CMakeLists.txt"]
+    return []
+
+
 def write_task(ex: Exercise, out_root: Path, commit: str = "") -> Path:
     """`<out_root>/<task>/task.toml` and `seed/`; an existing task folder is rebuilt from scratch."""
     task_dir = out_root / ex.task_name
@@ -229,8 +270,7 @@ def write_task(ex: Exercise, out_root: Path, commit: str = "") -> Path:
         test_file = seed / rel
         if test_file.is_file():
             test_file.write_text(unskip(ex.track, test_file.read_text(encoding="utf-8")), encoding="utf-8")
-    if ex.track == "java":
-        (seed / "pom.xml").write_text(POM.format(artifact=ex.slug), encoding="utf-8")
+    build_files = _adapt_build(ex, seed)
     fields = {
         "name": ex.task_name,
         "prompt": prompt_for(ex),
@@ -238,7 +278,7 @@ def write_task(ex: Exercise, out_root: Path, commit: str = "") -> Path:
         "checks": [],
         "tier": "quality",
         "seed": "seed",
-        "protect": [*ex.test, *ex.editor],
+        "protect": [*ex.test, *ex.editor, *build_files],
         "split": "eval" if held_out(ex.track, ex.slug) else "train",
         "difficulty": ex.difficulty,
         "source": f"exercism/{ex.track}@{commit}" if commit else f"exercism/{ex.track}",

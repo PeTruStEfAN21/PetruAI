@@ -163,3 +163,47 @@ def test_build_writes_every_known_track_and_validate_keeps_what_passes(tmp_path)
     split = exercism.held_out("rust", "isogram")
     assert exercism.validated_tasks(out, split="eval" if split else "train")
     assert not exercism.validated_tasks(out, split="train" if split else "eval")
+
+
+def test_cpp_projects_build_whatever_the_folder_is_called(tmp_path):
+    cmake = "get_filename_component(exercise ${CMAKE_CURRENT_SOURCE_DIR} NAME)\nproject(${exercise} CXX)\n"
+    files = {
+        "CMakeLists.txt": cmake,
+        "two_fer.cpp": "",
+        "two_fer.h": "",
+        "two_fer_test.cpp": "",
+        ".meta/example.cpp": "",
+    }
+    track = make_exercise(
+        tmp_path,
+        "cpp",
+        "two-fer",
+        files,
+        ["two_fer.cpp", "two_fer.h"],
+        ["two_fer_test.cpp"],
+        [".meta/example.cpp"],
+    )
+    [ex] = exercism.load_exercises(track)
+    seed = exercism.write_task(ex, tmp_path / "tasks").parent / "seed"
+    text = (seed / "CMakeLists.txt").read_text(encoding="utf-8")
+    assert "get_filename_component" not in text and "set(exercise two-fer)" in text
+
+
+def test_c_projects_get_a_cmake_build_that_registers_the_unity_tests(tmp_path):
+    makefile = "LIBS = -lm\nCFLAGS += -DUNITY_SUPPORT_64 -DUNITY_INCLUDE_DOUBLE -DUNITY_OUTPUT_COLOR\n"
+    files = {
+        "makefile": makefile,
+        "isogram.c": "",
+        "isogram.h": "",
+        "test_isogram.c": "",
+        "test-framework/unity.c": "",
+        ".meta/example.c": "",
+    }
+    track = make_exercise(
+        tmp_path, "c", "isogram", files, ["isogram.c", "isogram.h"], ["test_isogram.c"], [".meta/example.c"]
+    )
+    [ex] = exercism.load_exercises(track)
+    seed = exercism.write_task(ex, tmp_path / "tasks").parent / "seed"
+    text = (seed / "CMakeLists.txt").read_text(encoding="utf-8")
+    assert not (seed / "makefile").exists() and "add_test(" in text and "test-framework/unity.c" in text
+    assert "UNITY_INCLUDE_DOUBLE" in text and "UNITY_SUPPORT_64" in text
