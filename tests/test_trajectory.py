@@ -277,3 +277,33 @@ def test_only_the_solution_files_leave_the_agents_project_for_the_final_check(tm
         spec, provider=finishing(solve), repo_root=tmp_path, project=tmp_path / "b", ctx_tokens=8192
     )
     assert honest.passed, honest.check_output
+
+
+def test_a_task_can_run_as_a_team(tmp_path):
+    from petru.agent import team
+
+    worker = FakeProvider(
+        [
+            result(tool_calls=[call("write_file", {"path": "hello.py", "content": "print('hello')\n"})]),
+            result(tool_calls=[call("task_complete", {"summary": "hello.py written"})]),
+            result(content="ok"),
+        ]
+    )
+    lead = FakeProvider(
+        [
+            result(tool_calls=[call("plan", {"title": "Hello", "steps": ["delegate hello.py"]})]),
+            result(tool_calls=[call("delegate", {"task": "print hello", "files": ["hello.py"]})]),
+            result(tool_calls=[call("task_complete", {"summary": "done"})]),
+            result(content="Done."),
+        ]
+    )
+    res = run_task(
+        spec(["python hello.py"]),
+        provider=lead,
+        repo_root=tmp_path,
+        project=tmp_path / "p",
+        ctx_tokens=8192,
+        worker=team.Worker(provider=lambda: worker, ctx_tokens=8192),
+    )
+    assert res.passed and team.LEAD_PROMPT in res.messages[0]["content"]
+    assert "delegate" in {t["function"]["name"] for t in res.tools}

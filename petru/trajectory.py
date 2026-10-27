@@ -15,12 +15,13 @@ import time
 import tomllib
 from collections.abc import Iterator
 from contextlib import contextmanager
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
 
 from petru.agent.context import transcript_tokens
 from petru.agent.loop import Agent
 from petru.agent.state import Phase, Session
+from petru.agent.team import LEAD_PROMPT, DelegateTool, Worker
 from petru.config import find_repo_root, load_config
 from petru.providers.base import ChatProvider
 from petru.providers.openai_compat import OpenAICompatProvider
@@ -37,6 +38,7 @@ CONTINUE_PROMPT = (
     "then call task_complete."
 )
 CHECK_TIMEOUT_S = 600
+WORKER_PORT_OFFSET = 10  # the assistant's server in team mode: next to the lead's port
 
 
 @dataclass
@@ -210,6 +212,7 @@ def run_task(
     max_extra_turns: int = 10,
     online: bool = False,
     max_iterations: int = 60,
+    worker: Worker | None = None,
 ) -> TaskResult:
     """One task as a user would live it: the prompt, answers to questions the model wrote as plain text
     instead of calling ask_user, and 'continue' while it stops talking in BUILD before task_complete."""
@@ -223,8 +226,10 @@ def run_task(
         plant_seed(spec.seed, project)
     run_setup(spec, project)  # a failed install shows up in the agent's own check runs
     ui = TaskUI(list(spec.answers))
-    session = Session(project, tier=spec.tier)
+    session = Session(project, tier=spec.tier, role=LEAD_PROMPT if worker else "")
     registry = default_registry(online)
+    if worker is not None:  # team mode: the model leads and delegates small tasks
+        registry.register(DelegateTool(worker))
     agent = Agent(
         provider, registry, ui, session, repo_root, ctx_tokens, online, max_iterations=max_iterations
     )
@@ -272,6 +277,11 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--max-extra-turns", type=int, default=10)
     parser.add_argument(
+        "--team", action="store_true", help="lead a team: delegate small tasks to --worker-tier"
+    )
+    parser.add_argument("--worker-tier", default="fast", help="the assistant model in team mode")
+    parser.add_argument("--worker-base-url", default=None, help="running llama-server of the assistant")
+    parser.add_argument(
         "--verify-with",
         type=Path,
         default=None,
@@ -293,6 +303,17 @@ def main(argv: list[str] | None = None) -> int:
     if base_url is None:
         manager = ServerManager(cfg)
         base_url = manager.ensure_running(tier)
+    worker, worker_manager = None, None
+    if args.team:
+        worker_url = args.worker_base_url
+        if worker_url is None:  # a second server next to the lead's, on its own port
+            worker_manager = ServerManager(replace(cfg, port=cfg.port + WORKER_PORT_OFFSET))
+            worker_url = worker_manager.ensure_running(args.worker_tier)
+        worker = Worker(
+            provider=lambda: OpenAICompatProvider(worker_url),
+            ctx_tokens=cfg.tiers[args.worker_tier].ctx,
+            tier=args.worker_tier,
+        )
     try:
         result = run_task(
             spec,
@@ -302,10 +323,12 @@ def main(argv: list[str] | None = None) -> int:
             max_iterations=cfg.tiers[tier].max_iterations,
             base_url=base_url,
             max_extra_turns=args.max_extra_turns,
+            worker=worker,
         )
     finally:
-        if manager is not None:
-            manager.stop()
+        for running in (manager, worker_manager):
+            if running is not None:
+                running.stop()
     result.save(args.out)
     status = "PASS" if result.passed else "FAIL"
     print(f"{spec.name}: {status} in {result.seconds}s, {result.tokens} tokens -> {args.out}")
