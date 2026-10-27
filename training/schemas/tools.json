@@ -226,7 +226,7 @@
     "type": "function",
     "function": {
       "name": "run_checks",
-      "description": "Detect and run the project's checks (pytest, npm test, tsc, dart analyze, flutter test, go test, cargo test, cmake + ctest, dotnet test, mvn test) and report PASS/FAIL per command. Run it after every change.",
+      "description": "Detect and run the project's checks (pytest, npm test, tsc, dart analyze, flutter test, go test, cargo test, cmake + ctest, dotnet test, mvn test, gradle test, minitest/rake, phpunit, testthat) and report PASS/FAIL per command. Run it after every change.",
       "parameters": {
         "type": "object",
         "properties": {},

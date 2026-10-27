@@ -129,3 +129,49 @@ def test_detect_checks_for_go_rust_cmake_dotnet_and_maven(tmp_path):
         project.mkdir()
         (project / marker).write_text("x", encoding="utf-8")
         assert detect_checks(project) == expected, marker
+
+
+def touch(root, *names):
+    for name in names:
+        (root / name).parent.mkdir(parents=True, exist_ok=True)
+        (root / name).write_text("x", encoding="utf-8")
+
+
+def test_detect_checks_ruby_minitest_files_or_rake(tmp_path):
+    plain, rake = tmp_path / "plain", tmp_path / "rake"
+    touch(plain, "isogram.rb", "isogram_test.rb", "test/test_helper_x.rb", "test/unit/parser_test.rb")
+    touch(rake, "lib/a.rb", "test/a_test.rb")
+    (rake / "Rakefile").write_text("require 'rake/testtask'\nRake::TestTask.new(:test)\n", encoding="utf-8")
+    assert detect_checks(plain) == ["ruby -Itest isogram_test.rb", "ruby -Itest test/unit/parser_test.rb"]
+    assert detect_checks(rake) == ["rake test"]
+
+
+def test_detect_checks_phpunit(tmp_path):
+    loose, configured, vendored = tmp_path / "loose", tmp_path / "configured", tmp_path / "vendored"
+    touch(loose, "Isogram.php", "IsogramTest.php")
+    touch(configured, "src/A.php", "tests/ATest.php", "phpunit.xml")
+    touch(vendored, "src/A.php", "tests/ATest.php", "phpunit.xml.dist", "vendor/bin/phpunit")
+    assert detect_checks(loose) == ["phpunit ."]
+    assert detect_checks(configured) == ["phpunit"]
+    assert detect_checks(vendored) == ["php vendor/bin/phpunit"]
+
+
+def test_detect_checks_r_testthat(tmp_path):
+    loose, package = tmp_path / "loose", tmp_path / "package"
+    touch(loose, "isogram.R", "test_isogram.R")
+    touch(package, "R/a.R", "tests/testthat/test-a.R")
+    assert detect_checks(loose) == ["Rscript test_isogram.R"]
+    assert detect_checks(package) == [
+        "Rscript -e \"testthat::test_dir('tests/testthat', stop_on_failure = TRUE)\""
+    ]
+
+
+def test_detect_checks_gradle_prefers_the_wrapper(tmp_path, monkeypatch):
+    wrapped, bare = tmp_path / "wrapped", tmp_path / "bare"
+    touch(wrapped, "build.gradle.kts", "gradlew", "gradlew.bat", "src/main/kotlin/A.kt")
+    touch(bare, "build.gradle", "src/main/java/A.java")
+    monkeypatch.setattr(checks.sys, "platform", "win32")
+    assert detect_checks(wrapped) == [r".\gradlew.bat test --console=plain"]
+    assert detect_checks(bare) == ["gradle test --console=plain"]
+    monkeypatch.setattr(checks.sys, "platform", "linux")
+    assert detect_checks(wrapped) == ["./gradlew test --console=plain"]

@@ -3,12 +3,48 @@
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 from petru.tools.base import Tool, ToolContext, ToolResult
 from petru.tools.shell import run_shell
 
 CHECK_TIMEOUT_S = 600
+
+
+def _ruby_checks(root: Path) -> list[str]:
+    rakefile = root / "Rakefile"
+    if rakefile.is_file() and "test" in rakefile.read_text(encoding="utf-8", errors="replace").lower():
+        return ["rake test"]
+    files = sorted({*root.glob("*_test.rb"), *root.glob("test_*.rb"), *root.glob("test/**/*_test.rb")})
+    return [f"ruby -Itest {f.relative_to(root).as_posix()}" for f in files]
+
+
+def _php_checks(root: Path) -> list[str]:
+    configured = (root / "phpunit.xml").is_file() or (root / "phpunit.xml.dist").is_file()
+    if (root / "vendor" / "bin" / "phpunit").is_file():
+        return ["php vendor/bin/phpunit"]
+    if configured:
+        return ["phpunit"]
+    if any(root.glob("*Test.php")):
+        return ["phpunit ."]
+    return ["phpunit tests"] if any(root.glob("tests/**/*Test.php")) else []
+
+
+def _r_checks(root: Path) -> list[str]:
+    if (root / "tests" / "testthat").is_dir():
+        return ["Rscript -e \"testthat::test_dir('tests/testthat', stop_on_failure = TRUE)\""]
+    return [f"Rscript {f.name}" for f in sorted(root.glob("test_*.R"))]
+
+
+def _gradle_checks(root: Path) -> list[str]:
+    if not any((root / name).is_file() for name in ("build.gradle", "build.gradle.kts")):
+        return []
+    if sys.platform == "win32" and (root / "gradlew.bat").is_file():
+        return [r".\gradlew.bat test --console=plain"]
+    if sys.platform != "win32" and (root / "gradlew").is_file():
+        return ["./gradlew test --console=plain"]
+    return ["gradle test --console=plain"]
 
 
 def _has_python_tests(root: Path) -> bool:
@@ -53,6 +89,7 @@ def detect_checks(root: Path) -> list[str]:
         commands.append("dotnet test --nologo")
     if (root / "pom.xml").is_file():
         commands.append("mvn -q test")
+    commands += _gradle_checks(root) + _ruby_checks(root) + _php_checks(root) + _r_checks(root)
     return commands
 
 
@@ -87,7 +124,7 @@ class RunChecksTool(Tool):
     name = "run_checks"
     description = (
         "Detect and run the project's checks (pytest, npm test, tsc, dart analyze, flutter test, go test, "
-        "cargo test, cmake + ctest, dotnet test, mvn test) "
+        "cargo test, cmake + ctest, dotnet test, mvn test, gradle test, minitest/rake, phpunit, testthat) "
         "and report PASS/FAIL per command. Run it after every change."
     )
     parameters = {"type": "object", "properties": {}, "additionalProperties": False}
@@ -98,7 +135,7 @@ class RunChecksTool(Tool):
             return ToolResult(
                 "No checks detected: no pyproject.toml, pytest.ini, tests/*.py or test_*.py, "
                 "no package.json test script, no tsconfig.json, no pubspec.yaml, go.mod, Cargo.toml, "
-                "CMakeLists.txt, .csproj or pom.xml."
+                "CMakeLists.txt, .csproj, pom.xml, build.gradle, *_test.rb, *Test.php or test_*.R."
             )
         reports, failed = [], False
         for project in project_dirs:
