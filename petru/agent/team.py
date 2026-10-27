@@ -27,7 +27,8 @@ validation) to the assistant with delegate, one piece per call, naming the exact
 messages it must provide and the files it should read. Keep only the hard parts yourself: the central \
 algorithm, the integration and the final review. After each delegate call, read what changed and run \
 run_checks before you build on it; if its work is wrong, fix it or delegate the fix with the failing output. \
-The assistant sees nothing but the task and the files you list."""
+You may create one new file yourself to start, then one more per piece you delegate; files that exist you may \
+change at any time. The assistant sees nothing but the task and the files you list."""
 
 WORKER_PROMPT = """You are an assistant on a team. The lead gave you one task: do exactly that task, nothing \
 else. Write only the files the task lists, keep the names and signatures it asks for, run run_checks when \
@@ -131,10 +132,12 @@ class DelegateTool(Tool):
 
     def __init__(self, worker: Worker) -> None:
         self.worker = worker
+        self.calls = 0
 
     def run(self, args: dict, ctx: ToolContext) -> ToolResult:
         from petru.agent.loop import Agent
 
+        self.calls += 1
         files = [str(f) for f in args.get("files") or []]
         read = [str(f) for f in args.get("read") or []]
         session = Session(ctx.project_root, tier=self.worker.tier, role=WORKER_PROMPT)
@@ -157,6 +160,43 @@ class DelegateTool(Tool):
             f"Assistant finished{stop}.\nReport: {report}\nChanged files:\n{changed}\n"
             f"Its last check run:\n{checks[-1500:]}"
         )
+
+
+class LeadWrite(Tool):
+    """The lead's write_file: a prompt alone does not make a model delegate, so the lead may create a new
+    file only while it has created no more files than it has delegated pieces, plus one (it may start with
+    the hard part). Files that exist stay free to change: integration and fixes are the lead's job."""
+
+    def __init__(self, inner: Tool, delegate: DelegateTool) -> None:
+        self.inner, self.delegate, self.created = inner, delegate, 0
+        self.name, self.description, self.parameters = inner.name, inner.description, inner.parameters
+        self.mutating, self.changes_files = inner.mutating, inner.changes_files
+
+    def run(self, args: dict, ctx: ToolContext) -> ToolResult:
+        try:
+            new = not resolve_in_project(str(args.get("path", "")), ctx.project_root).exists()
+        except OutsideProjectError:
+            new = False  # the inner tool reports it
+        if new and self.created > self.delegate.calls:
+            return ToolResult(
+                f"Team mode: you created {self.created} new file(s) yourself and delegated "
+                f"{self.delegate.calls} piece(s). Hand this file, or another simple piece, to the assistant "
+                "with delegate first; files that already exist you may change at any time.",
+                True,
+            )
+        result = self.inner.run(args, ctx)
+        if new and not result.is_error:
+            self.created += 1
+        return result
+
+
+def lead_registry(registry: ToolRegistry, worker: Worker) -> None:
+    """Turn a full registry into the lead's: the delegate tool, and write_file under LeadWrite."""
+    delegate = DelegateTool(worker)
+    registry.register(delegate)
+    write = registry.get("write_file")
+    if write is not None:
+        registry.register(LeadWrite(write, delegate))
 
 
 def _last_tool_output(session: Session, name: str) -> str:

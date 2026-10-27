@@ -21,7 +21,7 @@ from pathlib import Path
 from petru.agent.context import transcript_tokens
 from petru.agent.loop import Agent
 from petru.agent.state import Phase, Session
-from petru.agent.team import LEAD_PROMPT, DelegateTool, Worker
+from petru.agent.team import LEAD_PROMPT, Worker, lead_registry
 from petru.config import find_repo_root, load_config
 from petru.providers.base import ChatProvider
 from petru.providers.openai_compat import OpenAICompatProvider
@@ -229,7 +229,7 @@ def run_task(
     session = Session(project, tier=spec.tier, role=LEAD_PROMPT if worker else "")
     registry = default_registry(online)
     if worker is not None:  # team mode: the model leads and delegates small tasks
-        registry.register(DelegateTool(worker))
+        lead_registry(registry, worker)
     agent = Agent(
         provider, registry, ui, session, repo_root, ctx_tokens, online, max_iterations=max_iterations
     )

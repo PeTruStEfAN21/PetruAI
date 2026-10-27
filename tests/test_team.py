@@ -14,7 +14,7 @@ TASK = "Write a.py with x = 1. Only a.py."
 def lead_with(tmp_path, lead_steps, worker_steps):
     worker = FakeProvider([result(tool_calls=[c]) for c in worker_steps] + [result(content="ok")])
     registry = default_registry(False)
-    registry.register(team.DelegateTool(team.Worker(provider=lambda: worker, ctx_tokens=8192)))
+    team.lead_registry(registry, team.Worker(provider=lambda: worker, ctx_tokens=8192))
     lead = FakeProvider(
         [result(tool_calls=[call("plan", {"title": "T", "steps": ["delegate a.py"]})])]
         + [result(tool_calls=[c]) for c in lead_steps]
@@ -91,3 +91,24 @@ def test_delegated_changes_must_pass_the_leads_checks_before_completion(tmp_path
     session, _ = lead_with(tmp_path, lead_steps, worker_steps)
     first, second = replies(session, "task_complete")
     assert "not verified" in first and second == "done"
+
+
+def write(path, content="x = 1\n"):
+    return call("write_file", {"path": path, "content": content})
+
+
+def test_the_lead_may_start_with_one_file_then_must_delegate_before_creating_more(tmp_path):
+    delegate = call("delegate", {"task": "Write c.py with z = 3.", "files": ["c.py"]})
+    worker_steps = [write("c.py", "z = 3\n"), call("task_complete", {"summary": "c.py written"})]
+    done = call("task_complete", {"summary": "done"})
+    lead_steps = [write("a.py"), write("b.py"), delegate, write("b.py"), done]
+    session, _ = lead_with(tmp_path, lead_steps, worker_steps)
+    _, refused, allowed = replies(session, "write_file")
+    assert "delegate" in refused and "delegate" not in allowed
+    assert all((tmp_path / name).is_file() for name in ("a.py", "b.py", "c.py"))
+
+
+def test_the_lead_may_always_rewrite_a_file_that_exists(tmp_path):
+    lead_steps = [write("a.py"), write("a.py", "x = 2\n"), call("task_complete", {"summary": "done"})]
+    lead_with(tmp_path, lead_steps, [])
+    assert (tmp_path / "a.py").read_text(encoding="utf-8") == "x = 2\n"
