@@ -39,6 +39,20 @@ def detect_checks(root: Path) -> list[str]:
         text = pubspec.read_text(encoding="utf-8", errors="replace")
         commands.append("dart analyze")
         commands.append("flutter test" if "sdk: flutter" in text else "dart test")
+    if (root / "go.mod").is_file():
+        commands.append("go test ./...")
+    if (root / "Cargo.toml").is_file():
+        commands.append("cargo test --quiet")
+    if (root / "CMakeLists.txt").is_file():  # C/C++ with GCC (WinLibs); tests registered with add_test
+        commands += [
+            'cmake -S . -B build -G "MinGW Makefiles"',
+            "cmake --build build",
+            "ctest --test-dir build --output-on-failure",
+        ]
+    if any(root.glob("*.sln")) or any(root.glob("*.csproj")):
+        commands.append("dotnet test --nologo")
+    if (root / "pom.xml").is_file():
+        commands.append("mvn -q test")
     return commands
 
 
@@ -72,7 +86,8 @@ def summarize_output(text: str, head: int = 25, tail: int = 35) -> str:
 class RunChecksTool(Tool):
     name = "run_checks"
     description = (
-        "Detect and run the project's checks (pytest, npm test, tsc, dart analyze, flutter test) "
+        "Detect and run the project's checks (pytest, npm test, tsc, dart analyze, flutter test, go test, "
+        "cargo test, cmake + ctest, dotnet test, mvn test) "
         "and report PASS/FAIL per command. Run it after every change."
     )
     parameters = {"type": "object", "properties": {}, "additionalProperties": False}
@@ -82,7 +97,8 @@ class RunChecksTool(Tool):
         if not project_dirs:
             return ToolResult(
                 "No checks detected: no pyproject.toml, pytest.ini, tests/*.py or test_*.py, "
-                "no package.json test script, no tsconfig.json, no pubspec.yaml."
+                "no package.json test script, no tsconfig.json, no pubspec.yaml, go.mod, Cargo.toml, "
+                "CMakeLists.txt, .csproj or pom.xml."
             )
         reports, failed = [], False
         for project in project_dirs:

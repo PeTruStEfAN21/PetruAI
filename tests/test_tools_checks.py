@@ -110,3 +110,22 @@ def test_check_output_keeps_the_first_failure_and_the_summary():
     assert out[:3] == lines[:3] and out[-1] == "Some tests failed." and any("omitted" in line for line in out)
     assert "?????????????????????????????" not in out and len(out) < 70
     assert summarize_output("1 passed") == "1 passed"
+
+
+def test_detect_checks_for_go_rust_cmake_dotnet_and_maven(tmp_path):
+    cases = {
+        "go.mod": ["go test ./..."],
+        "Cargo.toml": ["cargo test --quiet"],
+        "CMakeLists.txt": [
+            'cmake -S . -B build -G "MinGW Makefiles"',
+            "cmake --build build",
+            "ctest --test-dir build --output-on-failure",
+        ],
+        "app.csproj": ["dotnet test --nologo"],
+        "pom.xml": ["mvn -q test"],
+    }
+    for marker, expected in cases.items():
+        project = tmp_path / marker.replace(".", "_")
+        project.mkdir()
+        (project / marker).write_text("x", encoding="utf-8")
+        assert detect_checks(project) == expected, marker
