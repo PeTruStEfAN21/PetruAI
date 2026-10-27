@@ -455,3 +455,66 @@ def test_a_state_file_per_run_lets_every_night_generate_again(tmp_path):
     generate(config("n1"), runner=lambda task, cfg, attempt: good("python_a"))
     generate(config("n2"), runner=lambda task, cfg, attempt: good("python_a", seconds=11.0))
     assert len(read_jsonl(out)) == 2 and (tmp_path / "n2" / "state.json").is_file()
+
+
+def seeded_tasks(root: Path, names: list[str]) -> list[Path]:
+    paths = []
+    for name in names:
+        (root / name).mkdir(parents=True, exist_ok=True)
+        path = root / name / "task.toml"
+        path.write_text(f'name = "{name}"\nprompt = "do {name}"\nseed = "seed"\n', encoding="utf-8")
+        paths.append(path)
+    return paths
+
+
+def test_seeded_tasks_are_known_by_their_own_names(tmp_path):
+    tasks = seeded_tasks(tmp_path / "pool", ["go_ex_bob", "rust_ex_anagram"])
+    seen = []
+
+    def runner(task_path, cfg, attempt):
+        seen.append(task_path.parent.name)
+        return good(task_path.parent.name)
+
+    cfg = TrajConfig(tasks_dir=tmp_path / "unused", out=tmp_path / "t.jsonl", samples_per_task=1)
+    stats = generate(cfg, runner=runner, tasks=tasks)
+    assert stats["kept"] == {"go_ex_bob": 1, "rust_ex_anagram": 1} and seen == [
+        "go_ex_bob",
+        "rust_ex_anagram",
+    ]
+    assert sorted(s.language for s in read_jsonl(cfg.out)) == ["go", "rust"]
+
+
+def test_every_task_prefix_has_its_dataset_language():
+    from petru_train.trajectories import language_for
+
+    expected = {
+        "go_ex_a": "go", "rust_ex_a": "rust", "c_ex_a": "c", "cpp_ex_a": "cpp", "csharp_ex_a": "csharp",
+        "java_ex_a": "java", "kotlin_ex_a": "kotlin", "js_ex_a": "javascript", "ts_ex_a": "typescript",
+        "ruby_ex_a": "ruby", "php_ex_a": "php", "r_ex_a": "r", "dart_ex_a": "dart", "shell_ex_a": "shell",
+        "sql_ex_a": "sql", "python_ex_a": "python", "flutter_counter": "dart", "go_wordfreq": "go",
+    }  # fmt: skip
+    assert {name: language_for(name) for name in expected} == expected
+
+
+def test_parallel_attempts_share_the_server_and_keep_the_counts_right(tmp_path):
+    import threading
+    import time
+
+    tasks = seeded_tasks(tmp_path / "pool", [f"python_ex_{i}" for i in range(6)])
+    lock, running, peak = threading.Lock(), [0], [0]
+
+    def runner(task_path, cfg, attempt):
+        with lock:
+            running[0] += 1
+            peak[0] = max(peak[0], running[0])
+        time.sleep(0.05)
+        with lock:
+            running[0] -= 1
+        return good(task_path.parent.name, passed=attempt == 2)  # every task passes on its second attempt
+
+    cfg = TrajConfig(
+        tasks_dir=tmp_path, out=tmp_path / "t.jsonl", samples_per_task=1, attempts_per_task=2, parallel=3
+    )
+    stats = generate(cfg, runner=runner, tasks=tasks)
+    assert peak[0] == 3 and all(v == 1 for v in stats["kept"].values()) and len(read_jsonl(cfg.out)) == 6
+    assert all(v == 2 for v in stats["attempts"].values())

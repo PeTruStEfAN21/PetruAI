@@ -9,6 +9,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 import tomllib
 from collections.abc import Callable
@@ -26,6 +27,21 @@ LANGUAGE_BY_PREFIX = {
     "ts": "typescript",
     "js": "javascript",
     "flutter": "dart",
+    "dart": "dart",
+    "go": "go",
+    "rust": "rust",
+    "c": "c",
+    "cpp": "cpp",
+    "csharp": "csharp",
+    "java": "java",
+    "kotlin": "kotlin",
+    "ruby": "ruby",
+    "php": "php",
+    "r": "r",
+    "shell": "shell",
+    "sql": "sql",
+    "swift": "swift",
+    "scala": "scala",
 }
 Runner = Callable[[Path, "TrajConfig", int], dict]
 
@@ -42,6 +58,15 @@ class TrajConfig:
     attempt_timeout_s: int = 900
     max_minutes: int | None = None
     state_file: Path | None = None  # progress per task; the night keeps one per run so each night generates
+    parallel: int = 1  # attempts at once on one server: one generates while another runs its tests
+
+
+def task_name(task_path: Path) -> str:
+    """The task's own name: seeded tasks all live in `<name>/task.toml`."""
+    if not task_path.is_file():
+        return task_path.stem
+    data = tomllib.loads(task_path.read_text(encoding="utf-8"))
+    return str(data.get("name") or task_path.stem)
 
 
 def load_traj_config(path: Path = DEFAULT_CONFIG, base_dir: Path | None = None) -> TrajConfig:
@@ -264,14 +289,14 @@ def run_petru_task(task_path: Path, cfg: TrajConfig, attempt: int) -> dict:
             except subprocess.TimeoutExpired:
                 kill_tree(proc.pid)
                 return {
-                    "name": task_path.stem,
+                    "name": task_name(task_path),
                     "passed": False,
                     "stop_reason": f"timeout after {cfg.attempt_timeout_s}s",
                 }
         if not out.exists():
             tail = log.read_text(encoding="utf-8", errors="replace").strip().splitlines()[-5:]
             return {
-                "name": task_path.stem,
+                "name": task_name(task_path),
                 "passed": False,
                 "stop_reason": "runner error: " + " | ".join(tail),
             }
@@ -304,17 +329,24 @@ def _load_state(path: Path) -> dict:
 
 
 def generate(
-    cfg: TrajConfig, runner: Runner = run_petru_task, clock: Callable[[], float] = time.monotonic
+    cfg: TrajConfig,
+    runner: Runner = run_petru_task,
+    clock: Callable[[], float] = time.monotonic,
+    tasks: list[Path] | None = None,
 ) -> dict:
-    """Round-robin over the tasks, one attempt each per round, until every task has `samples_per_task` kept
-    or `attempts_per_task` spent, or `max_minutes` is used up (no stack is starved). Resumable."""
-    tasks = sorted(cfg.tasks_dir.glob("*.toml"))
+    """Round-robin over the tasks (`tasks`, else the TOML files of `tasks_dir`), one attempt each per round,
+    until every task has `samples_per_task` kept or `attempts_per_task` spent, or `max_minutes` is used up (no
+    stack is starved). `parallel` attempts run at once, never two of the same task. Resumable."""
+    tasks = list(tasks) if tasks is not None else sorted(cfg.tasks_dir.glob("*.toml"))
+    names = {task: task_name(task) for task in tasks}
     state_path = _state_path(cfg)
     state = _load_state(state_path)
-    for task in tasks:
-        state["kept"].setdefault(task.stem, 0)
-        state["attempts"].setdefault(task.stem, 0)
+    for name in names.values():
+        state["kept"].setdefault(name, 0)
+        state["attempts"].setdefault(name, 0)
     started = clock()
+    lock = threading.Lock()
+    in_flight: set[str] = set()
 
     def out_of_time() -> bool:
         return cfg.max_minutes is not None and (clock() - started) / 60 >= cfg.max_minutes
@@ -323,32 +355,49 @@ def generate(
         state_path.parent.mkdir(parents=True, exist_ok=True)
         state_path.write_text(json.dumps(state, indent=1), encoding="utf-8")
 
-    progress = True
-    while progress and not out_of_time():
-        progress = False
-        for task in tasks:
-            if out_of_time():
-                break
-            name = task.stem
-            kept, attempts = int(state["kept"][name]), int(state["attempts"][name])
-            if kept >= cfg.samples_per_task or attempts >= cfg.attempts_per_task:
-                continue
-            progress = True
-            attempts += 1
-            result = runner(task, cfg, attempts)
+    def next_task() -> Path | None:
+        """The open task with the fewest attempts, in list order: one attempt each per round."""
+        open_tasks = [
+            (int(state["attempts"][name]), index, task)
+            for index, (task, name) in enumerate(names.items())
+            if name not in in_flight
+            and int(state["kept"][name]) < cfg.samples_per_task
+            and int(state["attempts"][name]) < cfg.attempts_per_task
+        ]
+        return min(open_tasks)[2] if open_tasks else None
+
+    def worker() -> None:
+        while True:
+            with lock:
+                task = None if out_of_time() else next_task()
+                if task is None:
+                    return
+                name = names[task]
+                in_flight.add(name)
+                state["attempts"][name] = attempt = int(state["attempts"][name]) + 1
+            try:
+                result = runner(task, cfg, attempt)
+            except Exception as exc:  # one broken attempt must not end the generation
+                result = {"name": name, "passed": False, "stop_reason": f"runner error: {exc}"}
             sample = result_to_sample(result, name, cfg.max_tokens)
-            if sample is not None:
-                _append_jsonl(cfg.out, sample)
-                kept += 1
-                verdict = "kept"
-            else:
-                _save_rejected(cfg, name, attempts, result)
-                verdict = "rejected"
-            line = f"{name} attempt {attempts}: {verdict} ({kept}/{cfg.samples_per_task})"
-            reason = rejection_reason(result, cfg.max_tokens) if sample is None else ""
-            print(f"{line}: {reason}" if reason else line, flush=True)
-            state["kept"][name], state["attempts"][name] = kept, attempts
-            save()
+            with lock:
+                in_flight.discard(name)
+                if sample is not None:
+                    _append_jsonl(cfg.out, sample)
+                    state["kept"][name] = int(state["kept"][name]) + 1
+                else:
+                    _save_rejected(cfg, name, attempt, result)
+                verdict = "kept" if sample else "rejected"
+                line = f"{name} attempt {attempt}: {verdict} ({state['kept'][name]}/{cfg.samples_per_task})"
+                reason = rejection_reason(result, cfg.max_tokens) if sample is None else ""
+                print(f"{line}: {reason}" if reason else line, flush=True)
+                save()
+
+    workers = [threading.Thread(target=worker) for _ in range(max(1, cfg.parallel))]
+    for thread in workers:
+        thread.start()
+    for thread in workers:
+        thread.join()
     save()
     return {"tasks": len(tasks), "kept": dict(state["kept"]), "attempts": dict(state["attempts"])}
 
