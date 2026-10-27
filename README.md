@@ -57,9 +57,10 @@ time by training on the user's own repositories.
 
 - **Team mode** (`--team`): the 35B model leads and, after reading the task and its tests, decides whether the
   project needs the team. Working as a team, it keeps the hard parts and hands simple, self-contained pieces
-  (records, exceptions, formatting, parsing helpers) to a faster assistant model (the fine-tune once one is
-  promoted, else the 4B) that works in a fresh context, may write only the files it was given and cannot run shell
-  commands. The lead verifies every delegated piece with the checks before it builds on it. The assistant's server
+  (records, exceptions, formatting, parsing helpers) to a faster assistant model that works in a fresh context,
+  may write only the files it was given and cannot run shell commands. Each piece goes to the promoted specialist
+  for the language of its files, else to the general fine-tune, else to the 4B, so a project in several languages
+  is shared among several specialists. The lead verifies every delegated piece with the checks before it builds on it. The assistant's server
   starts on the first delegation, so a lead that works alone costs no extra memory.
 - **Offline package caches** for generated projects: a Python wheelhouse, a pre-filled npm cache and a pub cache
   (`infra/offline/`), with the agent told which packages are available.
