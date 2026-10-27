@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import argparse
 import sys
+from dataclasses import replace
 from pathlib import Path
 
 from rich.console import Console
 
+from petru.agent import team
 from petru.agent.loop import Agent
-from petru.agent.state import Session
+from petru.agent.state import Phase, Session
 from petru.config import find_repo_root, load_config
 from petru.journal.summarize import journal_prompt_section, summarize_pending
 from petru.memory.tools import memory_prompt_section
@@ -28,6 +30,16 @@ def make_provider(base_url: str) -> OpenAICompatProvider:
     return OpenAICompatProvider(base_url)
 
 
+def _assistant(manager: ServerManager, cfg) -> team.Worker:
+    """The team's assistant: the promoted fine-tune when there is one; its server starts on first use."""
+    tier = "tuned" if "tuned" in cfg.tiers else "fast"
+    return team.Worker(
+        provider=lambda: make_provider(manager.ensure_running(tier)),
+        ctx_tokens=cfg.tiers[tier].ctx,
+        tier=tier,
+    )
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="petru", description="Local coding agent in your terminal.")
     parser.add_argument(
@@ -38,6 +50,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--yolo", action="store_true", help="never ask for confirmation; build immediately")
     parser.add_argument("--project", default=".", help="project directory (default: current directory)")
     parser.add_argument("-p", "--prompt", default=None, help="run one prompt non-interactively and exit")
+    parser.add_argument(
+        "--team",
+        action="store_true",
+        help="the model (default: quality) leads and hands simple pieces to an assistant (tuned, else fast)",
+    )
     return parser
 
 
@@ -63,6 +80,8 @@ def _switch_model(manager: ServerManager, agent: Agent, cfg, tier: str, console:
 
 
 def _run_turn(agent: Agent, ui: RichUI, console: Console, text: str, quick: bool = False) -> None:
+    if agent.session.phase is Phase.IDLE:  # a new task: in team mode the lead chooses again
+        team.start_task(agent.registry)
     try:
         agent.run_turn(text, quick=quick)
     except KeyboardInterrupt:
@@ -310,7 +329,7 @@ def main(argv: list[str] | None = None) -> int:
     project.mkdir(parents=True, exist_ok=True)
     repo_root = find_repo_root(Path(__file__))
     cfg = load_config(repo_root)
-    tier = ns.model or cfg.default_tier
+    tier = ns.model or ("quality" if ns.team else cfg.default_tier)
     if tier == "auto":  # the promoted language specialist for this project, else the general fine-tune
         from petru.router import choose_tier
 
@@ -328,13 +347,18 @@ def main(argv: list[str] | None = None) -> int:
     except ServerStartError as exc:
         err.print(f"Cannot start the model server: {exc}", markup=False)
         return 2
+    worker_manager = ServerManager(replace(cfg, port=cfg.port + team.WORKER_PORT_OFFSET)) if ns.team else None
     try:
         provider = make_provider(base_url)
-        session = Session(project, tier=tier, yolo=ns.yolo)
+        session = Session(project, tier=tier, yolo=ns.yolo, role=team.LEAD_PROMPT if ns.team else "")
         ui = NonInteractiveUI(err, yolo=ns.yolo) if ns.prompt is not None else RichUI(console)
+        registry = default_registry(online)
+        if worker_manager is not None:
+            team.lead_registry(registry, _assistant(worker_manager, cfg))
+            err.print(f"Team mode: {tier} leads; the assistant starts on its first delegation.", markup=False)
         agent = Agent(
             provider=provider,
-            registry=default_registry(online),
+            registry=registry,
             ui=ui,
             session=session,
             repo_root=repo_root,
@@ -361,6 +385,8 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     finally:
         manager.stop()
+        if worker_manager is not None:
+            worker_manager.stop()
 
 
 if __name__ == "__main__":

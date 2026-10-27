@@ -21,7 +21,7 @@ from pathlib import Path
 from petru.agent.context import transcript_tokens
 from petru.agent.loop import Agent
 from petru.agent.state import Phase, Session
-from petru.agent.team import LEAD_PROMPT, Worker, lead_registry
+from petru.agent.team import LEAD_PROMPT, WORKER_PORT_OFFSET, Worker, lead_registry
 from petru.config import find_repo_root, load_config
 from petru.providers.base import ChatProvider
 from petru.providers.openai_compat import OpenAICompatProvider
@@ -38,7 +38,6 @@ CONTINUE_PROMPT = (
     "then call task_complete."
 )
 CHECK_TIMEOUT_S = 600
-WORKER_PORT_OFFSET = 10  # the assistant's server in team mode: next to the lead's port
 
 
 @dataclass

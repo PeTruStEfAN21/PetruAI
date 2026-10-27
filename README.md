@@ -55,6 +55,12 @@ time by training on the user's own repositories.
   | `fast` | Qwen3.5-4B IQ4_XS | fully in VRAM |
   | `tuned` | Qwen3.5-4B fine-tuned by the pipeline below | appears once a model passes the gate |
 
+- **Team mode** (`--team`): the 35B model leads and, after reading the task and its tests, decides whether the
+  project needs the team. Working as a team, it keeps the hard parts and hands simple, self-contained pieces
+  (records, exceptions, formatting, parsing helpers) to a faster assistant model (the fine-tune once one is
+  promoted, else the 4B) that works in a fresh context, may write only the files it was given and cannot run shell
+  commands. The lead verifies every delegated piece with the checks before it builds on it. The assistant's server
+  starts on the first delegation, so a lead that works alone costs no extra memory.
 - **Offline package caches** for generated projects: a Python wheelhouse, a pre-filled npm cache and a pub cache
   (`infra/offline/`), with the agent told which packages are available.
 
@@ -116,6 +122,7 @@ prints the fix for anything missing. Details: `docs/setup.md`.
 py -3.14 -m uv sync
 py -3.14 -m uv run petru                     # REPL in the current folder, tier "default"
 py -3.14 -m uv run petru --model fast -p "Create hello.py that prints the date"   # one-shot
+py -3.14 -m uv run petru --team              # the 35B leads a two-model team
 ```
 
 Slash commands: `/help`, `/model [tier]`, `/plan`, `/quick <text>`, `/done`, `/yolo`, `/status`, `/memory`,

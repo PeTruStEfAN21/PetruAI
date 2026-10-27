@@ -50,6 +50,7 @@ WORKER_TOOLS = (
     "task_complete",
 )
 WORKER_MAX_ITERATIONS = 30
+WORKER_PORT_OFFSET = 10  # the assistant's server: next to the lead's port
 
 
 def worker_request(task: str, files: list[str], read: list[str]) -> str:
@@ -254,6 +255,17 @@ def lead_registry(registry: ToolRegistry, worker: Worker) -> None:
     write = registry.get("write_file")
     if write is not None:
         registry.register(LeadWrite(write, delegate, choice))
+
+
+def start_task(registry: ToolRegistry) -> None:
+    """A new task in the same session (the REPL): the lead chooses again and counts its files afresh."""
+    choice, delegate, write = (registry.get(name) for name in ("choose_mode", "delegate", "write_file"))
+    if isinstance(choice, ChooseModeTool):
+        choice.mode = None
+    if isinstance(delegate, DelegateTool):
+        delegate.calls = 0
+    if isinstance(write, LeadWrite):
+        write.created = 0
 
 
 def _last_tool_output(session: Session, name: str) -> str:

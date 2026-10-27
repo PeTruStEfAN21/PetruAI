@@ -1,5 +1,6 @@
 from petru import cli
-from petru.config import Config, default_tiers
+from petru.agent import team
+from petru.config import Config, Tier, default_tiers
 from tests.fakes import FakeProvider, call, result
 
 
@@ -84,3 +85,79 @@ def test_server_start_error_is_reported(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(FakeManager, "ensure_running", boom)
     assert cli.main(["-p", "x", "--project", str(tmp_path)]) == 2
     assert "port busy" in capsys.readouterr().err
+
+
+def patch_team(monkeypatch, tmp_path, lead_script, worker_script, tiers=None):
+    patch_runtime(monkeypatch, tmp_path, [])
+    scripts = [lead_script, worker_script]
+    providers = []
+
+    def make_provider(base_url):
+        providers.append(FakeProvider(scripts[len(providers)]))
+        return providers[-1]
+
+    monkeypatch.setattr(cli, "make_provider", make_provider)
+    if tiers is not None:
+        monkeypatch.setattr(
+            cli, "load_config", lambda root: Config(root, root / "models", root / "server.exe", tiers=tiers)
+        )
+    return providers
+
+
+def test_team_mode_leads_with_the_quality_tier_and_starts_the_assistant_when_it_delegates(
+    tmp_path, monkeypatch
+):
+    lead = [
+        result(tool_calls=[call("choose_mode", {"mode": "team", "reason": "two files"})]),
+        result(tool_calls=[call("delegate", {"task": "Write a.py with x = 1.", "files": ["a.py"]})]),
+        result(content="done"),
+    ]
+    worker = [
+        result(tool_calls=[call("write_file", {"path": "a.py", "content": "x = 1\n"})]),
+        result(content="a.py written"),
+    ]
+    providers = patch_team(monkeypatch, tmp_path, lead, worker)
+    assert cli.main(["-p", "x", "--project", str(tmp_path), "--team"]) == 0
+    lead_manager, worker_manager = FakeManager.instances
+    assert lead_manager.started == ["quality"] and worker_manager.started == ["fast"]
+    assert worker_manager.cfg.port == lead_manager.cfg.port + team.WORKER_PORT_OFFSET
+    assert lead_manager.stopped and worker_manager.stopped
+    first = providers[0].calls[0]
+    assert team.LEAD_PROMPT in first["messages"][0]["content"]
+    assert {"delegate", "choose_mode"} <= {t["function"]["name"] for t in first["tools"]}
+    assert (tmp_path / "a.py").read_text(encoding="utf-8") == "x = 1\n"
+
+
+def test_team_mode_starts_no_assistant_while_the_lead_works_alone(tmp_path, monkeypatch):
+    patch_team(monkeypatch, tmp_path, [result(content="done")], [])
+    assert cli.main(["-p", "x", "--project", str(tmp_path), "--team"]) == 0
+    assert FakeManager.instances[1].started == [] and FakeManager.instances[1].stopped
+
+
+def test_the_assistant_is_the_promoted_fine_tune_when_there_is_one(tmp_path, monkeypatch):
+    tiers = {**default_tiers(), "tuned": Tier("tuned", "Qwen3.5-4B-petru.gguf", ctx=32768)}
+    delegate = call("delegate", {"task": "Write a.py.", "files": ["a.py"]})
+    patch_team(
+        monkeypatch,
+        tmp_path,
+        [result(tool_calls=[delegate]), result(content="done")],
+        [result(content="ok")],
+        tiers=tiers,
+    )
+    cli.main(["-p", "x", "--project", str(tmp_path), "--team"])
+    assert FakeManager.instances[1].started == ["tuned"]
+
+
+def test_each_new_task_in_the_repl_lets_the_lead_choose_again(tmp_path):
+    from petru.agent.loop import Agent
+    from petru.agent.state import Session
+    from petru.tools.registry import default_registry
+
+    registry = default_registry(False)
+    team.lead_registry(registry, team.Worker(provider=lambda: None, ctx_tokens=8192))
+    registry.get("choose_mode").mode = "solo"  # what the lead chose for the previous task
+    session = Session(tmp_path, role=team.LEAD_PROMPT)
+    ui = cli.NonInteractiveUI(cli.Console(), yolo=True)
+    agent = Agent(FakeProvider([result(content="hi")]), registry, ui, session, tmp_path, 8192, False)
+    cli._run_turn(agent, ui, cli.Console(), "next task")
+    assert registry.get("choose_mode").mode is None

@@ -154,3 +154,14 @@ def test_the_choice_is_final(tmp_path):
     session, _ = lead_with(tmp_path, lead_steps, [])
     assert "final" in replies(session, "choose_mode")[1]
     assert not (tmp_path / "b.py").exists()  # still a team: b.py waits for a delegation
+
+
+def test_a_new_task_lets_the_lead_choose_again():
+    registry = default_registry(False)
+    team.lead_registry(registry, team.Worker(provider=lambda: None, ctx_tokens=8192))
+    registry.get("choose_mode").mode, registry.get("write_file").created = "solo", 3
+    registry.get("delegate").calls = 2
+    team.start_task(registry)
+    assert registry.get("choose_mode").mode is None and registry.get("write_file").created == 0
+    assert registry.get("delegate").calls == 0
+    team.start_task(default_registry(False))  # a registry without the team's tools is left alone
