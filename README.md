@@ -73,9 +73,10 @@ See `docs/memory.md`.
 
 ## Training pipeline (`training/`)
 
-An autonomous, resumable nightly pipeline (Python 3.12, Unsloth + TRL):
+An autonomous, resumable nightly pipeline (Python 3.12, Unsloth + TRL) over 182 permissively licensed
+repositories in every in-demand language plus the user's own:
 
-1. **Data.** Commits of the user's repositories and of 42 permissively licensed GitHub repositories (license
+1. **Data.** Commits of the user's repositories and of the permissively licensed GitHub repositories (license
    verified through the GitHub API; copyleft and unknown licenses excluded) become read/edit/complete tool
    trajectories. Filters drop generated files, lockfiles, secrets, trivial messages and oversized changes; MinHash
    deduplication and per-language balancing follow. Verified trajectories of the local models solving scripted tasks
@@ -87,7 +88,13 @@ An autonomous, resumable nightly pipeline (Python 3.12, Unsloth + TRL):
 4. **Gate**: the candidate is promoted only if it does not regress against the base model on held-out loss
    (assistant tokens), tool-call validity on fixed requests and the pass rate on harness tasks.
 
-Each heavy step runs in its own process so the GPU is fully released between steps. See `docs/training.md`.
+5. **Language specialists**: after the generalist, the night trains specialists in rotation (Python, Python web,
+   Python data, web/TypeScript, Flutter, JVM, .NET, C/C++, Go, Rust, PHP, Ruby, Swift, R, scripting), each on its
+   share of the data and gated against the base model on its own tasks. Promoted ones become tiers
+   `tuned-<name>`; `petru --model auto` picks the one that matches the project.
+
+Each heavy step runs in its own process so the GPU is fully released between steps. A scheduled task runs the
+whole pipeline every night on AC power. See `docs/training.md`.
 
 ## Install (Windows, NVIDIA GPU)
 
