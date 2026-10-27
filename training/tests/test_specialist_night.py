@@ -153,3 +153,16 @@ def test_held_out_exercism_tasks_of_its_languages_evaluate_a_specialist(tmp_path
         f"go_ex_{a}",
         f"go_ex_{b}",
     ]
+
+
+def test_baselines_of_seeded_tasks_are_cached_per_task_name(tmp_path):
+    calls = []
+
+    def eval_fn(gguf, tasks, log):
+        calls.append([t.parent.name for t in tasks])
+        return EvalResult(float("nan"), 1.0, 0.5, {}, "s")
+
+    one, two = [tmp_path / "php_ex_a" / "task.toml"], [tmp_path / "ruby_ex_b" / "task.toml"]
+    night._base_result(one, tmp_path / "baseline", eval_fn)
+    night._base_result(two, tmp_path / "baseline", eval_fn)
+    assert calls == [["php_ex_a"], ["ruby_ex_b"]]  # both are "task.toml": the stem would share one cache file

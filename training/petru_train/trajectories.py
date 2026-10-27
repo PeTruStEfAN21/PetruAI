@@ -64,7 +64,7 @@ class TrajConfig:
 def task_name(task_path: Path) -> str:
     """The task's own name: seeded tasks all live in `<name>/task.toml`."""
     if not task_path.is_file():
-        return task_path.stem
+        return task_path.parent.name if task_path.name == "task.toml" else task_path.stem
     data = tomllib.loads(task_path.read_text(encoding="utf-8"))
     return str(data.get("name") or task_path.stem)
 

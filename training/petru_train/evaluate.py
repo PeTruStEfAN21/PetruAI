@@ -19,6 +19,7 @@ from petru_train.exercism import TASKS_DIR as EXERCISM_TASKS
 from petru_train.exercism import validated_tasks
 from petru_train.samples import load_tools, read_jsonl, render_chat, text_tokenizer
 from petru_train.server import start_server, stop, wait_healthy
+from petru_train.trajectories import task_name
 
 TRAINING_DIR = Path(__file__).resolve().parents[1]
 REPO_ROOT = TRAINING_DIR.parent
@@ -85,9 +86,10 @@ def held_out_tasks(pool: Path | None, per_language: int = HELD_OUT_PER_LANGUAGE)
 
 def tasks_signature(tasks_dir: Path, requests_file: Path, limit: int, tasks: list[Path] | None = None) -> str:
     """Hash of exactly what tool_validity and task_pass measure, so a stale baseline is noticed. `tasks`, when
-    given (a specialist's own tasks), replaces the balanced selection."""
+    given (a specialist's own, or a list frozen earlier), replaces the balanced selection; the same list gives
+    the same signature either way."""
     chosen = select_eval_tasks(tasks_dir, limit) if tasks is None else tasks
-    head = f"limit={limit}" if tasks is None else f"tasks={len(chosen)}"
+    head = f"tasks={len(chosen)}"
     digest = hashlib.sha1(f"{head} harness={HARNESS_VERSION}".encode())
     digest.update(requests_file.read_bytes() if requests_file.is_file() else b"")
     for task in chosen:
@@ -214,7 +216,7 @@ def task_pass(
         result = runner(task, base_url, ctx_tokens)
         details.append(
             {
-                "name": result.get("name", task.stem),
+                "name": result.get("name", task_name(task)),
                 "passed": bool(result.get("passed")),
                 "seconds": result.get("seconds"),
                 "stop_reason": result.get("stop_reason"),
@@ -330,6 +332,7 @@ def evaluate(
 ) -> EvalResult:
     """Tool validity and task pass rate of a GGUF served by llama-server; the loss comes from training."""
     loss = float("nan")
+    tasks = select_eval_tasks(tasks_dir, limit) if tasks is None else tasks  # one list for everything below
     proc = start_server(gguf, port, ctx, log=log)
     try:
         if not wait_healthy(port, proc=proc):
@@ -339,7 +342,11 @@ def evaluate(
         passed, task_details = task_pass(base_url, tasks_dir, ctx, limit, tasks=tasks)
     finally:
         stop(proc)
-    details = {"tool_validity": validity_details, "task_pass": task_details}
+    details = {
+        "tool_validity": validity_details,
+        "task_pass": task_details,
+        "tasks": [str(t) for t in tasks],  # the candidate is evaluated on exactly these
+    }
     signature = tasks_signature(tasks_dir, requests_file, limit, tasks=tasks)
     return EvalResult(loss, validity, passed, details, signature)
 

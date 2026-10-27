@@ -169,3 +169,27 @@ def _report():
     return TrainReport(
         steps=1, train_loss=1.0, eval_loss=0.9, minutes=1.0, adapter_dir="a", resumed_from=None
     )
+
+
+def test_the_candidate_is_evaluated_on_exactly_the_tasks_of_the_baseline(tmp_path, monkeypatch):
+    import json as _json
+    from pathlib import Path
+
+    from petru_train import evaluate, export, nightly
+    from petru_train.evaluate import EvalResult
+
+    seen = []
+    monkeypatch.setattr(
+        evaluate,
+        "evaluate",
+        lambda gguf, **kw: seen.append(kw.get("tasks")) or EvalResult(0, 1.0, 1.0, {}, "s"),
+    )
+    monkeypatch.setattr(export, "candidate_file", lambda run_dir: run_dir / "candidate-Q4_K_M.gguf")
+    ctx = RunContext(run="r1", runs_dir=tmp_path, hours=1.0)
+    ctx.run_dir.mkdir(parents=True)
+    report = {"base_eval_loss": 1.0, "eval_loss": 0.5}
+    (ctx.run_dir / "train_report.json").write_text(_json.dumps(report), encoding="utf-8")
+    frozen = [str(tmp_path / "go_ex_a" / "task.toml"), str(tmp_path / "python_x.toml")]
+    EvalResult(0, 1.0, 1.0, {"tasks": frozen}, "s").save(ctx.baseline_dir / "eval_base.json")
+    nightly.step_eval_cand(ctx)
+    assert seen == [[Path(p) for p in frozen]]

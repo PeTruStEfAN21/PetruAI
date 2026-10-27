@@ -338,3 +338,14 @@ def test_held_out_exercism_tasks_join_the_evaluation_one_per_language(tmp_path, 
     monkeypatch.setattr(ev, "EVAL_POOL", pool)
     chosen = ev.select_eval_tasks(harness)
     assert [p.name for p in chosen] == ["python_x.toml", "task.toml", "task.toml"]
+
+
+def test_the_signature_names_the_list_whether_chosen_now_or_frozen_earlier(tmp_path):
+    from petru_train.evaluate import select_eval_tasks, tasks_signature
+
+    (tmp_path / "python_a.toml").write_text('prompt = "p"\n', encoding="utf-8")
+    (tmp_path / "ts_b.toml").write_text('prompt = "p"\n', encoding="utf-8")
+    requests = tmp_path / "requests.json"
+    requests.write_text("[]", encoding="utf-8")
+    frozen = select_eval_tasks(tmp_path, 6)
+    assert tasks_signature(tmp_path, requests, 6) == tasks_signature(tmp_path, requests, 6, tasks=frozen)

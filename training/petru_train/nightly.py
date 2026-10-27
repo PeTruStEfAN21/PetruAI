@@ -164,10 +164,14 @@ def step_eval_cand(ctx: RunContext) -> None:
     candidate = candidate_file(ctx.run_dir)
     if candidate is None:
         raise RuntimeError("no quantized candidate: the export step did not produce one")
-    result = evaluate(candidate, log=ctx.run_dir / "server.log")
+    baseline = EvalResult.load(ctx.baseline_dir / "eval_base.json")
+    frozen = [
+        Path(p) for p in baseline.details.get("tasks", [])
+    ] or None  # the tasks the base was measured on
+    result = evaluate(candidate, log=ctx.run_dir / "server.log", tasks=frozen)
     result.save(ctx.run_dir / "eval_cand.json")
     report = json.loads((ctx.run_dir / "train_report.json").read_text(encoding="utf-8"))
-    base, result = gate_inputs(EvalResult.load(ctx.baseline_dir / "eval_base.json"), result, report)
+    base, result = gate_inputs(baseline, result, report)
     passed, why = gate(base, result)
     (ctx.run_dir / "gate.json").write_text(
         json.dumps({"passed": passed, "reason": why}, indent=2), encoding="utf-8"

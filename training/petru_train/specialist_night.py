@@ -10,6 +10,7 @@ against the base model on its own gate. Every stage leaves a marker, so an inter
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import shutil
 import sys
@@ -24,6 +25,7 @@ from petru_train.evaluate import BASE_GGUF, TASKS_DIR, EvalResult, evaluate, gat
 from petru_train.export import MODELS_DIR, candidate_file, export_run
 from petru_train.specialists import Specialist, load_specialists, write_specialist_data
 from petru_train.train import TrainReport, load_train_config, train
+from petru_train.trajectories import task_name
 
 TRAINING_DIR = Path(__file__).resolve().parents[1]
 RUNS_DIR = TRAINING_DIR / "runs"
@@ -56,7 +58,8 @@ def _write(path: Path, data: dict) -> dict:
 
 def _base_result(tasks: list[Path], baseline_dir: Path, eval_fn: Callable) -> EvalResult:
     """The base model on these tasks, measured once and kept per task set (the file name is its signature)."""
-    key = "-".join(t.stem for t in tasks) or "no-tasks"
+    names = "-".join(task_name(t) for t in tasks)  # seeded tasks are all task.toml: the stem says nothing
+    key = f"{len(tasks)}-{hashlib.sha1(names.encode()).hexdigest()[:12]}" if tasks else "no-tasks"
     cached = baseline_dir / "specialists" / f"{key}.json"
     if cached.is_file():
         return EvalResult.load(cached)
