@@ -1,0 +1,16 @@
+# Added by PetruAI before the first commit; edit freely.
+node_modules/
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.dart_tool/
+build/
+dist/
+.env
+.env.*
+*.log
+.petru/index.sqlite*
+.petru/journal.sqlite*

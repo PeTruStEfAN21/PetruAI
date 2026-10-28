@@ -143,6 +143,9 @@ End-to-end demos from an empty folder (design questions, plan, build, checks, co
 the 9B tier: a Python todo CLI with pytest (about 2 minutes) and a Flutter counter app with widget tests (about
 3 minutes). Measurements are in `docs/benchmarks.md`.
 
+Projects the team (the 35B leading, the 4B assisting) built in a 12-project bench, each with who wrote which
+file: `showcase/`.
+
 ## Layout
 
 ```
