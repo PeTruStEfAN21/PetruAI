@@ -291,8 +291,8 @@ def test_a_task_can_run_as_a_team(tmp_path):
     )
     lead = FakeProvider(
         [
-            result(tool_calls=[call("plan", {"title": "Hello", "steps": ["delegate hello.py"]})]),
             result(tool_calls=[call("choose_mode", {"mode": "team", "reason": "a simple piece"})]),
+            result(tool_calls=[call("plan", {"title": "Hello", "steps": ["delegate hello.py"]})]),
             result(tool_calls=[call("delegate", {"task": "print hello", "files": ["hello.py"]})]),
             result(tool_calls=[call("task_complete", {"summary": "done"})]),
             result(content="Done."),
@@ -339,8 +339,8 @@ def test_a_run_can_stop_once_the_lead_has_chosen(tmp_path):
 
     lead = FakeProvider(
         [
-            result(tool_calls=[call("plan", {"title": "Hello", "steps": ["delegate hello.py"]})]),
             result(tool_calls=[call("choose_mode", {"mode": "team", "reason": "a simple piece"})]),
+            result(tool_calls=[call("plan", {"title": "Hello", "steps": ["delegate hello.py"]})]),
             result(tool_calls=[call("write_file", {"path": "hello.py", "content": "print('hello')\n"})]),
             result(content="Done."),
         ]

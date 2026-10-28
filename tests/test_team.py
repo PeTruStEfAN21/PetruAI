@@ -13,18 +13,24 @@ from tests.fakes import FakeProvider, call, result
 TASK = "Write a.py with x = 1. Only a.py."
 
 
-def lead_with(tmp_path, lead_steps, worker_steps, registry=None):
+PLAN = call("plan", {"title": "T", "steps": ["delegate a.py"]})
+
+
+def lead_with(tmp_path, lead_steps, worker_steps, registry=None, quick=False):
+    """The lead runs `lead_steps`; one that never chooses works as a team, one that never plans plans right
+    after its first step when that is its choice (else first), unless `quick` leaves out the design phase."""
     worker = FakeProvider([result(tool_calls=[c]) for c in worker_steps] + [result(content="ok")])
     registry = default_registry(False) if registry is None else registry
     team.lead_registry(registry, team.Worker(provider=lambda tier: worker, ctx_tokens=8192))
-    lead = FakeProvider(
-        [result(tool_calls=[call("plan", {"title": "T", "steps": ["delegate a.py"]})])]
-        + [result(tool_calls=[c]) for c in lead_steps]
-        + [result(content="Done.")]
-    )
+    steps = list(lead_steps)
+    if not any(c.name == "choose_mode" for c in steps):
+        steps.insert(0, choose("team"))
+    if not quick and not any(c.name == "plan" for c in steps):
+        steps.insert(1 if steps[0].name == "choose_mode" else 0, PLAN)
+    lead = FakeProvider([result(tool_calls=[c]) for c in steps] + [result(content="Done.")])
     session = Session(tmp_path, role=team.LEAD_PROMPT)
     agent = Agent(lead, registry, ScriptedUI(), session, tmp_path, 8192, False)
-    agent.run_turn("build it")
+    agent.run_turn("build it", quick=quick)
     return session, worker
 
 
@@ -136,9 +142,20 @@ def test_a_name_that_only_contains_test_is_not_a_test_file():
 def test_the_lead_decides_whether_the_project_needs_the_team_before_it_creates_a_file(tmp_path):
     done = call("task_complete", {"summary": "done"})
     steps = [write("a.py"), choose("solo", "one small file"), write("a.py"), done]
-    session, _ = lead_with(tmp_path, steps, [])
+    session, _ = lead_with(tmp_path, steps, [], quick=True)  # no design phase: the first file asks for it
     refused, allowed = replies(session, "write_file")
     assert "choose_mode" in refused and "choose_mode" not in allowed
+    assert "tightly coupled" not in refused  # the old words that led the lead to solo on a large project
+
+
+def test_the_lead_chooses_while_designing_and_plans_after_its_choice(tmp_path):
+    # the lead once planned a large project alone, then chose solo to match the plan it had written
+    done = call("task_complete", {"summary": "done"})
+    session, _ = lead_with(tmp_path, [PLAN, choose("team"), PLAN, done], [])
+    refused, confirmed = replies(session, "plan")
+    assert "choose_mode" in refused and "confirmed" in confirmed.lower()
+    assert "Invalid tool call" not in replies(session, "choose_mode")[0]
+    assert "before you write the plan" in team.LEAD_PROMPT
 
 
 def test_a_lead_that_works_alone_may_create_every_file_itself(tmp_path):
@@ -198,6 +215,7 @@ def test_each_piece_goes_to_the_assistant_for_its_language(tmp_path):
     team.lead_registry(registry, worker)
     lead = FakeProvider(
         [
+            result(tool_calls=[choose("team")]),
             result(tool_calls=[call("plan", {"title": "T", "steps": ["delegate"]})]),
             result(tool_calls=[call("delegate", {"task": "Write a.go.", "files": ["a.go"]})]),
             result(tool_calls=[call("delegate", {"task": "Write b.py.", "files": ["b.py"]})]),
@@ -219,8 +237,8 @@ def test_a_delegation_whose_assistant_cannot_start_does_not_count(tmp_path):
     team.lead_registry(registry, team.Worker(provider=provider, ctx_tokens=8192))
     lead = FakeProvider(
         [
-            result(tool_calls=[call("plan", {"title": "T", "steps": ["delegate"]})]),
             result(tool_calls=[choose("team")]),
+            result(tool_calls=[call("plan", {"title": "T", "steps": ["delegate"]})]),
             result(tool_calls=[write("a.py")]),
             result(tool_calls=[call("delegate", {"task": "Write b.py.", "files": ["b.py"]})]),
             result(tool_calls=[write("b.py")]),

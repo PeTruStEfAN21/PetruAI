@@ -13,6 +13,7 @@ from petru.tools.shell import classify_command
 DESIGN_ALLOWED = {
     "read_file", "list_dir", "glob", "grep", "ask_user", "plan",
     "remember", "recall", "search_code", "search_docs",  # memory and search never touch the project's code
+    "choose_mode",  # a team's lead chooses how to work before it plans
 }  # fmt: skip
 
 

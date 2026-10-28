@@ -21,13 +21,13 @@ from petru.tools.paths import OutsideProjectError, resolve_in_project
 from petru.tools.registry import ToolRegistry
 from petru.tui.port import ScriptedUI
 
-LEAD_PROMPT = """You lead a small team. Read the task and its tests first, then decide once, with \
-choose_mode, whether this project needs the team: choose team when the work splits into several files and \
-some of them are simple pieces, solo when it is small or its parts call into each other so much that none \
-can be written alone. Modules that only import shared models, errors or helpers are not tightly coupled: \
-those shared files come first, and each module that uses them is a piece of its own. Working alone, you \
-write everything yourself. Working as a team, split the work into pieces of one file each. Hand every \
-piece with a clear interface and little \
+LEAD_PROMPT = """You lead a small team. Read the task and its tests first, then, before you write the plan, \
+decide once with choose_mode whether this project needs the team: choose team when the work splits into \
+several files and some of them are simple pieces, solo when it is small or its parts call into each other \
+so much that none can be written alone. Modules that only import shared models, errors or helpers are not \
+tightly coupled: those shared files come first, and each module that uses them is a piece of its own. \
+Working alone, you write everything yourself. Working as a team, split the work into pieces of one file \
+each, and let the plan name the pieces you delegate. Hand every piece with a clear interface and little \
 logic of its own (records and value types, exceptions, formatting and rendering, parsing helpers, simple \
 validation) to the assistant with delegate, one piece per call, naming the exact types, signatures and \
 messages it must provide and the files it should read. Keep only the hard parts yourself: the central \
@@ -290,7 +290,7 @@ class LeadWrite(Tool):
         if new and self.choice.mode is None:
             return ToolResult(
                 "Team mode: before you create files, decide with choose_mode whether this project needs the "
-                "team (several files, some of them simple) or you work alone (small or tightly coupled).",
+                "team (several files, some of them simple pieces) or you work alone (a small project).",
                 True,
             )
         team = self.choice.mode == "team" and not self.delegate.unavailable
@@ -308,6 +308,24 @@ class LeadWrite(Tool):
             if relative is not None:
                 self.delegate.authors.record("lead", relative.as_posix(), not existed)
         return result
+
+
+class LeadPlan(Tool):
+    """The lead's plan waits for choose_mode: a lead that planned first chose to match the plan it had
+    written, not the project."""
+
+    def __init__(self, inner: Tool, choice: ChooseModeTool) -> None:
+        self.inner, self.choice = inner, choice
+        self.name, self.description, self.parameters = inner.name, inner.description, inner.parameters
+
+    def run(self, args: dict, ctx: ToolContext) -> ToolResult:
+        if self.choice.mode is None:
+            return ToolResult(
+                "Team mode: decide with choose_mode first whether this project needs the team; the plan "
+                "follows from that choice (as a team, it names the pieces you delegate).",
+                True,
+            )
+        return self.inner.run(args, ctx)
 
 
 class LeadEdit(Tool):
@@ -330,12 +348,14 @@ class LeadEdit(Tool):
 
 
 def lead_registry(registry: ToolRegistry, worker: Worker) -> None:
-    """Turn a full registry into the lead's: choose_mode, delegate, write_file under LeadWrite, edit_file
-    recorded in the credits."""
+    """Turn a full registry into the lead's: choose_mode, delegate, plan under LeadPlan, write_file under
+    LeadWrite, edit_file recorded in the credits."""
     delegate, choice = DelegateTool(worker), ChooseModeTool()
     registry.register(choice)
     registry.register(delegate)
-    write, edit = registry.get("write_file"), registry.get("edit_file")
+    plan, write, edit = registry.get("plan"), registry.get("write_file"), registry.get("edit_file")
+    if plan is not None:
+        registry.register(LeadPlan(plan, choice))
     if write is not None:
         registry.register(LeadWrite(write, delegate, choice))
     if edit is not None:

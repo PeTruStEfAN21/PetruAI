@@ -38,7 +38,7 @@ def test_prompt_in_idle_enters_design_and_blocks_writes(tmp_path):
 def test_design_allowed_set_matches_spec():
     assert DESIGN_ALLOWED == {
         "read_file", "list_dir", "glob", "grep", "ask_user", "plan",
-        "remember", "recall", "search_code", "search_docs",
+        "remember", "recall", "search_code", "search_docs", "choose_mode",
     }  # fmt: skip
     assert not DESIGN_ALLOWED & {"write_file", "edit_file", "shell", "git", "run_checks"}
 
