@@ -196,3 +196,20 @@ def test_a_run_reports_why_the_lead_chose(tmp_path):
     out = tmp_path / "result.json"
     out.write_text(json.dumps({"passed": False, "team_reason": "tight", "messages": []}), encoding="utf-8")
     assert bench.read_result(out)["team_reason"] == "tight"
+
+
+def test_an_attempt_stops_itself_before_it_would_be_killed(tmp_path, monkeypatch):
+    commands = []
+
+    class Recorded(FakeRun):
+        def __init__(self, cmd, **kwargs):
+            commands.append(cmd)
+            super().__init__(cmd, **kwargs)
+
+    monkeypatch.setattr(bench.subprocess, "Popen", Recorded)
+    task = tmp_path / "task.toml"
+    task.write_text(BIG_TASK, encoding="utf-8")
+    bench.run_mode(task, "solo", "lead", "worker")
+    own = float(commands[0][commands[0].index("--time-limit") + 1])
+    assert 180 * 60 - 900 <= own < 180 * 60  # the transcript is saved; the kill stays a backstop
+    assert bench.own_time_limit(600) == 540

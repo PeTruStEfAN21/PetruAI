@@ -356,3 +356,17 @@ def test_a_run_can_stop_once_the_lead_has_chosen(tmp_path):
     )
     assert (res.team_choice, res.team_reason) == ("team", "a simple piece")
     assert not res.passed and not (tmp_path / "p" / "hello.py").exists()
+
+
+def test_a_run_out_of_time_stops_and_keeps_its_transcript(tmp_path):
+    provider = FakeProvider([result(content="never")])
+    res = run_task(
+        spec(["python hello.py"]),
+        provider=provider,
+        repo_root=tmp_path,
+        project=tmp_path / "p",
+        ctx_tokens=8192,
+        time_limit_s=0,
+    )
+    assert res.stop_reason == "time limit" and not res.passed
+    assert res.messages and not provider.calls

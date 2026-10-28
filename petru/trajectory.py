@@ -240,10 +240,12 @@ def run_task(
     max_iterations: int = 60,
     worker: Worker | None = None,
     choice_only: bool = False,
+    time_limit_s: float | None = None,
 ) -> TaskResult:
     """One task as a user would live it: the prompt, answers to questions the model wrote as plain text
     instead of calling ask_user, and 'continue' while it stops talking (or hits the iteration limit) in BUILD
-    before task_complete. With `choice_only`, a team run ends as soon as the lead has chosen its mode."""
+    before task_complete. With `choice_only`, a team run ends as soon as the lead has chosen its mode; with
+    `time_limit_s`, the run stops on its own when that time is up, and its transcript is kept."""
     if provider is None:
         if base_url is None:
             raise ValueError("run_task needs a provider or a base_url")
@@ -261,10 +263,12 @@ def run_task(
     choice = registry.get("choose_mode")
     if choice_only and choice is not None:
         registry.register(StopAfterChoice(choice))
-    agent = Agent(
-        provider, registry, ui, session, repo_root, ctx_tokens, online, max_iterations=max_iterations
-    )
     started = time.monotonic()
+    deadline = None if time_limit_s is None else started + time_limit_s
+    agent = Agent(
+        provider, registry, ui, session, repo_root, ctx_tokens, online, max_iterations=max_iterations,
+        deadline=deadline,
+    )  # fmt: skip
     extra = 0
     with isolated_home():  # scripted runs must never write into the user's real global memory
         agent.run_turn(spec.prompt)
@@ -317,6 +321,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--worker-tier", default="fast", help="the assistant model in team mode")
     parser.add_argument("--worker-base-url", default=None, help="running llama-server of the assistant")
     parser.add_argument(
+        "--time-limit", type=float, default=None, help="seconds after which the run stops and saves itself"
+    )
+    parser.add_argument(
         "--choice-only", action="store_true", help="team mode: stop once the lead has chosen team or solo"
     )
     parser.add_argument(
@@ -363,6 +370,7 @@ def main(argv: list[str] | None = None) -> int:
             max_extra_turns=args.max_extra_turns,
             worker=worker,
             choice_only=args.choice_only,
+            time_limit_s=args.time_limit,
         )
     finally:
         for running in (manager, worker_manager):

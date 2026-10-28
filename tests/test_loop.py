@@ -433,3 +433,14 @@ def test_a_run_that_differs_only_in_its_duration_is_the_same_result(tmp_path):
     agent.registry.register(_ChecksTool())
     agent.run_turn("x")
     assert "nothing changed" in fake.calls[2]["messages"][-1]["content"]
+
+
+def test_a_turn_past_its_deadline_stops_on_its_own(tmp_path):
+    import time
+
+    fake = FakeProvider([result(content="never")])
+    ui = ScriptedUI()
+    agent = make_agent(fake, ui, tmp_path, deadline=time.monotonic() - 1)
+    agent.run_turn("x")
+    assert agent.stop_reason == "time limit" and not fake.calls
+    assert "time" in ui.notices[-1].lower()

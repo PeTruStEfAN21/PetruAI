@@ -91,6 +91,12 @@ def attempt_timeout(task: Path) -> float:
     return float(minutes * 60) if isinstance(minutes, int | float) else float(ATTEMPT_TIMEOUT_S)
 
 
+def own_time_limit(limit: float) -> float:
+    """When an attempt with `limit` seconds stops itself: early enough for a last long reply to finish and its
+    transcript to be saved (10%, at most 15 minutes); the kill at `limit` stays a backstop."""
+    return limit - min(900.0, limit / 10)
+
+
 def run_mode(
     task: Path,
     mode: str,
@@ -113,12 +119,14 @@ def _attempt(task: Path, mode: str, lead_url: str, worker_url: str, keep: Path |
             "--tier", "quality", "--base-url", lead_url, "--out", str(out),
             "--project", str(Path(tmp) / "project"),
         ]  # fmt: skip
+        limit = attempt_timeout(task)
+        cmd += ["--time-limit", str(own_time_limit(limit))]
         if mode in ("team", "choice"):
             cmd += ["--team", "--worker-tier", "fast", "--worker-base-url", worker_url]
         if mode == "choice":
             cmd += ["--choice-only"]
         proc = subprocess.Popen(cmd, cwd=str(REPO_ROOT), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        timed_out, limit = False, attempt_timeout(task)
+        timed_out = False
         try:
             proc.wait(timeout=limit)
         except subprocess.TimeoutExpired:

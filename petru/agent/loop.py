@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import re
+import time
 from pathlib import Path
 
 from petru.agent.context import build_system_prompt, compact_if_needed
@@ -85,6 +86,7 @@ class Agent:
         online: bool,
         max_iterations: int = 40,
         max_invalid_retries: int = 3,
+        deadline: float | None = None,
     ) -> None:
         self.provider = provider
         self.registry = registry
@@ -96,6 +98,7 @@ class Agent:
         self.online = online
         self.max_iterations = max_iterations
         self.max_invalid_retries = max_invalid_retries
+        self.deadline = deadline  # time.monotonic() past which a turn stops itself (a scripted run's limit)
         self.stop_reason: str | None = None
         self._changes = 0  # file changes so far: a repeated call is only useless while this stays put
         self._seen: dict[tuple[str, str], tuple[int, int]] = {}  # call -> (changes, result) when last made
@@ -215,6 +218,8 @@ class Agent:
         provider_errors = 0
         last_text = ""
         while True:
+            if self.deadline is not None and time.monotonic() >= self.deadline:
+                return self._stop("time limit", "Time limit reached.", last_text)
             if session.turn_tool_iterations >= self.max_iterations:
                 return self._stop(
                     "iteration limit", f"Iteration limit ({self.max_iterations}) reached.", last_text
