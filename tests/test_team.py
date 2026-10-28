@@ -156,13 +156,28 @@ def test_the_choice_is_final(tmp_path):
     assert not (tmp_path / "b.py").exists()  # still a team: b.py waits for a delegation
 
 
+def test_modules_that_only_share_models_and_errors_are_not_tightly_coupled():
+    # the lead once chose solo for a 25-module project because "service, query and storage need models"
+    for text in (team.LEAD_PROMPT, team.ChooseModeTool.description):
+        assert "shared models" in text and "not tightly coupled" in text
+
+
+def test_the_choice_keeps_its_reason(tmp_path):
+    done = call("task_complete", {"summary": "done"})
+    registry = default_registry(False)
+    lead_with(tmp_path, [choose("team", "many modules around shared models"), done], [], registry)
+    assert registry.get("choose_mode").reason == "many modules around shared models"
+
+
 def test_a_new_task_lets_the_lead_choose_again():
     registry = default_registry(False)
     team.lead_registry(registry, team.Worker(provider=lambda tier: None, ctx_tokens=8192))
     registry.get("choose_mode").mode, registry.get("write_file").created = "solo", 3
+    registry.get("choose_mode").reason = "one small file"
     registry.get("delegate").calls, registry.get("delegate").unavailable = 2, True
     team.start_task(registry)
     assert registry.get("choose_mode").mode is None and registry.get("write_file").created == 0
+    assert registry.get("choose_mode").reason is None
     assert registry.get("delegate").calls == 0 and not registry.get("delegate").unavailable
     team.start_task(default_registry(False))  # a registry without the team's tools is left alone
 

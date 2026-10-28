@@ -23,9 +23,11 @@ from petru.tui.port import ScriptedUI
 
 LEAD_PROMPT = """You lead a small team. Read the task and its tests first, then decide once, with \
 choose_mode, whether this project needs the team: choose team when the work splits into several files and \
-some of them are simple pieces, solo when it is small or its parts depend too tightly on each other to hand \
-out. Working alone, you write everything yourself. Working as a team, split the work into pieces of one \
-file each. Hand every piece with a clear interface and little \
+some of them are simple pieces, solo when it is small or its parts call into each other so much that none \
+can be written alone. Modules that only import shared models, errors or helpers are not tightly coupled: \
+those shared files come first, and each module that uses them is a piece of its own. Working alone, you \
+write everything yourself. Working as a team, split the work into pieces of one file each. Hand every \
+piece with a clear interface and little \
 logic of its own (records and value types, exceptions, formatting and rendering, parsing helpers, simple \
 validation) to the assistant with delegate, one piece per call, naming the exact types, signatures and \
 messages it must provide and the files it should read. Keep only the hard parts yourself: the central \
@@ -225,7 +227,8 @@ class ChooseModeTool(Tool):
     description = (
         "Decide once, after reading the task and its tests, whether this project needs the team: 'team' when "
         "the work splits into several files and some are simple pieces the assistant can write from a clear "
-        "interface, 'solo' when it is small or its parts depend too tightly on each other to hand out."
+        "interface, 'solo' when it is small or its parts call into each other so much that none can be "
+        "written alone. Modules that only import shared models, errors or helpers are not tightly coupled."
     )
     parameters = {
         "type": "object",
@@ -239,6 +242,7 @@ class ChooseModeTool(Tool):
 
     def __init__(self) -> None:
         self.mode: str | None = None
+        self.reason: str | None = None
 
     def run(self, args: dict, ctx: ToolContext) -> ToolResult:
         if self.mode is not None:
@@ -246,7 +250,7 @@ class ChooseModeTool(Tool):
         mode = str(args.get("mode", ""))
         if mode not in ("team", "solo"):
             return ToolResult("mode must be team or solo.", True)
-        self.mode = mode
+        self.mode, self.reason = mode, str(args.get("reason", ""))
         if mode == "solo":
             return ToolResult("Working alone: write every file yourself.")
         return ToolResult("Working as a team: write one file, then delegate a piece before each new one.")
@@ -348,7 +352,7 @@ def start_task(registry: ToolRegistry) -> None:
     """A new task in the same session (the REPL): the lead chooses again and counts its files afresh."""
     choice, delegate, write = (registry.get(name) for name in ("choose_mode", "delegate", "write_file"))
     if isinstance(choice, ChooseModeTool):
-        choice.mode = None
+        choice.mode, choice.reason = None, None
     if isinstance(delegate, DelegateTool):
         delegate.calls, delegate.unavailable, delegate.authors = 0, False, Authors()
     if isinstance(write, LeadWrite):
