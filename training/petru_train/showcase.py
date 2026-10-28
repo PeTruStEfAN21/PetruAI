@@ -22,6 +22,7 @@ from petru_train.bench import BENCH_DIR
 
 LEAD_MODEL = "Qwen3.6-35B-A3B"
 NOT_RECORDED = "not recorded"
+CACHES = (".pytest_cache", "__pycache__", "node_modules", "target", ".gradle")  # tool output, not the work
 
 
 def _calls(messages: list[dict]) -> list[tuple[str, dict]]:
@@ -153,8 +154,12 @@ def export(report: Path, out: Path, bench_dir: Path = BENCH_DIR) -> list[str]:
         authors = run_authors(data, row)
         dest = out / task
         shutil.rmtree(dest, ignore_errors=True)  # no files left over from an earlier export
-        shutil.copytree(project, dest)
-        files = sorted(p.relative_to(project).as_posix() for p in project.rglob("*") if p.is_file())
+        shutil.copytree(project, dest, ignore=shutil.ignore_patterns(*CACHES))
+        files = sorted(
+            p.relative_to(project).as_posix()
+            for p in project.rglob("*")
+            if p.is_file() and set(CACHES).isdisjoint(p.relative_to(project).parts)
+        )
         page = _project_page(
             task, spec, row, solo.get(task, {}), files, partial(_credit, given=given, authors=authors)
         )

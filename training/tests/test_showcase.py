@@ -71,6 +71,20 @@ def test_a_team_project_is_exported_with_who_wrote_what(tmp_path):
     assert "| rooms | passed | 18 min | 35 min | 1 |" in index
 
 
+def test_tool_caches_are_left_out_of_the_export(tmp_path):
+    report, bench_dir = bench_run(tmp_path)
+    project = report.with_suffix("") / "rooms-team"
+    for name in (".pytest_cache/v/cache/nodeids", "src/__pycache__/x.pyc", "node_modules/a/index.js"):
+        (project / name).parent.mkdir(parents=True, exist_ok=True)
+        (project / name).write_text("cache", encoding="utf-8")
+    out = tmp_path / "showcase"
+    showcase.export(report, out, bench_dir)
+    readme = (out / "rooms" / "SHOWCASE.md").read_text(encoding="utf-8")
+    assert "cache" not in readme and "node_modules" not in readme
+    assert not (out / "rooms" / ".pytest_cache").exists() and not (out / "rooms" / "node_modules").exists()
+    assert not (out / "rooms" / "src" / "__pycache__").exists()
+
+
 def test_without_recorded_authors_a_complete_transcript_is_read_in_order(tmp_path):
     report, bench_dir = bench_run(tmp_path)
     showcase.export(report, tmp_path / "showcase", bench_dir)
