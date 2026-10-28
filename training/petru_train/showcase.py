@@ -81,7 +81,7 @@ def _minutes(seconds) -> str:
 def _byline(row: dict) -> str:
     if row.get("team_choice") == "solo":
         return f"Built by the PetruAI lead ({LEAD_MODEL}), which chose to work alone on this one."
-    assistant = Path(row.get("assistant") or "Qwen3.5-4B").stem
+    assistant = Path(row.get("assistant") or "Qwen3.5-4B").name.removesuffix(".gguf")  # .stem cuts at ".5"
     return f"Built by the PetruAI team: {LEAD_MODEL} leading, {assistant} assisting, both run locally."
 
 

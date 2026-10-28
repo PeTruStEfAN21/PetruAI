@@ -71,6 +71,13 @@ def test_a_team_project_is_exported_with_who_wrote_what(tmp_path):
     assert "| rooms | passed | 18 min | 35 min | 1 |" in index
 
 
+def test_an_older_run_without_the_assistant_names_the_default_model_whole(tmp_path):
+    report, bench_dir = bench_run(tmp_path, team_row={"assistant": None})
+    showcase.export(report, tmp_path / "showcase", bench_dir)
+    readme = (tmp_path / "showcase" / "rooms" / "SHOWCASE.md").read_text(encoding="utf-8")
+    assert "Qwen3.5-4B assisting" in readme
+
+
 def test_tool_caches_are_left_out_of_the_export(tmp_path):
     report, bench_dir = bench_run(tmp_path)
     project = report.with_suffix("") / "rooms-team"
