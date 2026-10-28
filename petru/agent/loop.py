@@ -44,6 +44,12 @@ def _recordable(call: ToolCall) -> str:
     return "{}"
 
 
+def output_budget(ctx_tokens: int) -> int:
+    """Tokens one reply may take: a quarter of the context, so a whole source file fits in one write_file
+    call (4096 cut large files off mid-call), and the transcript is compacted early enough to leave it."""
+    return max(4096, min(16384, ctx_tokens // 4))
+
+
 def _json_problem(raw: str) -> str:
     """Where the arguments stopped being JSON: the model never sees its broken call again (it is recorded as
     {}), so without this it repeats the same mistake."""
@@ -74,6 +80,7 @@ class Agent:
         self.session = session
         self.repo_root = repo_root
         self.ctx_tokens = ctx_tokens
+        self.output_tokens = output_budget(ctx_tokens)
         self.online = online
         self.max_iterations = max_iterations
         self.max_invalid_retries = max_invalid_retries
@@ -187,7 +194,7 @@ class Agent:
                     "iteration limit", f"Iteration limit ({self.max_iterations}) reached.", last_text
                 )
             self._refresh_system_prompt()
-            compact_if_needed(session, self.provider, self.ctx_tokens)
+            compact_if_needed(session, self.provider, self.ctx_tokens, self.output_tokens)
             allowed = self._allowed_tool_names()
             try:
                 result = self.provider.complete(
@@ -195,6 +202,7 @@ class Agent:
                     self.registry.schemas(allowed),
                     on_text=self.ui.text,
                     temperature=round(0.2 + 0.3 * provider_errors, 2),  # a retry samples differently
+                    max_tokens=self.output_tokens,
                 )
             except Exception as exc:  # server 500 (unparseable tool call), timeout, connection reset
                 provider_errors += 1
@@ -205,7 +213,7 @@ class Agent:
                     f"Model error: {exc}. Retrying ({provider_errors}/{self.max_invalid_retries - 1})..."
                 )
                 if _is_context_overflow(exc):
-                    compact_if_needed(session, self.provider, self.ctx_tokens, force=True)
+                    compact_if_needed(session, self.provider, self.ctx_tokens, self.output_tokens, force=True)
                 continue
             calls = [canonical_call(c) for c in extract_tool_calls(result)]
             last_text = strip_text_tool_calls(result.content or "")
@@ -219,6 +227,13 @@ class Agent:
             try:
                 for call in calls:
                     content, was_invalid = self._execute(call, allowed)
+                    if was_invalid and result.finish_reason == "length":
+                        content = self._invalid(
+                            f"your reply was cut off at the {self.output_tokens}-token output limit before "
+                            "this call was complete. Write a large file in parts: write_file with the first "
+                            "part, then write_file with append=true for each next part",
+                            allowed,
+                        )
                     invalid_count += was_invalid
                     outputs.append(self._tool_message(call, content))
             except KeyboardInterrupt:

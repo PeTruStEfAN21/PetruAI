@@ -44,6 +44,10 @@
           "content": {
             "type": "string",
             "description": "Full file content"
+          },
+          "append": {
+            "type": "boolean",
+            "description": "Add the content to the end of the file instead (write a large file in parts)"
           }
         },
         "required": [

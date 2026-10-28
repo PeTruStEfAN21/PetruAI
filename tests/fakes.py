@@ -53,7 +53,7 @@ class FakeProvider:
         self.calls: list[dict] = []
 
     def complete(self, messages, tools, on_text=None, temperature=0.2, max_tokens=4096):
-        self.calls.append({"messages": copy.deepcopy(messages), "tools": tools})
+        self.calls.append({"messages": copy.deepcopy(messages), "tools": tools, "max_tokens": max_tokens})
         if not self._scripted:
             raise AssertionError("FakeProvider: no scripted result left")
         result: ChatResult = self._scripted.pop(0)

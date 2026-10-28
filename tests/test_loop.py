@@ -358,3 +358,20 @@ def test_unparseable_arguments_tell_the_model_where_the_json_broke(tmp_path):
     content = fake.calls[1]["messages"][-1]["content"]
     assert "line 1 column 25" in content and 'python -c "print(1)' in content
     assert "write_file" in content  # long code goes in a file instead
+
+
+def test_a_large_context_gives_the_model_room_for_a_whole_file(tmp_path):
+    fake = FakeProvider([result(content="ok"), result(content="ok")])
+    make_agent(fake, ScriptedUI(), tmp_path, ctx_tokens=32768).run_turn("x", quick=True)
+    make_agent(fake, ScriptedUI(), tmp_path, ctx_tokens=8192).run_turn("x", quick=True)
+    assert [c["max_tokens"] for c in fake.calls] == [8192, 4096]
+
+
+def test_a_call_cut_off_at_the_output_limit_is_told_to_write_in_parts(tmp_path):
+    from petru.providers.base import ChatResult
+
+    broken = ToolCall("c1", "write_file", None, '{"path": "big.py", "content": "def f():')
+    fake = FakeProvider([ChatResult("", [broken], "length"), result(content="ok")])
+    make_agent(fake, ScriptedUI(), tmp_path).run_turn("x")
+    content = fake.calls[1]["messages"][-1]["content"]
+    assert "cut off" in content and "append" in content

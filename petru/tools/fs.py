@@ -83,6 +83,10 @@ class WriteFileTool(Tool):
         "properties": {
             "path": {"type": "string", "description": "Path relative to the project root"},
             "content": {"type": "string", "description": "Full file content"},
+            "append": {
+                "type": "boolean",
+                "description": "Add the content to the end of the file instead (write a large file in parts)",
+            },
         },
         "required": ["path", "content"],
         "additionalProperties": False,
@@ -96,10 +100,12 @@ class WriteFileTool(Tool):
         content = str(args.get("content", ""))
         try:
             path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(content, encoding="utf-8", newline="\n")
+            with path.open("a" if args.get("append") else "w", encoding="utf-8", newline="\n") as f:
+                f.write(content)
         except OSError as exc:
             return ToolResult(f"Cannot write {args['path']}: {exc}", True)
-        return ToolResult(f"Wrote {len(content.encode('utf-8'))} bytes to {_rel(path, ctx.project_root)}")
+        verb = "Appended" if args.get("append") else "Wrote"
+        return ToolResult(f"{verb} {len(content.encode('utf-8'))} bytes to {_rel(path, ctx.project_root)}")
 
 
 class EditFileTool(Tool):

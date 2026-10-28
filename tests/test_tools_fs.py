@@ -121,3 +121,9 @@ def test_registry_schemas_are_openai_shaped():
     assert reg.get("missing") is None
     assert [s["function"]["name"] for s in reg.schemas(["grep"])] == ["grep"]
     assert isinstance(ToolResult("x"), ToolResult)
+
+
+def test_write_file_can_build_a_large_file_in_parts(tmp_path):
+    write_file.run({"path": "big.py", "content": "a = 1\n"}, ctx(tmp_path))
+    r = write_file.run({"path": "big.py", "content": "b = 2\n", "append": True}, ctx(tmp_path))
+    assert not r.is_error and (tmp_path / "big.py").read_text(encoding="utf-8") == "a = 1\nb = 2\n"
