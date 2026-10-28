@@ -311,3 +311,24 @@ def test_a_task_can_run_as_a_team(tmp_path):
     assert res.delegations == 1  # counted by the tool: a summarised transcript may lose the call
     assert res.team_choice == "team"
     assert res.authors == {"hello.py": "assistant"}
+
+
+def test_a_run_goes_on_past_the_iteration_limit_like_a_user_saying_continue(tmp_path):
+    provider = FakeProvider(
+        [
+            result(tool_calls=[call("plan", {"title": "Hello", "steps": ["write hello.py"]})]),
+            result(tool_calls=[call("write_file", {"path": "hello.py", "content": "print('hello')\n"})]),
+            result(tool_calls=[call("task_complete", {"summary": "done"})]),
+            result(content="Done."),
+        ]
+    )
+    res = run_task(
+        spec(["python hello.py"]),
+        provider=provider,
+        repo_root=tmp_path,
+        project=tmp_path / "p",
+        ctx_tokens=8192,
+        max_iterations=1,  # every tool call ends a turn: a large project ends many
+    )
+    assert res.passed, res.check_output
+    assert res.extra_turns == 2

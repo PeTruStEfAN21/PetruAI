@@ -203,6 +203,10 @@ def check_solution(spec: TaskSpec, project: Path) -> tuple[bool, str]:
         return verify_task(spec, Path(tmp) / "project", solution)
 
 
+# A turn that ended on the iteration limit is one a user answers with "continue"; a large project ends many.
+GOES_ON = (None, "iteration limit")
+
+
 def run_task(
     spec: TaskSpec,
     *,
@@ -217,7 +221,8 @@ def run_task(
     worker: Worker | None = None,
 ) -> TaskResult:
     """One task as a user would live it: the prompt, answers to questions the model wrote as plain text
-    instead of calling ask_user, and 'continue' while it stops talking in BUILD before task_complete."""
+    instead of calling ask_user, and 'continue' while it stops talking (or hits the iteration limit) in BUILD
+    before task_complete."""
     if provider is None:
         if base_url is None:
             raise ValueError("run_task needs a provider or a base_url")
@@ -239,14 +244,14 @@ def run_task(
     extra = 0
     with isolated_home():  # scripted runs must never write into the user's real global memory
         agent.run_turn(spec.prompt)
-        while session.phase is not Phase.IDLE and agent.stop_reason is None and extra < max_extra_turns:
+        while session.phase is not Phase.IDLE and agent.stop_reason in GOES_ON and extra < max_extra_turns:
             if session.phase is Phase.DESIGN:
                 message = f"{ui.next_answer()} (Use the ask_user tool for further questions, then call plan.)"
             else:
                 message = CONTINUE_PROMPT
             extra += 1
             agent.run_turn(message)
-    completed = session.phase is Phase.IDLE and agent.stop_reason is None
+    completed = session.phase is Phase.IDLE and agent.stop_reason in GOES_ON
     if completed and spec.seed is not None and spec.solution:
         ok, output = check_solution(spec, project)
     elif completed:
