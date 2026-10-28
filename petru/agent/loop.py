@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 from petru.agent.context import build_system_prompt, compact_if_needed
@@ -33,6 +34,17 @@ def _is_context_overflow(exc: Exception) -> bool:
 
 QUESTION_STRIKES = 2  # refused questions after which DESIGN stops offering ask_user
 MAX_TOOL_RESULT_CHARS = 24_000  # a backstop above read_file's 400 lines; tools keep their own, smaller limits
+REPEAT_LIMIT = 5  # calls repeated with the same result and no file changed, after which the turn stops
+REPEAT_NOTE = (
+    "\n\nNote: you made this same call before and nothing changed since, so its result is the same. Do not "
+    "run it again: change the code it points at, delegate the missing piece, or say what blocks you."
+)
+DURATION = re.compile(r"\b\d+(?:\.\d+)?\s?(?:ms|s)\b|\(\d+:\d\d:\d\d\)")  # "in 0.39s", "(0:01:16)"
+
+
+def _same_result_key(output: str) -> int:
+    """Two runs of the same checks differ in their timings: masked, the same result compares equal."""
+    return hash(DURATION.sub("#", output))
 
 
 def _recordable(call: ToolCall) -> str:
@@ -85,6 +97,9 @@ class Agent:
         self.max_iterations = max_iterations
         self.max_invalid_retries = max_invalid_retries
         self.stop_reason: str | None = None
+        self._changes = 0  # file changes so far: a repeated call is only useless while this stays put
+        self._seen: dict[tuple[str, str], tuple[int, int]] = {}  # call -> (changes, result) when last made
+        self.repeats = 0  # useless repeats since the last file change
 
     # -- transcript helpers -------------------------------------------------
 
@@ -169,14 +184,24 @@ class Agent:
         self.ui.tool_finished(call.name, result)
         if call.name == "run_checks":
             self.session.unverified_changes = result.is_error
-        elif tool.changes_files and not result.is_error:
-            self.session.unverified_changes = True
-        elif tool.may_change_files and (
-            before is None or tree_fingerprint(self.session.project_root) != before
+        elif (tool.changes_files and not result.is_error) or (
+            tool.may_change_files
+            and (before is None or tree_fingerprint(self.session.project_root) != before)
         ):
             self.session.unverified_changes = True
+            self._changes, self.repeats = self._changes + 1, 0
         output = truncate_output(result.output, MAX_TOOL_RESULT_CHARS)  # one result must not fill the context
+        if self._repeated(call.name, args, result.output):
+            output += REPEAT_NOTE
         return (f"ERROR: {output}" if result.is_error else output), False
+
+    def _repeated(self, name: str, args: dict, output: str) -> bool:
+        """The same call, the same result and no file changed since: running it again tells nothing new."""
+        key, state = (name, json.dumps(args, sort_keys=True)), (self._changes, _same_result_key(output))
+        repeated = self._seen.get(key) == state
+        self._seen[key] = state
+        self.repeats += repeated
+        return repeated
 
     # -- the turn -----------------------------------------------------------
 
@@ -185,6 +210,7 @@ class Agent:
         session = self.session
         session.start_turn(text, quick=quick)
         self.stop_reason = None
+        self.repeats = 0  # a new prompt gives the model a fresh chance
         invalid_count = 0
         provider_errors = 0
         last_text = ""
@@ -245,6 +271,9 @@ class Agent:
                 return self._stop(
                     "invalid tool calls", f"Giving up after {invalid_count} invalid tool calls.", last_text
                 )
+            if self.repeats >= REPEAT_LIMIT:
+                message = f"Stopped: {self.repeats} calls gave the same result, no file changed in between."
+                return self._stop("no progress", message, last_text)
 
     def _stop(self, reason: str, message: str, text: str) -> str:
         self.stop_reason = reason

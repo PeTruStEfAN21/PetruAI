@@ -373,7 +373,7 @@ def main(argv: list[str] | None = None) -> int:
         if ns.prompt is not None:
             text = agent.run_turn(ns.prompt, quick=True)
             print(text)
-            return 1 if agent.stop_reason in ("iteration limit", "invalid tool calls") else 0
+            return 1 if agent.stop_reason in ("iteration limit", "invalid tool calls", "no progress") else 0
         try:  # lazy journal: summarize a few queued commits while the model is loaded anyway
             done = summarize_pending(
                 project,

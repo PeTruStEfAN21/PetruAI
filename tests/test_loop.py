@@ -132,9 +132,8 @@ def test_tool_error_is_prefixed(tmp_path):
 
 def test_iteration_cap(tmp_path):
     (tmp_path / "a.txt").write_text("x", encoding="utf-8")
-    fake = FakeProvider(
-        [result(tool_calls=[call("read_file", {"path": "a.txt"})])] * 50 + [result(content="never")]
-    )
+    reads = [result(tool_calls=[call("read_file", {"path": "a.txt", "offset": i + 1})]) for i in range(50)]
+    fake = FakeProvider(reads + [result(content="never")])  # different calls: no repeat stops it first
     ui = ScriptedUI()
     agent = make_agent(fake, ui, tmp_path)
     agent.run_turn("x")
@@ -375,3 +374,62 @@ def test_a_call_cut_off_at_the_output_limit_is_told_to_write_in_parts(tmp_path):
     make_agent(fake, ScriptedUI(), tmp_path).run_turn("x")
     content = fake.calls[1]["messages"][-1]["content"]
     assert "cut off" in content and "append" in content
+
+
+def read_a(i):
+    return result(tool_calls=[call("read_file", {"path": "a.py"}, f"c{i}")])
+
+
+def test_a_call_repeated_with_nothing_changed_is_pointed_out(tmp_path):
+    # a lead once ran the same failing checks every few seconds for 90 minutes without changing a file
+    (tmp_path / "a.py").write_text("x = 1\n", encoding="utf-8")
+    fake = FakeProvider([read_a(1), read_a(2), result(content="ok")])
+    make_agent(fake, ScriptedUI(), tmp_path, yolo=True).run_turn("x")
+    first, second = (fake.calls[i]["messages"][-1]["content"] for i in (1, 2))
+    assert "x = 1" in first and "x = 1" in second
+    assert "nothing changed" not in first and "nothing changed" in second
+
+
+def test_a_change_in_between_makes_a_repeated_call_new(tmp_path):
+    (tmp_path / "a.py").write_text("x = 1\n", encoding="utf-8")
+    write = result(tool_calls=[call("write_file", {"path": "b.py", "content": "y = 2\n"})])
+    fake = FakeProvider([read_a(1), write, read_a(2), result(content="ok")])
+    make_agent(fake, ScriptedUI(), tmp_path, yolo=True).run_turn("x")
+    assert "nothing changed" not in fake.calls[3]["messages"][-1]["content"]
+
+
+def test_repeating_without_progress_ends_the_turn(tmp_path):
+    from petru.agent.loop import REPEAT_LIMIT
+
+    (tmp_path / "a.py").write_text("x = 1\n", encoding="utf-8")
+    fake = FakeProvider([read_a(i) for i in range(REPEAT_LIMIT + 5)] + [result(content="ok")])
+    ui = ScriptedUI()
+    agent = make_agent(fake, ui, tmp_path, yolo=True)
+    agent.run_turn("x")
+    assert agent.stop_reason == "no progress" and len(fake.calls) == REPEAT_LIMIT + 1
+    assert "no file changed" in ui.notices[-1]
+
+
+class _ChecksTool(Tool):
+    name = "checks"
+    description = "fails the same way, each run with its own duration"
+
+    def __init__(self):
+        self.runs = 0
+
+    def run(self, args, ctx):
+        from petru.tools.base import ToolResult
+
+        self.runs += 1
+        return ToolResult(
+            f"ImportError: no module tracker.query\n1 error in 0.{self.runs}9s (0:00:0{self.runs})", True
+        )
+
+
+def test_a_run_that_differs_only_in_its_duration_is_the_same_result(tmp_path):
+    checks = [result(tool_calls=[call("checks", {}, f"c{i}")]) for i in range(2)]
+    fake = FakeProvider([*checks, result(content="ok")])
+    agent = make_agent(fake, ScriptedUI(), tmp_path, yolo=True)
+    agent.registry.register(_ChecksTool())
+    agent.run_turn("x")
+    assert "nothing changed" in fake.calls[2]["messages"][-1]["content"]
