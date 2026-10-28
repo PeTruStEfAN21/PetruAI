@@ -159,3 +159,66 @@ se păstrează, cum a cerut utilizatorul. O epocă pe datasetul v3 e estimată l
 | Documentație și configurări (Markdown 236, YAML 215, necunoscut 186, JSON 33, TOML 31) | ~45 % |
 
 Filtrul de actualizări de versiuni a scos aproape toate commit-urile „bump” (JSON: 183 → 33 față de v1).
+
+## 12. Echipă (35B lider + 4B asistent) vs 35B singur (2026-10-27)
+
+Bench pe 12 proiecte mici-medii în 6 limbaje (`training/runs/bench/bench-2026-10-27.json`). Fiecare proiect are teste
+de acceptanță date; trece doar dacă toate trec. Liderul e Qwen3.6-35B-A3B, asistentul Qwen3.5-4B, amândoi local, pe
+rând pe același GPU. Limită: 60 de minute pe încercare. Echipa a fost FORȚATĂ să delege (liderul scrie un fișier, apoi
+câte o delegare pentru fiecare fișier nou); alegerea liderului între echipă și solo a venit abia după.
+
+| Proiect | 35B singur | Echipă | Delegări |
+|---|---|---|---|
+| csharp_bank | PASS, 10 min | PASS, 37 min | 3 |
+| csharp_rooms | PASS, 35 min | **PASS, 18 min** | 3 |
+| go_adventure | PASS, 12 min | PASS, 27 min | 2 |
+| go_expr | PASS, 19 min | PASS, 31 min | 3 |
+| java_csv | FAIL, 51 min (apeluri de unealtă invalide) | FAIL, timeout | — |
+| java_library | PASS, 15 min | PASS, 28 min | 4 |
+| python_inventory | PASS, 7 min | PASS, 17 min | 3 |
+| python_markdown | PASS, 12 min | FAIL, timeout (buclă infinită în `blocks.py`) | — |
+| rust_ini | PASS, 16 min | PASS, 47 min | 3 |
+| rust_kvstore | PASS, 51 min | FAIL, timeout | — |
+| ts_cache | PASS, 18 min | PASS, 30 min | 2 |
+| ts_todo | FAIL, timeout | **PASS, 35 min** | 2 |
+| **Total** | **10/12, medie 26 min** | **9/12, medie 37 min** | |
+
+Mediile includ timeout-urile ca 60 de minute.
+
+Control fără delegare (`bench-2026-10-27.no-delegation.json`): prima rulare în echipă a celor două proiecte C#, în care
+liderul nu a delegat nimic, a dat aproape același timp ca 35B singur (csharp_bank 9 vs 10 min, csharp_rooms 40 vs
+35 min). Atunci s-a introdus delegarea forțată, iar cele două proiecte au fost refăcute (rândurile din tabel).
+
+Concluzii:
+- Pe un singur GPU, echipa lucrează pe rând (liderul așteaptă asistentul), deci delegarea nu aduce viteză în sine;
+  costul ei e contextul pe care liderul îl dă și îl verifică. Echipa a câștigat de două ori: csharp_rooms (de două
+  ori mai repede) și ts_todo (singur a ieșit din timp).
+- Delegarea în paralel a fost măsurată separat (27 oct): cu ambele servere active, 4B scade de la 52 la 20 tok/s și
+  35B de la 15,5 la 8 tok/s, deci mai prost decât pe rând.
+- „Apeluri de unealtă invalide” la java_csv venea din limita de 4.096 tokeni pe răspuns, care tăia fișierele mari la
+  jumătate de apel; reparat ulterior (buget = context/4, `write_file` în bucăți).
+- Proiectele echipei, cu cine a scris fiecare fișier: `showcase/`.
+
+## 13. Alegerea liderului: echipă sau solo (2026-10-28)
+
+Probă pe proiectul mare `python_tracker` (24 de module, 133 de teste): liderul citește sarcina și testele, apelează
+`choose_mode`, apoi proba se oprește (nu construiește nimic).
+
+| Rulare | Înainte/după | Alegere | Timp până la alegere | Motivul liderului |
+|---|---|---|---|---|
+| `probe-2026-10-28.json` | înainte | solo (1/1) | 6,4 min | „module strâns cuplate, fiecare depinde de celelalte” |
+| `probe-2026-10-28b.json` | după `0ce98f7` | echipă (3/3) | 1,5–2 min | „se împarte curat în subpachete independente cu interfețe clare” |
+
+Cauza alegerii solo: `choose_mode` nu era permis în faza DESIGN, așa că liderul își scria întâi planul pentru un singur
+agent și apoi alegea modul care se potrivea cu planul. Dependența de modelele și erorile comune era citită drept
+cuplare strânsă. După reparație liderul alege înainte de plan, iar criteriul spune că modulele care depind doar de
+modele comune nu sunt cuplate (liderul scrie modelele, apoi delegă piesele). Alegerea e acum și de 3–4 ori mai rapidă.
+
+## 14. Proiectul mare python_tracker, echipă vs solo (2026-10-28)
+
+Raport: `training/runs/bench/bench-large-2026-10-28b.json` (180 de minute pe încercare). De completat după rulare.
+
+| Mod | Rezultat | Timp | Delegări | Observații |
+|---|---|---|---|---|
+| 35B singur | | | | |
+| Echipă | | | | |
