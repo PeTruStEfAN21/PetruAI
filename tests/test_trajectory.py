@@ -332,3 +332,27 @@ def test_a_run_goes_on_past_the_iteration_limit_like_a_user_saying_continue(tmp_
     )
     assert res.passed, res.check_output
     assert res.extra_turns == 2
+
+
+def test_a_run_can_stop_once_the_lead_has_chosen(tmp_path):
+    from petru.agent import team
+
+    lead = FakeProvider(
+        [
+            result(tool_calls=[call("plan", {"title": "Hello", "steps": ["delegate hello.py"]})]),
+            result(tool_calls=[call("choose_mode", {"mode": "team", "reason": "a simple piece"})]),
+            result(tool_calls=[call("write_file", {"path": "hello.py", "content": "print('hello')\n"})]),
+            result(content="Done."),
+        ]
+    )
+    res = run_task(
+        spec(["python hello.py"]),
+        provider=lead,
+        repo_root=tmp_path,
+        project=tmp_path / "p",
+        ctx_tokens=8192,
+        worker=team.Worker(provider=lambda tier: None, ctx_tokens=8192),
+        choice_only=True,
+    )
+    assert (res.team_choice, res.team_reason) == ("team", "a simple piece")
+    assert not res.passed and not (tmp_path / "p" / "hello.py").exists()

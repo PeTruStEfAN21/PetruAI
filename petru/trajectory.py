@@ -26,6 +26,7 @@ from petru.config import find_repo_root, load_config
 from petru.providers.base import ChatProvider
 from petru.providers.openai_compat import OpenAICompatProvider
 from petru.server import ServerManager
+from petru.tools.base import Tool, ToolContext, ToolResult
 from petru.tools.checks import detect_checks, find_project_dirs
 from petru.tools.git import _run_git, ensure_repo
 from petru.tools.registry import default_registry
@@ -116,6 +117,7 @@ class TaskResult:
     extra_turns: int
     delegations: int = 0  # team mode: delegate calls, counted by the tool itself
     team_choice: str | None = None  # team mode: what the lead chose with choose_mode (team, solo, or none)
+    team_reason: str | None = None  # team mode: the reason the lead gave for that choice
     authors: dict[str, str] = field(default_factory=dict)  # team mode: who wrote each file, kept by the tools
 
     def save(self, path: Path) -> None:
@@ -203,6 +205,24 @@ def check_solution(spec: TaskSpec, project: Path) -> tuple[bool, str]:
         return verify_task(spec, Path(tmp) / "project", solution)
 
 
+class ChoiceMade(KeyboardInterrupt):
+    """Ends a choice-only run the way Ctrl+C ends a turn: the lead has chosen, nothing more is needed."""
+
+
+class StopAfterChoice(Tool):
+    """choose_mode in a choice-only run: a valid choice is recorded by the inner tool, then the run ends."""
+
+    def __init__(self, inner: Tool) -> None:
+        self.inner = inner
+        self.name, self.description, self.parameters = inner.name, inner.description, inner.parameters
+
+    def run(self, args: dict, ctx: ToolContext) -> ToolResult:
+        result = self.inner.run(args, ctx)
+        if not result.is_error:
+            raise ChoiceMade
+        return result
+
+
 # A turn that ended on the iteration limit is one a user answers with "continue"; a large project ends many.
 GOES_ON = (None, "iteration limit")
 
@@ -219,10 +239,11 @@ def run_task(
     online: bool = False,
     max_iterations: int = 60,
     worker: Worker | None = None,
+    choice_only: bool = False,
 ) -> TaskResult:
     """One task as a user would live it: the prompt, answers to questions the model wrote as plain text
     instead of calling ask_user, and 'continue' while it stops talking (or hits the iteration limit) in BUILD
-    before task_complete."""
+    before task_complete. With `choice_only`, a team run ends as soon as the lead has chosen its mode."""
     if provider is None:
         if base_url is None:
             raise ValueError("run_task needs a provider or a base_url")
@@ -237,6 +258,9 @@ def run_task(
     registry = default_registry(online)
     if worker is not None:  # team mode: the model leads and delegates small tasks
         lead_registry(registry, worker)
+    choice = registry.get("choose_mode")
+    if choice_only and choice is not None:
+        registry.register(StopAfterChoice(choice))
     agent = Agent(
         provider, registry, ui, session, repo_root, ctx_tokens, online, max_iterations=max_iterations
     )
@@ -271,7 +295,8 @@ def run_task(
         check_output=output,
         extra_turns=extra,
         delegations=getattr(registry.get("delegate"), "calls", 0),
-        team_choice=getattr(registry.get("choose_mode"), "mode", None),
+        team_choice=getattr(choice, "mode", None),
+        team_reason=getattr(choice, "reason", None),
         authors=credits(registry),
     )
 
@@ -291,6 +316,9 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--worker-tier", default="fast", help="the assistant model in team mode")
     parser.add_argument("--worker-base-url", default=None, help="running llama-server of the assistant")
+    parser.add_argument(
+        "--choice-only", action="store_true", help="team mode: stop once the lead has chosen team or solo"
+    )
     parser.add_argument(
         "--verify-with",
         type=Path,
@@ -334,6 +362,7 @@ def main(argv: list[str] | None = None) -> int:
             base_url=base_url,
             max_extra_turns=args.max_extra_turns,
             worker=worker,
+            choice_only=args.choice_only,
         )
     finally:
         for running in (manager, worker_manager):

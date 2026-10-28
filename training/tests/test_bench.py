@@ -70,6 +70,7 @@ def test_a_run_keeps_its_transcript_for_later_reading(tmp_path):
         "stop_reason": None,
         "delegations": 0,
         "team_choice": None,
+        "team_reason": None,
     }
     assert json.loads(keep.read_text(encoding="utf-8")) == data
 
@@ -159,3 +160,39 @@ def test_a_single_bench_project_can_be_run_by_name():
     assert bench.bench_tasks(["python_tracker"], 2) == [bench.BENCH_DIR / "python_tracker" / "task.toml"]
     with pytest.raises(SystemExit):
         bench.bench_tasks(["no_such_project"], 2)
+
+
+def test_a_probe_asks_the_lead_only_for_its_choice_several_times(tmp_path):
+    tasks = [task(tmp_path, "py_big")]
+    calls, choices = [], iter(["team", "solo", "team"])
+
+    def runner(path, mode):
+        calls.append(mode)
+        return {"passed": False, "seconds": 60.0, "team_choice": next(choices), "team_reason": "r"}
+
+    report = bench.probe(tasks, runner, 3, tmp_path / "probe.json")
+    assert calls == ["choice"] * 3
+    assert report["summary"] == {"py_big": {"team": 2, "solo": 1}}
+    saved = json.loads((tmp_path / "probe.json").read_text(encoding="utf-8"))
+    assert [r["team_reason"] for r in saved["results"]] == ["r"] * 3
+    bench.probe(tasks, runner, 3, tmp_path / "probe.json")  # resumed: nothing left to run
+    assert len(calls) == 3
+
+
+def test_a_choice_run_leads_a_team_and_stops_after_the_choice(tmp_path, monkeypatch):
+    commands = []
+
+    class Recorded(FakeRun):
+        def __init__(self, cmd, **kwargs):
+            commands.append(cmd)
+            super().__init__(cmd, **kwargs)
+
+    monkeypatch.setattr(bench.subprocess, "Popen", Recorded)
+    bench.run_mode(tmp_path / "task.toml", "choice", "lead", "worker")
+    assert "--team" in commands[0] and "--choice-only" in commands[0]
+
+
+def test_a_run_reports_why_the_lead_chose(tmp_path):
+    out = tmp_path / "result.json"
+    out.write_text(json.dumps({"passed": False, "team_reason": "tight", "messages": []}), encoding="utf-8")
+    assert bench.read_result(out)["team_reason"] == "tight"

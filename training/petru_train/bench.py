@@ -5,6 +5,10 @@ runs in both modes, in alternating order (a warm cache never favours one mode), 
 every run, so a stopped comparison resumes.
 
     py -3.14 -m uv run python -m petru_train.bench --tasks bench,heldout --per-language 2
+
+A probe asks the lead only whether it would work as a team, a few times per task, in minutes instead of hours:
+
+    py -3.14 -m uv run python -m petru_train.bench --tasks python_tracker --probe 3
 """
 
 from __future__ import annotations
@@ -61,6 +65,7 @@ def read_result(out: Path, keep: Path | None = None) -> dict:
         "stop_reason": data.get("stop_reason"),
         "delegations": data.get("delegations", delegations(data.get("messages") or [])),
         "team_choice": data.get("team_choice"),
+        "team_reason": data.get("team_reason"),
     }
 
 
@@ -108,8 +113,10 @@ def _attempt(task: Path, mode: str, lead_url: str, worker_url: str, keep: Path |
             "--tier", "quality", "--base-url", lead_url, "--out", str(out),
             "--project", str(Path(tmp) / "project"),
         ]  # fmt: skip
-        if mode == "team":
+        if mode in ("team", "choice"):
             cmd += ["--team", "--worker-tier", "fast", "--worker-base-url", worker_url]
+        if mode == "choice":
+            cmd += ["--choice-only"]
         proc = subprocess.Popen(cmd, cwd=str(REPO_ROOT), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         timed_out, limit = False, attempt_timeout(task)
         try:
@@ -160,6 +167,32 @@ def compare(tasks: list[Path], runner: Runner, report_file: Path) -> dict:
     return {"results": results, "summary": _summary(results)}
 
 
+def probe(tasks: list[Path], runner: Runner, runs: int, report_file: Path) -> dict:
+    """The lead's choice of team or solo, `runs` times per task, with its reasons; resumable."""
+    results = []
+    if report_file.is_file():
+        results = json.loads(report_file.read_text(encoding="utf-8")).get("results", [])
+    for task in tasks:
+        name = task_name(task)
+        for _ in range(runs - sum(r["task"] == name for r in results)):
+            row = {"task": name, "mode": "choice", **runner(task, "choice")}
+            results.append(row)
+            print(f"{name}: {row.get('team_choice')} ({row.get('team_reason')})", flush=True)
+            report_file.parent.mkdir(parents=True, exist_ok=True)
+            report = {"results": results, "summary": _choices(results)}
+            report_file.write_text(json.dumps(report, indent=1), encoding="utf-8")
+    return {"results": results, "summary": _choices(results)}
+
+
+def _choices(results: list[dict]) -> dict:
+    summary: dict[str, dict[str, int]] = {}
+    for row in results:
+        counts = summary.setdefault(row["task"], {})
+        choice = row.get("team_choice") or "none"
+        counts[choice] = counts.get(choice, 0) + 1
+    return summary
+
+
 def bench_tasks(kinds: list[str], per_language: int) -> list[Path]:
     tasks: list[Path] = []
     if "bench" in kinds:
@@ -183,6 +216,9 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--per-language", type=int, default=2, help="held-out Exercism tasks per language")
     parser.add_argument("--report", type=Path, default=None, help="resume this report")
+    parser.add_argument(
+        "--probe", type=int, default=0, help="only ask the lead this many times per task: team or solo"
+    )
     args = parser.parse_args(argv)
     tasks = bench_tasks([k.strip() for k in args.tasks.split(",")], args.per_language)
     report = args.report or REPORTS_DIR / f"{datetime.now():%Y-%m-%d-%H%M}.json"
@@ -191,21 +227,27 @@ def main(argv: list[str] | None = None) -> int:
     )
     assistant = assistant_gguf()
     print(f"assistant: {assistant.name}", flush=True)
-    worker = start_server(assistant, WORKER_PORT, WORKER_CTX, log=report.with_suffix(".worker.log"))
+    worker = None  # a probe ends before anything is delegated: no assistant to load
+    if not args.probe:
+        worker = start_server(assistant, WORKER_PORT, WORKER_CTX, log=report.with_suffix(".worker.log"))
     try:
-        if not (wait_healthy(LEAD_PORT, timeout_s=900, proc=lead) and wait_healthy(WORKER_PORT, proc=worker)):
+        lead_up = wait_healthy(LEAD_PORT, timeout_s=900, proc=lead)
+        if not (lead_up and (worker is None or wait_healthy(WORKER_PORT, proc=worker))):
             raise RuntimeError("a model server did not start; see the logs next to the report")
         lead_url, worker_url = f"http://127.0.0.1:{LEAD_PORT}/v1", f"http://127.0.0.1:{WORKER_PORT}/v1"
         transcripts = report.with_suffix("")  # one <task>-<mode>.json per attempt, next to the report
 
         def runner(task: Path, mode: str) -> dict:
             keep = transcripts / f"{task_name(task)}-{mode}.json"
+            if mode == "choice":  # a probe asks several times: one transcript each
+                keep = keep.with_stem(f"{keep.stem}-{len(list(transcripts.glob(f'{keep.stem}-*.json'))) + 1}")
             return run_mode(task, mode, lead_url, worker_url, keep, assistant.name)
 
-        result = compare(tasks, runner, report)
+        result = probe(tasks, runner, args.probe, report) if args.probe else compare(tasks, runner, report)
     finally:
         stop(lead)
-        stop(worker)
+        if worker is not None:
+            stop(worker)
     print(json.dumps(result["summary"], indent=2))
     return 0
 
