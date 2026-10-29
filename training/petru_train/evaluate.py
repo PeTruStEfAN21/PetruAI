@@ -19,7 +19,7 @@ from petru_train.exercism import TASKS_DIR as EXERCISM_TASKS
 from petru_train.exercism import validated_tasks
 from petru_train.samples import load_tools, read_jsonl, render_chat, text_tokenizer
 from petru_train.server import start_server, stop, wait_healthy
-from petru_train.trajectories import task_name
+from petru_train.trajectories import kill_tree, own_time_limit, task_name
 
 TRAINING_DIR = Path(__file__).resolve().parents[1]
 REPO_ROOT = TRAINING_DIR.parent
@@ -28,9 +28,11 @@ TASKS_DIR = TRAINING_DIR / "tasks"
 TASK_LIMIT = 6  # evaluated harness tasks, taken in turn from every stack
 EVAL_POOL: Path | None = EXERCISM_TASKS  # held-out Exercism tasks evaluated next to them (None: harness only)
 HELD_OUT_PER_LANGUAGE = 1
-HARNESS_VERSION = 3  # bump when the harness changes what counts as a pass
+HARNESS_VERSION = 4  # bump when the harness changes what counts as a pass
 # 2 (2026-10-27): no checks = fail, plus that night's agent fixes (git log --since 2026-10-27 -- petru)
 # 3 (2026-10-27): test-first prompts; task_complete waits for green checks after the last change
+# 4 (2026-10-29): a time limit per task; a turn stops after five repeated calls with no file changed
+EVAL_TASK_TIMEOUT_S = 1200  # one harness task (a hung `npm test` once held the base evaluation for 83 min)
 BASE_GGUF = REPO_ROOT / "infra" / "llama.cpp" / "models" / "Qwen3.5-4B.IQ4_XS.gguf"
 TOOL_TOLERANCE = 0.05
 EVAL_SYSTEM = (
@@ -182,16 +184,25 @@ def tool_validity(
     return score, details
 
 
-def run_task_cli(task_path: Path, base_url: str, ctx_tokens: int) -> dict:
-    """One task through the agent (Python 3.14 environment) against an already running server."""
+def run_task_cli(
+    task_path: Path, base_url: str, ctx_tokens: int, timeout_s: float = EVAL_TASK_TIMEOUT_S
+) -> dict:
+    """One task through the agent (Python 3.14 environment) against an already running server. It stops
+    itself shortly before `timeout_s`, so its result is kept; past `timeout_s` it is killed and fails."""
     with tempfile.TemporaryDirectory(prefix="petru-eval-", ignore_cleanup_errors=True) as tmp:
         out = Path(tmp) / "result.json"
         cmd = [
             "py", "-3.14", "-m", "uv", "run", "python", "-m", "petru.trajectory", str(task_path),
             "--base-url", base_url, "--out", str(out), "--tier", "default",
-            "--project", str(Path(tmp) / "project"),
+            "--project", str(Path(tmp) / "project"), "--time-limit", str(own_time_limit(timeout_s)),
         ]  # fmt: skip
-        subprocess.run(cmd, cwd=str(REPO_ROOT), capture_output=True, text=True, encoding="utf-8")
+        proc = subprocess.Popen(cmd, cwd=str(REPO_ROOT), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        try:
+            proc.wait(timeout=timeout_s)
+        except subprocess.TimeoutExpired:  # a hung test run (a server left listening) must not stall a night
+            kill_tree(proc.pid)
+            stop_reason = f"timeout after {timeout_s:.0f}s"
+            return {"name": task_path.stem, "passed": False, "seconds": timeout_s, "stop_reason": stop_reason}
         if not out.exists():
             return {"name": task_path.stem, "passed": False, "seconds": 0.0, "stop_reason": "runner error"}
         data = json.loads(out.read_text(encoding="utf-8"))

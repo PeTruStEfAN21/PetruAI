@@ -242,21 +242,50 @@ def test_held_out_loss_is_finite(tmp_path):
 def test_task_details_keep_the_tail_of_the_check_output(tmp_path, monkeypatch):
     from petru_train import evaluate
 
-    def fake_run(cmd, **kw):
-        out = Path(cmd[cmd.index("--out") + 1])
-        result = {
-            "name": "t",
-            "passed": False,
-            "messages": [{}] * 50,
-            "tools": [{}],
-            "check_output": "x" * 5000 + "END",
-        }
-        out.write_text(json.dumps(result), encoding="utf-8")
+    class Done:
+        pid = 1
 
-    monkeypatch.setattr(evaluate.subprocess, "run", fake_run)
+        def __init__(self, cmd, **kw):
+            out = Path(cmd[cmd.index("--out") + 1])
+            result = {
+                "name": "t",
+                "passed": False,
+                "messages": [{}] * 50,
+                "tools": [{}],
+                "check_output": "x" * 5000 + "END",
+            }
+            out.write_text(json.dumps(result), encoding="utf-8")
+
+        def wait(self, timeout=None):
+            return 0
+
+    monkeypatch.setattr(evaluate.subprocess, "Popen", Done)
     data = evaluate.run_task_cli(tmp_path / "t.toml", "http://x/v1", 16384)
     assert "messages" not in data and "tools" not in data and data["turns"] == 50
     assert data["check_output"].endswith("END") and len(data["check_output"]) <= 2000
+
+
+def test_an_eval_task_stops_itself_in_time_and_a_hung_one_is_killed(tmp_path, monkeypatch):
+    import subprocess
+
+    from petru_train import evaluate
+
+    started, killed = [], []
+
+    class Hung:
+        pid = 4242
+
+        def __init__(self, cmd, **kw):
+            started.append(cmd)
+
+        def wait(self, timeout=None):
+            raise subprocess.TimeoutExpired("petru", timeout)
+
+    monkeypatch.setattr(evaluate.subprocess, "Popen", Hung)
+    monkeypatch.setattr(evaluate, "kill_tree", lambda pid: killed.append(pid))
+    data = evaluate.run_task_cli(tmp_path / "t.toml", "http://x/v1", 16384, timeout_s=600)
+    assert started[0][started[0].index("--time-limit") + 1] == "540.0"
+    assert data["passed"] is False and "timeout" in data["stop_reason"] and killed == [4242]
 
 
 def test_tasks_signature_changes_with_the_harness_pass_rule(tmp_path, monkeypatch):

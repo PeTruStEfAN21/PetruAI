@@ -29,7 +29,7 @@ from petru_train.exercism import TASKS_DIR as EXERCISM_TASKS
 from petru_train.export import MODELS_DIR, TUNED_FILE
 from petru_train.server import start_server, stop, wait_healthy
 from petru_train.teacher import TEACHER_GGUF
-from petru_train.trajectories import REPO_ROOT, kill_tree, task_name
+from petru_train.trajectories import REPO_ROOT, kill_tree, own_time_limit, task_name
 
 TRAINING_DIR = Path(__file__).resolve().parents[1]
 BENCH_DIR = TRAINING_DIR / "bench"
@@ -89,12 +89,6 @@ def attempt_timeout(task: Path) -> float:
     except (OSError, tomllib.TOMLDecodeError):
         minutes = None
     return float(minutes * 60) if isinstance(minutes, int | float) else float(ATTEMPT_TIMEOUT_S)
-
-
-def own_time_limit(limit: float) -> float:
-    """When an attempt with `limit` seconds stops itself: early enough for a last long reply to finish and its
-    transcript to be saved (10%, at most 15 minutes); the kill at `limit` stays a backstop."""
-    return limit - min(900.0, limit / 10)
 
 
 def run_mode(

@@ -270,6 +270,12 @@ def kill_tree(pid: int) -> None:
         subprocess.run(["kill", "-TERM", str(pid)], capture_output=True)
 
 
+def own_time_limit(limit: float) -> float:
+    """When an attempt with `limit` seconds stops itself: early enough for a last long reply to finish and its
+    transcript to be saved (10%, at most 15 minutes); the kill at `limit` stays a backstop."""
+    return limit - min(900.0, limit / 10)
+
+
 def run_petru_task(task_path: Path, cfg: TrajConfig, attempt: int) -> dict:
     """One attempt through `python -m petru.trajectory` in the agent's environment, in a temporary project.
     A run past `attempt_timeout_s` is killed with its whole process tree and counts as failed."""
