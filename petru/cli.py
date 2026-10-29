@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 import sys
-from collections import Counter
 from dataclasses import replace
 from pathlib import Path
 
@@ -12,16 +11,15 @@ from rich.console import Console
 
 from petru.agent import team
 from petru.agent.loop import Agent
-from petru.agent.state import Phase, Session
+from petru.agent.state import Session
+from petru.app import App
 from petru.config import find_repo_root, load_config
-from petru.journal.summarize import journal_prompt_section, summarize_pending
-from petru.memory.tools import memory_prompt_section
+from petru.journal.summarize import summarize_pending
 from petru.offline import is_online
 from petru.providers.openai_compat import OpenAICompatProvider
 from petru.server import ServerManager, ServerStartError
 from petru.tools.git import ensure_repo
 from petru.tools.registry import ToolRegistry, default_registry
-from petru.tui.commands import HELP_TEXT, parse_command
 from petru.tui.rich_ui import NonInteractiveUI, RichUI
 
 TIERS = ("default", "quality", "fast", "tuned")
@@ -63,13 +61,6 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _status(session: Session, online: bool) -> str:
-    return (
-        f"phase={session.phase.value} tier={session.tier} project={session.project_root} "
-        f"{'online' if online else 'offline'}{' yolo' if session.yolo else ''}"
-    )
-
-
 class TeamModes:
     """The solo and the team registry of one session, so /team switches between tasks without a restart. The
     team's registry and its assistant's server are made on the first switch to the team."""
@@ -93,94 +84,14 @@ class TeamModes:
             self.worker_manager.stop()
 
 
-def _switch_team(agent: Agent, modes: TeamModes, manager: ServerManager, cfg, console: Console) -> None:
-    session = agent.session
-    if session.phase is not Phase.IDLE:  # the lead's tools and role must not change in the middle of a task
-        console.print("Finish the current task first (/done), then switch.", markup=False)
-        return
-    if agent.registry is modes.team:
-        agent.registry, session.role = modes.solo, ""
-        console.print(f"Team mode off: {session.tier} works alone.", markup=False)
-        return
-    agent.registry, session.role = modes.lead(), team.LEAD_PROMPT
-    if session.tier != "quality" and "quality" in cfg.tiers:  # the 35B leads, as with --team
-        _switch_model(manager, agent, cfg, "quality", console)
-    console.print(
-        f"Team mode on: {session.tier} leads; the assistant starts on its first delegation.", markup=False
-    )
-
-
-def _details(agent: Agent, cfg, modes: TeamModes) -> str:
-    session, usage = agent.session, agent.usage
-    tier = cfg.tiers.get(session.tier)
-    share = round(100 * usage.prompt_tokens / agent.ctx_tokens) if agent.ctx_tokens else 0
-    speed = f", {usage.completion_tokens / usage.model_seconds:.1f} tok/s" if usage.model_seconds else ""
-    lines = [
-        f"model    {session.tier} ({tier.model_file if tier else '?'})",
-        f"context  {usage.prompt_tokens:,} of {agent.ctx_tokens:,} tokens ({share}%)",
-        f"replies  {usage.requests} request{'' if usage.requests == 1 else 's'}, "
-        f"{usage.completion_tokens:,} tokens in "
-        f"{usage.model_seconds:.0f} s{speed}",
-        f"tools    {usage.tool_calls} calls",
-        f"stopped  {(agent.stop_reason or 'answered') if usage.requests else 'none yet'}",
-    ]
-    if agent.registry is modes.team:
-        choice, delegate = agent.registry.get("choose_mode"), agent.registry.get("delegate")
-        mode = getattr(choice, "mode", None) or "not chosen yet"
-        reason = getattr(choice, "reason", None)
-        authors = Counter(team.credits(agent.registry).values())
-        files = ", ".join(f"{who} {n}" for who, n in sorted(authors.items()))
-        lines.append(
-            f"team     on: {mode}{f' ({reason})' if reason else ''}, "
-            f"{getattr(delegate, 'calls', 0)} delegations{f'; files: {files}' if files else ''}"
-        )
-    else:
-        lines.append("team     off (/team switches it on)")
-    plan = session.plan
-    planned = f", plan: {plan.title} ({'confirmed' if plan.confirmed else 'proposed'})" if plan else ""
-    lines.append(f"phase    {session.phase.value}{planned}")
-    return "\n".join(lines)
-
-
-def _switch_model(manager: ServerManager, agent: Agent, cfg, tier: str, console: Console) -> None:
-    if tier not in cfg.tiers:
-        console.print(f"Unknown tier {tier!r}. Tiers: {', '.join(cfg.tiers)}", markup=False)
-        return
-    try:
-        manager.ensure_running(tier)
-    except ServerStartError as exc:
-        console.print(f"[red]{exc}[/]", markup=True, highlight=False)
-        return
-    agent.session.tier = tier
-    agent.ctx_tokens = cfg.tiers[tier].ctx
-    agent.max_iterations = cfg.tiers[tier].max_iterations
-    console.print(f"Model tier: {tier} ({cfg.tiers[tier].model_file})", markup=False)
-
-
-def _run_turn(agent: Agent, ui: RichUI, console: Console, text: str, quick: bool = False) -> None:
-    if agent.session.phase is Phase.IDLE:  # a new task: in team mode the lead chooses again
-        team.start_task(agent.registry)
-    try:
-        agent.run_turn(text, quick=quick)
-    except KeyboardInterrupt:
-        console.print("[yellow]Turn cancelled.[/]", markup=True)
-    except Exception as exc:  # the REPL survives a provider/tool crash; the error is shown
-        console.print(f"[red]{type(exc).__name__}: {exc}[/]", markup=True, highlight=False)
-    finally:
-        ui.flush()
-
-
-def repl(
-    agent: Agent, ui: RichUI, manager: ServerManager, cfg, online: bool, console: Console, modes: TeamModes
-) -> None:
+def repl(app: App, console: Console) -> None:
     from prompt_toolkit import PromptSession
     from prompt_toolkit.history import FileHistory
 
     history = Path.home() / ".petru" / "history"
     history.parent.mkdir(parents=True, exist_ok=True)
     prompt_session: PromptSession = PromptSession("petru> ", history=FileHistory(str(history)))
-    session = agent.session
-    console.print(f"Petru ready. {_status(session, online)}. /help for commands.", markup=False)
+    console.print(f"Petru ready. {app.status()}. /help for commands.", markup=False)
     while True:
         try:
             line = prompt_session.prompt()
@@ -189,52 +100,8 @@ def repl(
             continue
         except EOFError:
             return
-        if not line.strip():
-            continue
-        cmd = parse_command(line)
-        if cmd is None:
-            _run_turn(agent, ui, console, line)
-        elif cmd.name == "exit":
+        if line.strip() and app.handle(line):
             return
-        elif cmd.name == "help":
-            console.print(HELP_TEXT, markup=False)
-        elif cmd.name == "status":
-            console.print(_status(session, online), markup=False)
-        elif cmd.name == "details":
-            console.print(_details(agent, cfg, modes), markup=False)
-        elif cmd.name == "team":
-            _switch_team(agent, modes, manager, cfg, console)
-        elif cmd.name == "memory":
-            section = memory_prompt_section(session.project_root, max_tokens=10_000)
-            console.print(section or "No memories yet.", markup=False)
-        elif cmd.name == "journal":
-            section = journal_prompt_section(session.project_root, n=10, max_tokens=4_000)
-            console.print(section or "No commit summaries yet (petru journal hook install).", markup=False)
-        elif cmd.name == "model":
-            if cmd.arg:
-                _switch_model(manager, agent, cfg, cmd.arg, console)
-            else:
-                console.print(f"Model tier: {session.tier}. Tiers: {', '.join(cfg.tiers)}", markup=False)
-        elif cmd.name == "plan":
-            if session.plan is None:
-                console.print("No plan yet.", markup=False)
-            else:
-                steps = "\n".join(f"  {i}. {s}" for i, s in enumerate(session.plan.steps, start=1))
-                state = "confirmed" if session.plan.confirmed else "proposed"
-                console.print(f"Plan ({state}): {session.plan.title}\n{steps}", markup=False)
-        elif cmd.name == "quick":
-            if cmd.arg:
-                _run_turn(agent, ui, console, cmd.arg, quick=True)
-            else:
-                console.print("Usage: /quick <request>", markup=False)
-        elif cmd.name == "done":
-            session.complete()
-            console.print("Task closed; the next prompt starts a new design phase.", markup=False)
-        elif cmd.name == "yolo":
-            session.yolo = not session.yolo
-            console.print(f"yolo {'on' if session.yolo else 'off'}", markup=False)
-        else:
-            console.print(f"Unknown command /{cmd.name}. /help lists the commands.", markup=False)
 
 
 SUBCOMMANDS = ("memory", "index", "watch", "journal", "doctor")
@@ -464,7 +331,8 @@ def main(argv: list[str] | None = None) -> int:
                 console.print(f"Journal: summarized {done} new commits (/journal).", markup=False)
         except Exception as exc:  # the journal is a convenience; never block the REPL on it
             console.print(f"Journal summaries skipped: {exc}", markup=False)
-        repl(agent, ui, manager, cfg, online, console, modes)
+        say = lambda text: console.print(text, markup=False)  # noqa: E731
+        repl(App(agent, manager, cfg, modes, online, say=say), console)
         return 0
     finally:
         manager.stop()

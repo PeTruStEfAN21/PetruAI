@@ -102,3 +102,20 @@ def test_team_switches_on_and_off_between_tasks(tmp_path, monkeypatch, capsys):
 
     lead_manager, worker_manager = FakeManager.instances
     assert lead_manager.started == ["fast", "quality"] and worker_manager.stopped
+
+
+def test_think_switches_reasoning_on_and_off(tmp_path, monkeypatch, capsys):
+    code, _, providers = run_repl(monkeypatch, tmp_path, [], ["/think", "/status", "/think"])
+    out = capsys.readouterr().out
+    assert code == 0 and "think on" in out and "think off" in out.split("think on")[1]
+    assert " think" in out.split("phase=idle")[2]  # /status names it while on
+    assert providers[0].thinking is False
+
+
+def test_model_auto_picks_a_tier_for_the_project(tmp_path, monkeypatch, capsys):
+    code, _, _ = run_repl(monkeypatch, tmp_path, [], ["/model auto"])
+    out = capsys.readouterr().out
+    from tests.test_cli import FakeManager
+
+    assert code == 0 and "Model tier: default" in out
+    assert FakeManager.instances[0].started == ["fast", "default"]

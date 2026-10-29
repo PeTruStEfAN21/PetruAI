@@ -159,7 +159,9 @@ def test_each_new_task_in_the_repl_lets_the_lead_choose_again(tmp_path):
     session = Session(tmp_path, role=team.LEAD_PROMPT)
     ui = cli.NonInteractiveUI(cli.Console(), yolo=True)
     agent = Agent(FakeProvider([result(content="hi")]), registry, ui, session, tmp_path, 8192, False)
-    cli._run_turn(agent, ui, cli.Console(), "next task")
+    from petru.app import App
+
+    App(agent, None, None, None, False, say=print).run_turn("next task")
     assert registry.get("choose_mode").mode is None
 
 

@@ -22,3 +22,9 @@ def test_parse_command(line, expected):
 def test_help_lists_every_command():
     for name in ("/help", "/model", "/plan", "/quick", "/done", "/yolo", "/status", "/exit"):
         assert name in HELP_TEXT
+
+
+def test_help_lists_think_and_the_auto_tier():
+    from petru.tui.commands import HELP_TEXT
+
+    assert "/think" in HELP_TEXT and "auto" in HELP_TEXT

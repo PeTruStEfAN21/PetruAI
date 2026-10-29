@@ -16,7 +16,7 @@ Type a request to start a task: Petru asks design questions, proposes a plan, th
 
 Commands:
   /help            this help
-  /model [tier]    show or switch the model tier (default, quality, fast); restarts the server
+  /model [tier]    show or switch the model tier (default, quality, fast, auto); restarts the server
   /plan            show the current plan
   /quick <text>    skip the design questions and build right away (small fixes)
   /done            end the current task and go back to idle
@@ -24,6 +24,7 @@ Commands:
   /status          phase, tier, project, online/offline
   /details         context used, replies and speed, tool calls, why the last turn stopped, team state
   /team            switch team mode on or off between tasks (the 35B leads, the 4B takes simple pieces)
+  /think           show the model's reasoning before it answers (slower; the reasoning is not kept)
   /memory          what Petru remembers (global and project memory)
   /journal         recent commit summaries and pending ones
   /exit            quit (Ctrl+D also works)
