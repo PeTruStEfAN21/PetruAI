@@ -265,6 +265,32 @@ def test_task_details_keep_the_tail_of_the_check_output(tmp_path, monkeypatch):
     assert data["check_output"].endswith("END") and len(data["check_output"]) <= 2000
 
 
+def test_a_failed_eval_task_keeps_its_transcript_under_its_own_name(tmp_path, monkeypatch):
+    from petru_train import evaluate
+
+    def finished(passed):
+        class Done:
+            pid = 1
+
+            def __init__(self, cmd, **kw):
+                out = Path(cmd[cmd.index("--out") + 1])
+                out.write_text(json.dumps({"name": "x", "passed": passed, "messages": []}), encoding="utf-8")
+
+            def wait(self, timeout=None):
+                return 0
+
+        return Done
+
+    task = tmp_path / "ruby_ex_tree" / "task.toml"
+    keep = tmp_path / "failed"
+    monkeypatch.setattr(evaluate.subprocess, "Popen", finished(True))
+    evaluate.run_task_cli(task, "http://x/v1", 16384, keep_dir=keep)
+    assert not keep.exists()
+    monkeypatch.setattr(evaluate.subprocess, "Popen", finished(False))
+    evaluate.run_task_cli(task, "http://x/v1", 16384, keep_dir=keep)
+    assert [p.name for p in keep.iterdir()] == ["ruby_ex_tree.json"]
+
+
 def test_an_eval_task_stops_itself_in_time_and_a_hung_one_is_killed(tmp_path, monkeypatch):
     import subprocess
 

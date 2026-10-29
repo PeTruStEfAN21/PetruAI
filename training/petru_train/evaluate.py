@@ -6,6 +6,7 @@ import argparse
 import hashlib
 import json
 import math
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -13,6 +14,7 @@ import tomllib
 import urllib.request
 from collections.abc import Callable
 from dataclasses import asdict, dataclass, replace
+from functools import partial
 from pathlib import Path
 
 from petru_train.exercism import TASKS_DIR as EXERCISM_TASKS
@@ -186,10 +188,16 @@ def tool_validity(
 
 
 def run_task_cli(
-    task_path: Path, base_url: str, ctx_tokens: int, timeout_s: float = EVAL_TASK_TIMEOUT_S
+    task_path: Path,
+    base_url: str,
+    ctx_tokens: int,
+    timeout_s: float = EVAL_TASK_TIMEOUT_S,
+    keep_dir: Path | None = None,
 ) -> dict:
     """One task through the agent (Python 3.14 environment) against an already running server. It stops
-    itself shortly before `timeout_s`, so its result is kept; past `timeout_s` it is killed and fails."""
+    itself shortly before `timeout_s`, so its result is kept; past `timeout_s` it is killed and fails. The
+    transcript of a failed task is copied to `keep_dir`, so why it failed can be read afterwards."""
+    name = task_name(task_path)
     with tempfile.TemporaryDirectory(prefix="petru-eval-", ignore_cleanup_errors=True) as tmp:
         out = Path(tmp) / "result.json"
         cmd = [
@@ -203,10 +211,13 @@ def run_task_cli(
         except subprocess.TimeoutExpired:  # a hung test run (a server left listening) must not stall a night
             kill_tree(proc.pid)
             stop_reason = f"timeout after {timeout_s:.0f}s"
-            return {"name": task_path.stem, "passed": False, "seconds": timeout_s, "stop_reason": stop_reason}
+            return {"name": name, "passed": False, "seconds": timeout_s, "stop_reason": stop_reason}
         if not out.exists():
-            return {"name": task_path.stem, "passed": False, "seconds": 0.0, "stop_reason": "runner error"}
+            return {"name": name, "passed": False, "seconds": 0.0, "stop_reason": "runner error"}
         data = json.loads(out.read_text(encoding="utf-8"))
+        if keep_dir is not None and not data.get("passed"):
+            keep_dir.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(out, keep_dir / f"{name}.json")
         data["turns"] = len(data.pop("messages", []))  # the transcript itself is too large for the report
         data.pop("tools", None)
         data["check_output"] = str(data.get("check_output") or "")[-2000:]  # the tail says why a check failed
@@ -351,7 +362,12 @@ def evaluate(
             raise RuntimeError(f"llama-server did not become healthy for {gguf}")
         base_url = f"http://127.0.0.1:{port}/v1"
         validity, validity_details = tool_validity(base_url, requests_file)
-        passed, task_details = task_pass(base_url, tasks_dir, ctx, limit, tasks=tasks)
+        runner = (
+            run_task_cli
+            if log is None
+            else partial(run_task_cli, keep_dir=log.parent / f"failed-{gguf.stem}")
+        )
+        passed, task_details = task_pass(base_url, tasks_dir, ctx, limit, runner=runner, tasks=tasks)
     finally:
         stop(proc)
     details = {
