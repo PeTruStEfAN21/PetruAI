@@ -28,10 +28,11 @@ TASKS_DIR = TRAINING_DIR / "tasks"
 TASK_LIMIT = 6  # evaluated harness tasks, taken in turn from every stack
 EVAL_POOL: Path | None = EXERCISM_TASKS  # held-out Exercism tasks evaluated next to them (None: harness only)
 HELD_OUT_PER_LANGUAGE = 1
-HARNESS_VERSION = 4  # bump when the harness changes what counts as a pass
+HARNESS_VERSION = 3  # bump when the harness changes what counts as a pass
 # 2 (2026-10-27): no checks = fail, plus that night's agent fixes (git log --since 2026-10-27 -- petru)
 # 3 (2026-10-27): test-first prompts; task_complete waits for green checks after the last change
-# 4 (2026-10-29): a time limit per task; a turn stops after five repeated calls with no file changed
+# The per-task time limit (2026-10-29) kept 3: the base evaluated that day already ran with its tasks killed
+# at 20 minutes and with the repeated-call stop, so its baseline is measured under the same rule.
 EVAL_TASK_TIMEOUT_S = 1200  # one harness task (a hung `npm test` once held the base evaluation for 83 min)
 BASE_GGUF = REPO_ROOT / "infra" / "llama.cpp" / "models" / "Qwen3.5-4B.IQ4_XS.gguf"
 TOOL_TOLERANCE = 0.05
