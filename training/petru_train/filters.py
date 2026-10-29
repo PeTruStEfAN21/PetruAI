@@ -31,14 +31,9 @@ GENERATED_PATTERNS: list[str] = [
     "__pycache__/",
     "migrations/",
     "vendor/",
-    ".venv/",
-    ".idea/",
-    ".vscode/",
-    ".assistant/",  # assistant/editor tool configuration, not the project's code
-    ".cursor/",
-    ".plans/",
-    "plans/",
 ]
+HIDDEN_KEPT = {".github"}  # hidden folders worth learning from; the others hold tool or editor settings
+PLAN_FOLDERS = {"plans", "specs"}  # planning documents (often written by coding assistants), not the project
 BUMP_MESSAGE = re.compile(
     r"\bbump(?:ed|s)?\b|\(deps(?:-dev)?\)|dependabot|renovate|\bupdate \S+ requirement\b"
     r"|^chore\(release\)|^v?\d+\.\d+\.\d+\S*$|^version packages$",
@@ -126,6 +121,11 @@ def is_generated_path(path: str) -> bool:
     posix = PurePosixPath(path.replace("\\", "/"))
     name = posix.name
     if posix.suffix.lower() in BINARY_EXTENSIONS:
+        return True
+    folders = posix.parts[:-1]
+    if any(part.startswith(".") and part not in HIDDEN_KEPT | {".", ".."} for part in folders):
+        return True  # .venv, .dart_tool, editor and assistant settings
+    if posix.suffix.lower() == ".md" and PLAN_FOLDERS.intersection(folders):
         return True
     for pattern in GENERATED_PATTERNS:
         if pattern.endswith("/"):

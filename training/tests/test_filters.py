@@ -64,14 +64,17 @@ def test_is_bump_message(message, expected):
     assert is_bump_message(message) is expected
 
 
-def test_assistant_tool_config_paths_are_excluded():
-    for path in [
-        ".assistant/settings.json",
-        ".cursor/rules.md",
-        "docs/plans/x.md",
-        ".plans/a",
-    ]:
+def test_hidden_tool_folders_are_excluded_but_github_is_kept():
+    for path in [".cursor/rules.md", ".anytool/settings.json", "app/.cache/x.py", ".idea/workspace.xml"]:
         assert is_generated_path(path), path
+    assert not is_generated_path(".github/workflows/ci.yml")
+    assert not is_generated_path("src/.hidden_name.py")  # a hidden file is not a hidden folder
+
+
+def test_planning_documents_are_excluded_but_other_docs_are_kept():
+    for path in ["docs/tool/plans/2026-01-01-x.md", "docs/specs/design.md"]:
+        assert is_generated_path(path), path
+    assert not is_generated_path("docs/guide.md") and not is_generated_path("src/plans/route.py")
 
 
 def test_is_trivial_message():
