@@ -28,3 +28,9 @@ def test_help_lists_think_and_the_auto_tier():
     from petru.tui.commands import HELP_TEXT
 
     assert "/think" in HELP_TEXT and "auto" in HELP_TEXT
+
+
+def test_help_names_the_keys_of_the_full_screen():
+    from petru.tui.commands import HELP_TEXT
+
+    assert all(key in HELP_TEXT for key in ("Esc", "F2", "PageUp", "Shift+drag", "--plain"))

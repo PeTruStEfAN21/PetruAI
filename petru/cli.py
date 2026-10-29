@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import shutil
 import sys
 from dataclasses import replace
 from pathlib import Path
@@ -10,6 +11,7 @@ from pathlib import Path
 from rich.console import Console
 
 from petru.agent import team
+from petru.agent.cancel import CancelToken
 from petru.agent.loop import Agent
 from petru.agent.state import Session
 from petru.app import App
@@ -20,9 +22,13 @@ from petru.providers.openai_compat import OpenAICompatProvider
 from petru.server import ServerManager, ServerStartError
 from petru.tools.git import ensure_repo
 from petru.tools.registry import ToolRegistry, default_registry
+from petru.tui.fullscreen import run_fullscreen
 from petru.tui.rich_ui import NonInteractiveUI, RichUI
+from petru.tui.screen_ui import ScreenUI
+from petru.tui.transcript import Transcript
 
 TIERS = ("default", "quality", "fast", "tuned")
+FULLSCREEN_MIN_COLUMNS = 80  # narrower terminals get the line mode
 
 
 def make_provider(base_url: str) -> OpenAICompatProvider:
@@ -58,7 +64,17 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="the model (default: quality) leads and hands simple pieces to an assistant (tuned, else fast)",
     )
+    parser.add_argument("--plain", action="store_true", help="line-by-line mode instead of the full screen")
     return parser
+
+
+def wants_fullscreen() -> bool:
+    """An interactive terminal wide enough for the full-screen view."""
+    return (
+        sys.stdin.isatty()
+        and sys.stdout.isatty()
+        and shutil.get_terminal_size().columns >= FULLSCREEN_MIN_COLUMNS
+    )
 
 
 class TeamModes:
@@ -302,7 +318,14 @@ def main(argv: list[str] | None = None) -> int:
     try:
         provider = make_provider(base_url)
         session = Session(project, tier=tier, yolo=ns.yolo, role=team.LEAD_PROMPT if ns.team else "")
-        ui = NonInteractiveUI(err, yolo=ns.yolo) if ns.prompt is not None else RichUI(console)
+        screen = ns.prompt is None and not ns.plain and wants_fullscreen()
+        transcript = Transcript()
+        if ns.prompt is not None:
+            ui = NonInteractiveUI(err, yolo=ns.yolo)
+        elif screen:
+            ui = ScreenUI(transcript, CancelToken(), project=project)
+        else:
+            ui = RichUI(console)
         registry = modes.lead() if ns.team else modes.solo
         if ns.team:
             err.print(f"Team mode: {tier} leads; the assistant starts on its first delegation.", markup=False)
@@ -315,6 +338,7 @@ def main(argv: list[str] | None = None) -> int:
             ctx_tokens=cfg.tiers[tier].ctx,
             max_iterations=cfg.tiers[tier].max_iterations,
             online=online,
+            cancel=getattr(ui, "cancel", None),
         )
         if ns.prompt is not None:
             text = agent.run_turn(ns.prompt, quick=True)
@@ -331,8 +355,11 @@ def main(argv: list[str] | None = None) -> int:
                 console.print(f"Journal: summarized {done} new commits (/journal).", markup=False)
         except Exception as exc:  # the journal is a convenience; never block the REPL on it
             console.print(f"Journal summaries skipped: {exc}", markup=False)
-        say = lambda text: console.print(text, markup=False)  # noqa: E731
-        repl(App(agent, manager, cfg, modes, online, say=say), console)
+        if screen:
+            run_fullscreen(App(agent, manager, cfg, modes, online, say=ui.info), ui, transcript)
+        else:
+            say = lambda text: console.print(text, markup=False)  # noqa: E731
+            repl(App(agent, manager, cfg, modes, online, say=say), console)
         return 0
     finally:
         manager.stop()

@@ -11,7 +11,7 @@ from rich.console import Console
 from rich.markdown import Markdown
 from rich.text import Text
 
-Kind = Literal["user", "text", "reasoning", "question", "tool", "notice"]
+Kind = Literal["user", "text", "reasoning", "question", "tool", "notice", "info"]
 MIN_RENDER_WIDTH = 20  # narrower windows get these lines cut, not a crash
 SPACED: tuple[Kind, ...] = ("user", "text", "reasoning", "question")  # a blank line before a new one of these
 
@@ -34,6 +34,8 @@ def _renderable(entry: Entry):
         return Text(body, style="bold")
     if entry.kind == "notice":
         return Text(body, style="yellow")
+    if entry.kind == "info":  # what a command says, kept as typed (the help text is indented)
+        return Text(body)
     if body.startswith("▸ "):
         name, _, rest = body[2:].partition(" ")
         return Text.assemble(("▸ ", "cyan"), (name, "bold cyan"), f" {rest}" if rest else "")

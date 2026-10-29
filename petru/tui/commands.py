@@ -28,6 +28,14 @@ Commands:
   /memory          what Petru remembers (global and project memory)
   /journal         recent commit summaries and pending ones
   /exit            quit (Ctrl+D also works)
+
+Full screen (petru --plain keeps the line mode):
+  Esc              stop what the agent is doing now; the session stays open
+  F2               hide or show the side panel (it hides itself on narrow terminals)
+  PageUp/PageDown  scroll the conversation (the mouse wheel too)
+  click            the top bar switches model, team, think and yolo; a choice answers a question
+  Shift+drag       select text to copy (the mouse belongs to the app otherwise)
+  Typing while the agent works sends the message to it at its next step.
 """
 
 

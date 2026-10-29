@@ -134,6 +134,10 @@ class ScreenUI:
     def notice(self, message: str) -> None:
         self._show("notice", message)
 
+    def info(self, text: str) -> None:
+        """What a slash command says (App.say)."""
+        self._show("info", text)
+
     def take_messages(self) -> list[str]:
         with self._lock:
             typed, self._typed = self._typed, []

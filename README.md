@@ -121,13 +121,20 @@ prints the fix for anything missing. Details: `docs/setup.md`.
 
 ```powershell
 py -3.14 -m uv sync
-py -3.14 -m uv run petru                     # REPL in the current folder, tier "default"
+py -3.14 -m uv run petru                     # full screen in the current folder, tier "default"
+py -3.14 -m uv run petru --plain             # the same session, line by line
 py -3.14 -m uv run petru --model fast -p "Create hello.py that prints the date"   # one-shot
 py -3.14 -m uv run petru --team              # the 35B leads a two-model team
 ```
 
-Slash commands: `/help`, `/model [tier]`, `/plan`, `/quick <text>`, `/done`, `/yolo`, `/status`, `/memory`,
-`/journal`, `/exit`. Subcommands: `petru index [--docs]`, `petru watch`, `petru journal hook install`,
+Petru tells you in a sentence what it starts and why, asks when a decision is yours, and ends a task with a
+short summary. The full screen keeps the conversation on the left and a panel with the plan, the changed files,
+the team and the model on the right (F2 hides it). The top bar switches model, team, thinking and confirmations
+with a click. Esc stops the current step, including a reply still being computed and any test run it started.
+Typing while Petru works hands it the message at its next step.
+
+Slash commands: `/help`, `/model [tier|auto]`, `/plan`, `/quick <text>`, `/done`, `/yolo`, `/think`, `/status`,
+`/details`, `/team`, `/memory`, `/journal`, `/exit`. Subcommands: `petru index [--docs]`, `petru watch`, `petru journal hook install`,
 `petru memory export|import`.
 
 ## Tests
