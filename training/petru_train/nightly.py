@@ -37,6 +37,7 @@ class RunContext:
     clock: Callable[[], float] = time.monotonic
     started: float | None = None
     notes: dict[str, str] = field(default_factory=dict)
+    skipped: set[str] = field(default_factory=set)  # steps this run leaves out: the others get their time
 
     def __post_init__(self) -> None:
         if self.started is None:
@@ -120,7 +121,8 @@ def step_train(ctx: RunContext) -> None:
     stop_llama_servers()
     cfg = load_train_config()
     remaining = ctx.remaining_minutes()
-    budget = int(min(remaining - EVAL_RESERVE_MIN, remaining * GENERALIST_SHARE))
+    share = 1.0 if "specialists" in ctx.skipped else GENERALIST_SHARE  # no specialists: the night is its own
+    budget = int(min(remaining - EVAL_RESERVE_MIN, remaining * share))
     cfg.time_budget_min = max(10, budget)
     report = train(cfg, ctx.run_dir)
     ctx.notes["train"] = (
@@ -219,7 +221,7 @@ def run_nightly(
     clock: Callable[[], float] = time.monotonic,
     skip: tuple[str, ...] | list[str] = (),
 ) -> RunState:
-    ctx = RunContext(run=run, runs_dir=runs_dir, hours=hours, clock=clock)
+    ctx = RunContext(run=run, runs_dir=runs_dir, hours=hours, clock=clock, skipped=set(skip))
     state = load_state(ctx.run_dir) or RunState(run, [], _now(), _now(), None)
     state.error = None
     state.save(ctx.run_dir)

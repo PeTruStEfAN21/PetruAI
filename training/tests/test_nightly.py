@@ -163,6 +163,27 @@ def test_the_generalist_leaves_half_of_the_night_to_the_specialists(tmp_path, mo
     assert len(budgets) == 1 and 299 <= budgets[0] <= 300  # half of 10 hours, give or take the clock
 
 
+def test_without_specialists_the_generalist_trains_the_whole_night(tmp_path, monkeypatch):
+    from petru_train import nightly
+    from petru_train import train as train_module
+
+    budgets = []
+    monkeypatch.setattr(nightly, "stop_llama_servers", lambda: None)
+    monkeypatch.setattr(
+        train_module, "train", lambda cfg, run_dir: budgets.append(cfg.time_budget_min) or _report()
+    )
+    ctx = RunContext(run="r1", runs_dir=tmp_path, hours=10.0, skipped={"specialists"})
+    nightly.step_train(ctx)
+    assert len(budgets) == 1 and 524 <= budgets[0] <= 525  # all but the evaluation reserve
+
+
+def test_a_night_tells_its_steps_which_ones_it_skips(tmp_path):
+    seen = []
+    steps = {name: (lambda ctx: seen.append(set(ctx.skipped))) for name in STEPS}
+    run_nightly("r1", 1.0, steps=steps, runs_dir=tmp_path, skip=["trajectories", "specialists"])
+    assert seen and all(s == {"trajectories", "specialists"} for s in seen)
+
+
 def _report():
     from petru_train.train import TrainReport
 
