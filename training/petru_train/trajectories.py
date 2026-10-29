@@ -258,6 +258,7 @@ def result_to_sample(result: dict, task_name: str, max_tokens: int) -> Sample | 
         language=language_for(task_name),
         messages=messages,
         tools=list(result.get("tools") or []),
+        prompt_version=str(result.get("prompt_version") or ""),
     )
 
 

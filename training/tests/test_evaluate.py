@@ -410,3 +410,33 @@ def test_server_command_caps_the_host_prompt_cache():
     # two servers with the default 8 GB caches filled the 32 GB laptop during the team bench
     cmd = server_command(Path("C:/m/cand.gguf"))
     assert cmd[cmd.index("--cache-ram") + 1] == "1024"
+
+
+def test_signature_changes_when_the_agent_prompt_changes(tmp_path):
+    from petru_train.evaluate import tasks_signature
+
+    tasks = tmp_path / "tasks"
+    tasks.mkdir()
+    (tasks / "a.toml").write_text('prompt = "a"\n', encoding="utf-8")
+    requests = tmp_path / "req.json"
+    requests.write_text("[]", encoding="utf-8")
+    build, design = tmp_path / "build.txt", tmp_path / "design.txt"
+    build.write_text("build", encoding="utf-8")
+    design.write_text("design", encoding="utf-8")
+    first = tasks_signature(tasks, requests, limit=1, prompt_files=(build, design))
+    assert tasks_signature(tasks, requests, limit=1, prompt_files=(build, design)) == first
+    build.write_text("build, narrating", encoding="utf-8")
+    assert tasks_signature(tasks, requests, limit=1, prompt_files=(build, design)) != first
+
+
+def test_tool_validity_asks_with_the_agent_prompt(tmp_path):
+    from petru_train.samples import load_system_prompt
+
+    requests_file = tmp_path / "req.json"
+    request = {"id": 1, "prompt": "hi", "should_call_tool": False}
+    requests_file.write_text(json.dumps([request]), encoding="utf-8")
+    fake = FakeChatServer([text_answer("Hello!"), text_answer("Hello!")])
+    tool_validity(fake.base_url, requests_file)
+    assert fake.requests[0]["messages"][0] == {"role": "system", "content": load_system_prompt()}
+    tool_validity(fake.base_url, requests_file, system="X")
+    assert fake.requests[1]["messages"][0] == {"role": "system", "content": "X"}

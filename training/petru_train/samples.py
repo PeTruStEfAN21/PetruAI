@@ -24,6 +24,7 @@ class Sample:
     language: str
     messages: list[dict] = field(default_factory=list)
     tools: list[dict] = field(default_factory=list)
+    prompt_version: str = ""  # trajectories: the agent prompt they were made under ("" = before versioning)
 
 
 PROMPT_FILE = SCHEMAS_FILE.with_name("system_prompt.txt")

@@ -553,3 +553,14 @@ def test_an_attempt_counts_on_disk_only_once_it_has_finished(tmp_path):
     )
     generate(cfg, runner=runner, tasks=tasks)
     assert on_disk == [0]  # a stop now would not cost python_ex_a the attempt it was running
+
+
+def test_a_trajectory_sample_keeps_its_prompt_version(tmp_path):
+    from dataclasses import asdict
+
+    sample = result_to_sample({**good(), "prompt_version": "ab12cd34"}, "python_x", max_tokens=12000)
+    assert sample is not None and sample.prompt_version == "ab12cd34"
+    old = {key: value for key, value in asdict(sample).items() if key != "prompt_version"}
+    path = tmp_path / "old.jsonl"
+    path.write_text(json.dumps(old) + "\n", encoding="utf-8")
+    assert read_jsonl(path)[0].prompt_version == ""  # files written before the field existed still load

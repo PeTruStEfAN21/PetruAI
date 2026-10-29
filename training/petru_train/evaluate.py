@@ -19,7 +19,15 @@ from pathlib import Path
 
 from petru_train.exercism import TASKS_DIR as EXERCISM_TASKS
 from petru_train.exercism import validated_tasks
-from petru_train.samples import load_tools, read_jsonl, render_chat, text_tokenizer
+from petru_train.samples import (
+    DESIGN_PROMPT_FILE,
+    PROMPT_FILE,
+    load_system_prompt,
+    load_tools,
+    read_jsonl,
+    render_chat,
+    text_tokenizer,
+)
 from petru_train.server import start_server, stop, wait_healthy
 from petru_train.trajectories import kill_tree, own_time_limit, task_name
 
@@ -35,13 +43,10 @@ HARNESS_VERSION = 3  # bump when the harness changes what counts as a pass
 # 3 (2026-10-27): test-first prompts; task_complete waits for green checks after the last change
 # The per-task time limit (2026-10-29) kept 3: the base evaluated that day already ran with its tasks killed
 # at 20 minutes and with the repeated-call stop, so its baseline is measured under the same rule.
+# The agent's prompts are in the signature (2026-10-29): a prompt change re-measures the base by itself.
 EVAL_TASK_TIMEOUT_S = 1200  # one harness task (a hung `npm test` once held the base evaluation for 83 min)
 BASE_GGUF = REPO_ROOT / "infra" / "llama.cpp" / "models" / "Qwen3.5-4B.IQ4_XS.gguf"
 TOOL_TOLERANCE = 0.05
-EVAL_SYSTEM = (
-    "You are Petru, a local coding agent in the user's terminal. Use the tools to act; "
-    "answer in plain text only when no tool applies."
-)
 TaskRunner = Callable[[Path, str, int], dict]
 
 
@@ -89,14 +94,22 @@ def held_out_tasks(pool: Path | None, per_language: int = HELD_OUT_PER_LANGUAGE)
     return [task for language in sorted(by_language) for task in sorted(by_language[language])[:per_language]]
 
 
-def tasks_signature(tasks_dir: Path, requests_file: Path, limit: int, tasks: list[Path] | None = None) -> str:
-    """Hash of exactly what tool_validity and task_pass measure, so a stale baseline is noticed. `tasks`, when
-    given (a specialist's own, or a list frozen earlier), replaces the balanced selection; the same list gives
-    the same signature either way."""
+def tasks_signature(
+    tasks_dir: Path,
+    requests_file: Path,
+    limit: int,
+    tasks: list[Path] | None = None,
+    prompt_files: tuple[Path, ...] = (PROMPT_FILE, DESIGN_PROMPT_FILE),
+) -> str:
+    """Hash of exactly what tool_validity and task_pass measure, so a stale baseline is noticed: the requests,
+    the tasks and the agent's prompts. `tasks`, when given (a specialist's own, or a list frozen earlier),
+    replaces the balanced selection; the same list gives the same signature either way."""
     chosen = select_eval_tasks(tasks_dir, limit) if tasks is None else tasks
     head = f"tasks={len(chosen)}"
     digest = hashlib.sha1(f"{head} harness={HARNESS_VERSION}".encode())
     digest.update(requests_file.read_bytes() if requests_file.is_file() else b"")
+    for prompt in prompt_files:
+        digest.update(prompt.read_bytes() if prompt.is_file() else b"")
     for task in chosen:
         digest.update(task.name.encode("utf-8"))
         digest.update(task.read_bytes())
@@ -148,16 +161,17 @@ def _arguments_ok(raw) -> bool:
 
 
 def tool_validity(
-    base_url: str, requests_file: Path, tools: list[dict] | None = None
+    base_url: str, requests_file: Path, tools: list[dict] | None = None, system: str | None = None
 ) -> tuple[float, list[dict]]:
     """Fraction of requests answered correctly: a valid native call to a known tool when one is expected,
-    a plain answer when none is."""
+    a plain answer when none is. Asked under the agent's BUILD prompt (or `system`), as the agent asks."""
     tools = tools or load_tools()
+    system = load_system_prompt() if system is None else system
     names = {t["function"]["name"] for t in tools}
     requests = json.loads(requests_file.read_text(encoding="utf-8"))
     details = []
     for req in requests:
-        messages = [{"role": "system", "content": EVAL_SYSTEM}, {"role": "user", "content": req["prompt"]}]
+        messages = [{"role": "system", "content": system}, {"role": "user", "content": req["prompt"]}]
         try:
             message = chat_completion(base_url, messages, tools)["choices"][0]["message"]
             calls = message.get("tool_calls") or []
