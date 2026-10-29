@@ -22,6 +22,27 @@ def test_interleave_goes_breadth_first_neediest_language_first_easiest_first(tmp
     assert [p.parent.name for p in order] == ["rust_ex_mid", "go_ex_easy", "python_ex_a", "go_ex_hard"]
 
 
+def test_inside_a_language_easy_and_medium_exercises_take_turns_and_the_hard_ones_come_last(tmp_path):
+    names = [
+        ("go_ex_e1", 1),
+        ("go_ex_e2", 2),
+        ("go_ex_e3", 2),
+        ("go_ex_m1", 3),
+        ("go_ex_m2", 5),
+        ("go_ex_h", 7),
+    ]
+    tasks = [task(tmp_path, name, difficulty) for name, difficulty in names]
+    order = teacher.interleave(tasks, Counter())
+    assert [p.parent.name for p in order] == [
+        "go_ex_e1",
+        "go_ex_m1",
+        "go_ex_e2",
+        "go_ex_m2",
+        "go_ex_e3",
+        "go_ex_h",
+    ]
+
+
 def test_run_serves_the_teacher_with_a_slot_per_parallel_attempt(tmp_path, monkeypatch):
     started, configs = [], []
     monkeypatch.setattr(teacher, "validated_tasks", lambda split: [task(tmp_path, "go_ex_a", 1)])

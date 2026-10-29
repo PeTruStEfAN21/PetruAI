@@ -17,6 +17,7 @@ import tomllib
 from collections import Counter, defaultdict
 from collections.abc import Callable
 from datetime import datetime
+from itertools import zip_longest
 from pathlib import Path
 
 from petru_train.exercism import TASKS_DIR, validated_tasks
@@ -32,20 +33,31 @@ OUT = DATA_DIR / "trajectories-exercism.jsonl"
 STATE = DATA_DIR / "trajectories-exercism.state.json"
 SAMPLES_PER_TASK, ATTEMPTS_PER_TASK = 1, 2  # breadth: one verified trajectory per exercise
 NOTHING_LEFT = 3  # exit code: every validated exercise has its trajectory or used its attempts
+EASY_UP_TO, MEDIUM_UP_TO = 2, 5  # Exercism difficulty (1-10) bands: easy, medium, then hard
 
 
 def _difficulty(task: Path) -> int:
     return int(tomllib.loads(task.read_text(encoding="utf-8")).get("difficulty", 0))
 
 
+def _easy_and_medium_in_turn(paths: list[Path]) -> list[Path]:
+    """Easy and medium exercises take turns, so the student sees real problems early, not only after every
+    warm-up; the hard ones come last. Each band keeps its easier exercises first."""
+    paths = sorted(paths, key=lambda p: (_difficulty(p), task_name(p)))
+    easy = [p for p in paths if _difficulty(p) <= EASY_UP_TO]
+    medium = [p for p in paths if EASY_UP_TO < _difficulty(p) <= MEDIUM_UP_TO]
+    hard = [p for p in paths if _difficulty(p) > MEDIUM_UP_TO]
+    return [p for pair in zip_longest(easy, medium) for p in pair if p is not None] + hard
+
+
 def interleave(tasks: list[Path], kept_by_language: Counter) -> list[Path]:
     """Breadth first: one exercise per language in turn, the languages with the fewest kept trajectories
-    first; inside a language, the easier exercises first."""
+    first; inside a language, easy and medium exercises in turn, then the hard ones."""
     by_language: dict[str, list[Path]] = defaultdict(list)
     for path in tasks:
         by_language[language_for(task_name(path))].append(path)
-    for paths in by_language.values():
-        paths.sort(key=lambda p: (_difficulty(p), task_name(p)))
+    for language, paths in by_language.items():
+        by_language[language] = _easy_and_medium_in_turn(paths)
     languages = sorted(by_language, key=lambda lang: (kept_by_language[lang], lang))
     ordered = []
     for index in range(max((len(p) for p in by_language.values()), default=0)):
