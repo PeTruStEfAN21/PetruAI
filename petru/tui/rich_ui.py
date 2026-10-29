@@ -95,6 +95,12 @@ class RichUI:
         self.flush()
         self.console.print(f"[yellow]{message}[/]", markup=True, highlight=False)
 
+    def reasoning(self, delta: str) -> None:
+        self.console.print(delta, style="dim", end="", markup=False, highlight=False)
+
+    def take_messages(self) -> list[str]:
+        return []  # the line prompt is not open while a turn runs
+
     # -- questions --------------------------------------------------------
 
     def _read(self, message: str = "> ") -> str:
@@ -183,6 +189,12 @@ class NonInteractiveUI:
 
     def notice(self, message: str) -> None:
         self.console.print(message, markup=False, highlight=False)
+
+    def reasoning(self, delta: str) -> None:
+        pass
+
+    def take_messages(self) -> list[str]:
+        return []
 
     def flush(self) -> None:
         pass

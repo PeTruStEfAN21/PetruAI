@@ -1,6 +1,6 @@
 from petru.agent.state import Phase
 from petru.providers.base import ToolCall
-from petru.tools.base import Tool
+from petru.tools.base import Tool, ToolResult
 from petru.tui.port import ScriptedUI
 from tests.fakes import FakeProvider, call, make_agent, result
 
@@ -239,7 +239,7 @@ class _FlakyProvider:
     def __init__(self, failures, then):
         self.failures, self.then, self.calls = failures, then, 0
 
-    def complete(self, messages, tools, on_text=None, temperature=0.2, max_tokens=4096):
+    def complete(self, messages, tools, on_text=None, temperature=0.2, max_tokens=4096, **kwargs):
         self.calls += 1
         if self.calls <= self.failures:
             raise RuntimeError("Error code: 500 - Failed to parse tool call arguments as JSON")
@@ -264,7 +264,7 @@ def test_provider_error_gives_up_after_three(tmp_path):
 class _RecordingFlaky(_FlakyProvider):
     temperatures: list[float] = []
 
-    def complete(self, messages, tools, on_text=None, temperature=0.2, max_tokens=4096):
+    def complete(self, messages, tools, on_text=None, temperature=0.2, max_tokens=4096, **kwargs):
         self.temperatures.append(temperature)
         return super().complete(messages, tools, on_text, temperature, max_tokens)
 
@@ -444,3 +444,68 @@ def test_a_turn_past_its_deadline_stops_on_its_own(tmp_path):
     agent.run_turn("x")
     assert agent.stop_reason == "time limit" and not fake.calls
     assert "time" in ui.notices[-1].lower()
+
+
+def test_a_message_typed_during_the_turn_reaches_the_model_at_the_next_step(tmp_path):
+    (tmp_path / "a.txt").write_text("hi", encoding="utf-8")
+    fake = FakeProvider([result(tool_calls=[call("read_file", {"path": "a.txt"})]), result(content="ok")])
+    ui = ScriptedUI(interjections=["why pytest?"])
+    agent = make_agent(fake, ui, tmp_path)
+    agent.run_turn("x", quick=True)
+    last = fake.calls[1]["messages"][-2:]
+    assert last[0]["role"] == "tool" and last[1] == {"role": "user", "content": "why pytest?"}
+    assert ui.take_messages() == []
+
+
+class _EscOnFirstReply(FakeProvider):
+    def complete(self, messages, tools, on_text=None, temperature=0.2, max_tokens=4096, **kwargs):
+        if not self.calls:
+            self.calls.append({"messages": messages})
+            from petru.agent.cancel import Cancelled
+
+            raise Cancelled
+        return super().complete(messages, tools, on_text, temperature, max_tokens, **kwargs)
+
+
+def test_esc_during_a_model_reply_stops_the_turn_cleanly(tmp_path):
+    ui = ScriptedUI()
+    agent = make_agent(_EscOnFirstReply([result(content="after")]), ui, tmp_path)
+    agent.run_turn("x", quick=True)
+    assert agent.stop_reason == "cancelled" and "Turn cancelled." in ui.notices
+    assert agent.session.messages[-1]["role"] == "user"  # nothing half-recorded
+    agent.cancel.cancel()  # a stale Esc from before the next prompt must not stop it
+    assert agent.run_turn("again") == "after" and agent.stop_reason is None
+
+
+class _EscTool(Tool):
+    name = "esc"
+    description = "presses Esc while it runs"
+
+    def __init__(self, agent):
+        self.agent = agent
+
+    def run(self, args, ctx):
+        self.agent.cancel.cancel()
+        return ToolResult("done", False)
+
+
+def test_esc_between_calls_marks_the_rest_cancelled(tmp_path):
+    (tmp_path / "a.txt").write_text("hi", encoding="utf-8")
+    calls = [call("esc", {}), call("read_file", {"path": "a.txt"})]
+    agent = make_agent(FakeProvider([result(tool_calls=calls)]), ScriptedUI(), tmp_path)
+    agent.registry.register(_EscTool(agent))
+    agent.run_turn("x", quick=True)
+    tools = [m["content"] for m in agent.session.messages if m["role"] == "tool"]
+    assert tools == ["done", "Cancelled by the user."] and agent.stop_reason == "cancelled"
+
+
+class _Thinking(FakeProvider):
+    def complete(self, messages, tools, on_text=None, temperature=0.2, max_tokens=4096, **kwargs):
+        kwargs["on_reasoning"]("thinking")
+        return super().complete(messages, tools, on_text, temperature, max_tokens, **kwargs)
+
+
+def test_reasoning_goes_to_the_ui(tmp_path):
+    ui = ScriptedUI()
+    make_agent(_Thinking([result(content="ok")]), ui, tmp_path).run_turn("x", quick=True)
+    assert ui.reasonings == ["thinking"]

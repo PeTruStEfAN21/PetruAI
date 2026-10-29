@@ -4,7 +4,10 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
+
+if TYPE_CHECKING:
+    from petru.agent.cancel import CancelToken
 
 
 @dataclass
@@ -32,4 +35,6 @@ class ChatProvider(Protocol):
         on_text: Callable[[str], None] | None = None,
         temperature: float = 0.2,
         max_tokens: int = 4096,
+        on_reasoning: Callable[[str], None] | None = None,
+        cancel: CancelToken | None = None,
     ) -> ChatResult: ...

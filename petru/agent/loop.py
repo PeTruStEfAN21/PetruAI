@@ -8,6 +8,7 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
+from petru.agent.cancel import Cancelled, CancelToken
 from petru.agent.context import build_system_prompt, compact_if_needed
 from petru.agent.permissions import DESIGN_ALLOWED, decide
 from petru.agent.state import Phase, Session
@@ -106,6 +107,7 @@ class Agent:
         max_iterations: int = 40,
         max_invalid_retries: int = 3,
         deadline: float | None = None,
+        cancel: CancelToken | None = None,
     ) -> None:
         self.provider = provider
         self.registry = registry
@@ -123,6 +125,7 @@ class Agent:
         self._seen: dict[tuple[str, str], tuple[int, int]] = {}  # call -> (changes, result) when last made
         self.repeats = 0  # useless repeats since the last file change
         self.usage = Usage()
+        self.cancel = cancel or CancelToken()  # Esc in the full-screen UI
 
     # -- transcript helpers -------------------------------------------------
 
@@ -232,6 +235,7 @@ class Agent:
         """Run one user prompt to completion and return the model's final text."""
         session = self.session
         session.start_turn(text, quick=quick)
+        self.cancel.reset()  # an Esc from before this prompt must not stop it
         self.stop_reason = None
         self.repeats = 0  # a new prompt gives the model a fresh chance
         invalid_count = 0
@@ -249,13 +253,18 @@ class Agent:
             allowed = self._allowed_tool_names()
             asked = time.monotonic()
             try:
+                self.cancel.check()
                 result = self.provider.complete(
                     session.messages,
                     self.registry.schemas(allowed),
                     on_text=self.ui.text,
                     temperature=round(0.2 + 0.3 * provider_errors, 2),  # a retry samples differently
                     max_tokens=self.output_tokens,
+                    on_reasoning=self.ui.reasoning,
+                    cancel=self.cancel,
                 )
+            except Cancelled:
+                return self._stop("cancelled", "Turn cancelled.", last_text)
             except Exception as exc:  # server 500 (unparseable tool call), timeout, connection reset
                 provider_errors += 1
                 if provider_errors >= self.max_invalid_retries:
@@ -291,11 +300,14 @@ class Agent:
                         )
                     invalid_count += was_invalid
                     outputs.append(self._tool_message(call, content))
+                    self.cancel.check()
             except KeyboardInterrupt:
                 outputs.extend(self._tool_message(call, CANCELLED) for call in calls[len(outputs) :])
                 session.messages.extend([assistant, *outputs])
                 return self._stop("cancelled", "Turn cancelled.", last_text)
             session.messages.extend([assistant, *outputs])
+            for typed in self.ui.take_messages():  # typed while the tools ran: the model reads it next
+                session.messages.append({"role": "user", "content": typed})
             if invalid_count >= self.max_invalid_retries:
                 return self._stop(
                     "invalid tool calls", f"Giving up after {invalid_count} invalid tool calls.", last_text

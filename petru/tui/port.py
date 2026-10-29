@@ -29,6 +29,10 @@ class UIPort(Protocol):
 
     def notice(self, message: str) -> None: ...
 
+    def reasoning(self, delta: str) -> None: ...  # /think: the model's reasoning, shown apart, never recorded
+
+    def take_messages(self) -> list[str]: ...  # what the user typed while the turn ran, delivered once
+
 
 class ScriptedUI:
     """Answers from a script and records everything; used by tests and end-to-end demos."""
@@ -39,6 +43,7 @@ class ScriptedUI:
         confirm: ConfirmAnswer = "yes",
         plan_action: PlanAction = "confirm",
         edited_steps: list[str] | None = None,
+        interjections: list[str] | None = None,
     ) -> None:
         self._answers = list(answers or [])
         self._confirm = confirm
@@ -50,6 +55,8 @@ class ScriptedUI:
         self.texts: list[str] = []
         self.notices: list[str] = []
         self.tool_events: list[tuple] = []
+        self.reasonings: list[str] = []
+        self._interjections = list(interjections or [])
 
     def ask(self, question: str, options: list[str] | None) -> str:
         self.questions.append((question, options))
@@ -79,3 +86,10 @@ class ScriptedUI:
 
     def notice(self, message: str) -> None:
         self.notices.append(message)
+
+    def reasoning(self, delta: str) -> None:
+        self.reasonings.append(delta)
+
+    def take_messages(self) -> list[str]:
+        messages, self._interjections = self._interjections, []
+        return messages

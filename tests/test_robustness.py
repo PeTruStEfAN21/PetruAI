@@ -74,7 +74,7 @@ class OverflowOnceProvider(FakeProvider):
         super().__init__(scripted)
         self.failed = False
 
-    def complete(self, messages, tools, on_text=None, temperature=0.2, max_tokens=4096):
+    def complete(self, messages, tools, on_text=None, temperature=0.2, max_tokens=4096, **kwargs):
         if (
             tools is not None and not self.failed
         ):  # the first agent request overflows; the summary request has no tools
