@@ -20,6 +20,7 @@ from pathlib import Path
 
 from petru.agent.context import transcript_tokens
 from petru.agent.loop import Agent
+from petru.agent.prompts import prompt_version
 from petru.agent.state import Phase, Session
 from petru.agent.team import LEAD_PROMPT, WORKER_PORT_OFFSET, Worker, credits, lead_registry
 from petru.config import find_repo_root, load_config
@@ -119,6 +120,7 @@ class TaskResult:
     team_choice: str | None = None  # team mode: what the lead chose with choose_mode (team, solo, or none)
     team_reason: str | None = None  # team mode: the reason the lead gave for that choice
     authors: dict[str, str] = field(default_factory=dict)  # team mode: who wrote each file, kept by the tools
+    prompt_version: str = ""  # the agent prompt this attempt ran under (petru.agent.prompts.prompt_version)
 
     def save(self, path: Path) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -302,6 +304,7 @@ def run_task(
         team_choice=getattr(choice, "mode", None),
         team_reason=getattr(choice, "reason", None),
         authors=credits(registry),
+        prompt_version=prompt_version(),
     )
 
 

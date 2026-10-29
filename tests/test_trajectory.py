@@ -370,3 +370,24 @@ def test_a_run_out_of_time_stops_and_keeps_its_transcript(tmp_path):
     )
     assert res.stop_reason == "time limit" and not res.passed
     assert res.messages and not provider.calls
+
+
+def test_a_task_result_carries_the_prompt_version(tmp_path):
+    from petru.agent.prompts import prompt_version
+
+    provider = FakeProvider(
+        [
+            result(tool_calls=[call("plan", {"title": "Hello", "steps": ["write hello.py"]})]),
+            result(tool_calls=[call("write_file", {"path": "hello.py", "content": "print('hello')\n"})]),
+            result(tool_calls=[call("task_complete", {"summary": "done"})]),
+            result(content="Done."),
+        ]
+    )
+    res = run_task(
+        spec(["python hello.py"]),
+        provider=provider,
+        repo_root=tmp_path,
+        project=tmp_path / "p",
+        ctx_tokens=8192,
+    )
+    assert res.prompt_version == prompt_version()

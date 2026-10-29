@@ -144,3 +144,20 @@ def test_base_prompt_says_build_in_the_current_directory():
 
 def test_base_prompt_requires_strict_json_arguments():
     assert "escape" in BASE_SYSTEM_PROMPT and "strict JSON" in BASE_SYSTEM_PROMPT
+
+
+def test_the_prompt_asks_for_one_sentence_of_narration_with_the_tool_call():
+    from petru.agent.prompts import BASE_SYSTEM_PROMPT, BUILD_PHASE_PROMPT
+
+    assert "in the same response as the tool call" in BASE_SYSTEM_PROMPT
+    assert "answer it first" in BASE_SYSTEM_PROMPT
+    assert "Do not stop to describe" not in BUILD_PHASE_PROMPT
+
+
+def test_prompt_version_follows_the_prompt(monkeypatch):
+    from petru.agent import prompts
+
+    version = prompts.prompt_version()
+    assert len(version) == 8 and int(version, 16) >= 0
+    monkeypatch.setattr(prompts, "BUILD_PHASE_PROMPT", "x")
+    assert prompts.prompt_version() != version
