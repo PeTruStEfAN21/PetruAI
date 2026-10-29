@@ -92,6 +92,8 @@ class OpenAICompatProvider:
         if cancel is not None:
             cancel.check()
         client, http = self._open()
+        if cancel is not None:  # the loop retries a failed request itself; a retry here would outlive Esc
+            client = client.with_options(max_retries=0)
         forget = cancel.on_cancel(http.close) if cancel is not None and http is not None else None
         try:
             return self._read(client.chat.completions.create(**kwargs), on_text, on_reasoning, cancel)

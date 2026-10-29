@@ -103,7 +103,7 @@ class _SlowServer:
         import threading
 
         outer = self
-        self.closed = threading.Event()
+        self.received, self.closed = threading.Event(), threading.Event()
 
         class Handler(http.server.BaseHTTPRequestHandler):
             def log_message(self, *args):
@@ -126,6 +126,7 @@ class _SlowServer:
                 import time
 
                 self.rfile.read(int(self.headers["Content-Length"]))
+                outer.received.set()
                 end = time.monotonic() + delay
                 while time.monotonic() < end:
                     if self._gone():
@@ -182,15 +183,13 @@ def _cancel_after(server, wait_for, timeout=1.5):
 
 
 def test_cancel_before_the_first_byte_stops_within_a_second():
-    import time
-
     from petru.agent.cancel import Cancelled
 
     server = _SlowServer(delay=10, every=0.5)
     try:
-        start = time.monotonic()
-        error, took, alive = _cancel_after(server, lambda seen: time.monotonic() - start > 0.3)
-        assert not alive and isinstance(error, Cancelled) and took < 1.5
+        error, took, alive = _cancel_after(server, lambda seen: server.received.is_set())
+        assert not alive and isinstance(error, Cancelled)
+        assert took < 0.3  # at once: a retry inside the SDK would first wait ~0.5 s
         assert server.closed.wait(3), "the server never saw the connection close"
     finally:
         server.stop()
