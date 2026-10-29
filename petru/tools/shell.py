@@ -98,17 +98,27 @@ def truncate_output(text: str, max_chars: int) -> str:
 
 _RUNNING: set[subprocess.Popen] = set()  # commands of run_shell still running, for Esc
 _STOPPED: set[int] = set()  # their pids that Esc killed, so the result says why it ended
+_REFUSING = threading.Event()  # set by Esc until the next prompt: no new command starts meanwhile
 _LOCK = threading.Lock()
+STOPPED_NOTE = "[stopped by the user]"
 
 
-def kill_running() -> int:
-    """Kill every command started by run_shell that is still running, with its process tree (Esc)."""
+def stop_commands() -> int:
+    """Esc: kill every running command with its process tree, and refuse new ones until allow_commands(), so
+    run_checks does not go on to its next command. The kills run in the background: Esc is pressed on the UI
+    thread, which must not wait for taskkill. Returns how many commands were running."""
     with _LOCK:
+        _REFUSING.set()
         procs = [proc for proc in _RUNNING if proc.poll() is None]
         _STOPPED.update(proc.pid for proc in procs)
     for proc in procs:
-        _kill_tree(proc)
+        threading.Thread(target=_kill_tree, args=(proc,), name="petru-kill", daemon=True).start()
     return len(procs)
+
+
+def allow_commands() -> None:
+    """A new prompt: commands may run again."""
+    _REFUSING.clear()
 
 
 def _kill_tree(proc: subprocess.Popen) -> None:
@@ -175,6 +185,8 @@ def run_shell(cmd: str, cwd: Path, timeout_s: int = 120, max_chars: int = 20000)
         "-Command",
         PS_PRELUDE + cmd,
     ]
+    if _REFUSING.is_set():
+        return ToolResult(STOPPED_NOTE, True)
     try:
         proc = subprocess.Popen(
             argv,
@@ -187,8 +199,11 @@ def run_shell(cmd: str, cwd: Path, timeout_s: int = 120, max_chars: int = 20000)
         )
     except OSError as exc:
         return ToolResult(f"Cannot start PowerShell: {exc}", True)
-    with _LOCK:
+    with _LOCK:  # an Esc between the check above and Popen still stops it
         _RUNNING.add(proc)
+        if _REFUSING.is_set():
+            _STOPPED.add(proc.pid)
+            _kill_tree(proc)
     try:
         raw, _ = proc.communicate(timeout=timeout_s)
     except subprocess.TimeoutExpired:
@@ -206,7 +221,7 @@ def run_shell(cmd: str, cwd: Path, timeout_s: int = 120, max_chars: int = 20000)
             _STOPPED.discard(proc.pid)
     text = truncate_output(_decode(raw), max_chars)
     if stopped:
-        return ToolResult(f"{text}\n[stopped by the user]".strip(), True)
+        return ToolResult(f"{text}\n{STOPPED_NOTE}".strip(), True)
     return ToolResult(f"{text}\nexit code: {proc.returncode}".strip(), proc.returncode != 0)
 
 

@@ -163,6 +163,30 @@ def test_baselines_of_seeded_tasks_are_cached_per_task_name(tmp_path):
         return EvalResult(float("nan"), 1.0, 0.5, {}, "s")
 
     one, two = [tmp_path / "php_ex_a" / "task.toml"], [tmp_path / "ruby_ex_b" / "task.toml"]
+    for task in (*one, *two):
+        task.parent.mkdir()
+        task.write_text(f'name = "{task.parent.name}"', encoding="utf-8")
     night._base_result(one, tmp_path / "baseline", eval_fn)
     night._base_result(two, tmp_path / "baseline", eval_fn)
     assert calls == [["php_ex_a"], ["ruby_ex_b"]]  # both are "task.toml": the stem would share one cache file
+
+
+def test_a_cached_base_measured_under_another_prompt_is_measured_again(tmp_path):
+    from petru_train.evaluate import REQUESTS_FILE, TASKS_DIR, tasks_signature
+
+    task = tmp_path / "php_ex_a" / "task.toml"
+    task.parent.mkdir()
+    task.write_text('prompt = "a"\n', encoding="utf-8")
+    current = tasks_signature(TASKS_DIR, REQUESTS_FILE, 0, tasks=[task])
+    calls = []
+
+    def eval_fn(gguf, tasks, log):
+        calls.append(1)
+        return EvalResult(float("nan"), 1.0, 0.5, {}, current)
+
+    night._base_result([task], tmp_path / "baseline", eval_fn)
+    night._base_result([task], tmp_path / "baseline", eval_fn)
+    assert len(calls) == 1
+    cached = next((tmp_path / "baseline" / "specialists").glob("*.json"))
+    EvalResult(float("nan"), 1.0, 0.5, {}, "measured-under-the-old-prompt").save(cached)
+    assert night._base_result([task], tmp_path / "baseline", eval_fn).signature == current and len(calls) == 2

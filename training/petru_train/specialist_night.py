@@ -21,7 +21,16 @@ from datetime import datetime
 from pathlib import Path
 
 from petru_train import evaluate as evaluate_module
-from petru_train.evaluate import BASE_GGUF, TASKS_DIR, EvalResult, evaluate, gate, gate_inputs
+from petru_train.evaluate import (
+    BASE_GGUF,
+    REQUESTS_FILE,
+    TASKS_DIR,
+    EvalResult,
+    evaluate,
+    gate,
+    gate_inputs,
+    tasks_signature,
+)
 from petru_train.export import MODELS_DIR, candidate_file, export_run
 from petru_train.specialists import Specialist, load_specialists, write_specialist_data
 from petru_train.train import TrainReport, load_train_config, train
@@ -57,12 +66,15 @@ def _write(path: Path, data: dict) -> dict:
 
 
 def _base_result(tasks: list[Path], baseline_dir: Path, eval_fn: Callable) -> EvalResult:
-    """The base model on these tasks, measured once and kept per task set (the file name is its signature)."""
+    """The base model on these tasks, measured once and kept per task set; measured again when what the
+    evaluation measures changed since (the agent's prompt, the requests, the harness: the signature)."""
     names = "-".join(task_name(t) for t in tasks)  # seeded tasks are all task.toml: the stem says nothing
     key = f"{len(tasks)}-{hashlib.sha1(names.encode()).hexdigest()[:12]}" if tasks else "no-tasks"
     cached = baseline_dir / "specialists" / f"{key}.json"
     if cached.is_file():
-        return EvalResult.load(cached)
+        kept = EvalResult.load(cached)
+        if kept.signature == tasks_signature(TASKS_DIR, REQUESTS_FILE, len(tasks), tasks=tasks):
+            return kept
     result = eval_fn(BASE_GGUF, tasks=tasks, log=baseline_dir / "specialists" / f"{key}.log")
     cached.parent.mkdir(parents=True, exist_ok=True)
     result.save(cached)

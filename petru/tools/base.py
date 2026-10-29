@@ -20,6 +20,7 @@ class ToolContext:
     online: bool
     ui: Any = None  # UIPort, defined in petru.tui.port
     session: Any = None  # Session, defined in petru.agent.state
+    cancel: Any = None  # the turn's CancelToken (petru.agent.cancel): a delegated assistant shares it
 
 
 class Tool(ABC):

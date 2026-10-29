@@ -127,3 +127,18 @@ def test_render_survives_a_narrow_terminal():
     transcript.add("tool", "▸ run_checks")
     for width in (1, 20):
         assert transcript.visible(width, 5)
+
+
+def test_markdown_links_render_as_their_text():
+    transcript = Transcript()
+    transcript.add("text", "see [the docs](https://example.com/x)")
+    rendered = transcript.visible(80, 5)
+    assert "\x1b]8" not in rendered and "the docs" in ANSI.sub("", rendered)
+
+
+def test_a_streamed_reply_keeps_one_rendered_copy():
+    transcript = Transcript()
+    for i in range(200):
+        transcript.stream("text", f"word{i} ")
+        transcript.visible(80, 10)
+    assert len(transcript._cache) == 1

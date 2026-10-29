@@ -275,3 +275,28 @@ def test_the_tools_record_who_created_and_who_changed_each_file(tmp_path):
         "a.py": "lead, extended by the assistant",
         "b.py": "assistant, revised by the lead",
     }
+
+
+class _EscInAssistant(FakeProvider):
+    def complete(
+        self, messages, tools, on_text=None, temperature=0.2, max_tokens=4096, cancel=None, **kwargs
+    ):
+        from petru.agent.cancel import Cancelled
+
+        self.seen = cancel
+        cancel.cancel()
+        raise Cancelled
+
+
+def test_esc_while_the_assistant_works_stops_the_lead_too(tmp_path):
+    worker = _EscInAssistant([])
+    registry = default_registry(False)
+    team.lead_registry(registry, team.Worker(provider=lambda tier: worker, ctx_tokens=8192))
+    delegate = call("delegate", {"task": TASK, "files": ["a.py"]})
+    steps = [result(tool_calls=[choose("team")]), result(tool_calls=[delegate]), result(content="never")]
+    lead = FakeProvider(steps)
+    agent = Agent(
+        lead, registry, ScriptedUI(), Session(tmp_path, role=team.LEAD_PROMPT), tmp_path, 8192, False
+    )
+    agent.run_turn("build it", quick=True)
+    assert worker.seen is agent.cancel and agent.stop_reason == "cancelled" and len(lead.calls) == 2

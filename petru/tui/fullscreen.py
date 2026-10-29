@@ -28,7 +28,6 @@ from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 from prompt_toolkit.styles import Style
 
 from petru.app import App
-from petru.tools.shell import kill_running
 from petru.tui.commands import parse_command
 from petru.tui.panel import panel_sections
 from petru.tui.screen_ui import ScreenUI
@@ -97,6 +96,8 @@ class FullScreen:
         self.app, self.ui, self.transcript = app, ui, transcript
         self.state = ScreenState()
         self.worker: threading.Thread | None = None
+        self._live = False  # a worker runs and still takes typed messages; changed only under _lock
+        self._lock = threading.Lock()
         self.input = Buffer(
             multiline=False, history=history or InMemoryHistory(), accept_handler=self._accept
         )
@@ -215,7 +216,8 @@ class FullScreen:
     # -- actions ------------------------------------------------------------------
 
     def working(self) -> bool:
-        return self.worker is not None and self.worker.is_alive()
+        with self._lock:
+            return self._live
 
     def act(self, key: str) -> None:
         """A click on the top bar."""
@@ -240,23 +242,49 @@ class FullScreen:
         self._start(lambda: self.app.switch_model(tier))
 
     def _start(self, job: Callable[[], None]) -> None:
-        """Run a turn or a slow command in the worker thread; what was typed after the model's last step
-        becomes the next prompt."""
-        self.app.busy = True
+        """Run a turn or a slow command in the worker thread, one at a time; what was typed after the model's
+        last step becomes the next prompt, unless Esc stopped the turn: then it goes back to the prompt."""
+        with self._lock:
+            if self._live:  # a stale click (an open menu) must not start a second worker
+                self.ui.info("Wait for the agent to stop (Esc stops it now).")
+                return
+            self._live = self.app.busy = True
 
         def work() -> None:
+            typed: list[str] = []
             try:
                 job()
-                while typed := self.ui.take_messages():
+                while True:
+                    with self._lock:  # Enter at this moment either joins the queue or starts the next turn
+                        typed = self.ui.take_messages()
+                        stopped = self.app.agent.cancel.cancelled
+                        if not typed or stopped:
+                            self._live = self.app.busy = False
+                            break
                     self.app.run_turn("\n".join(typed))
+                if typed:
+                    self.ui.info("Stopped. What you typed meanwhile is back at the prompt.")
+                    self._give_back(" ".join(typed))
             except Exception as exc:  # a crash is shown; the screen stays usable
                 self.ui.info(f"{type(exc).__name__}: {exc}")
             finally:
-                self.app.busy = False
+                with self._lock:
+                    self._live = self.app.busy = False
                 self.application.invalidate()
 
         self.worker = threading.Thread(target=work, name="petru-agent", daemon=True)
         self.worker.start()
+
+    def _give_back(self, text: str) -> None:
+        def put() -> None:
+            self.input.text = text
+            self.input.cursor_position = len(text)
+
+        loop = self.application.loop
+        if loop is not None and self.application.is_running:
+            loop.call_soon_threadsafe(put)
+        else:
+            put()
 
     def _accept(self, buffer: Buffer) -> bool:
         self.submit(buffer.text)
@@ -270,13 +298,17 @@ class FullScreen:
         text = text.strip()
         if not text:
             return
+        self.state.menu = None
         cmd = parse_command(text)
+        if cmd is None:
+            with self._lock:  # checked and queued together, so the worker cannot end in between
+                if self._live:
+                    self.ui.interject(text)
+                    return
         if cmd is not None and cmd.name == "exit":
             self.quit()
         elif self.working():
-            if cmd is None:
-                self.ui.interject(text)
-            elif cmd.name in WHILE_WORKING:
+            if cmd.name in WHILE_WORKING:
                 self.app.handle(text)
             else:
                 self.ui.info(f"/{cmd.name} waits until the agent stops (Esc stops it now).")
@@ -289,13 +321,12 @@ class FullScreen:
         if self.state.menu is not None:
             self.state.menu = None
         elif self.working():
-            self.app.agent.cancel.cancel()
-            kill_running()
+            self.app.agent.cancel.cancel()  # its callbacks close the reply and stop the commands
 
     def quit(self) -> None:
         if self.working():
             self.app.agent.cancel.cancel()
-            kill_running()
+        if self.worker is not None:
             self.worker.join(QUIT_WAIT_S)
         self.application.exit()
 

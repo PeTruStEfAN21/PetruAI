@@ -25,7 +25,7 @@ class Entry:
 def _renderable(entry: Entry):
     body = entry.body
     if entry.kind == "text":
-        return Markdown(body)
+        return Markdown(body, hyperlinks=False)  # prompt_toolkit shows OSC 8 links as garbage
     if entry.kind == "user":
         return Text(f"› {body}", style="bold")
     if entry.kind == "reasoning":
@@ -50,7 +50,7 @@ class Transcript:
         self.following = True
         self._offset = 0  # lines above the end, while not following
         self._total = 0  # lines at the last render, for scrolling
-        self._cache: dict[tuple[int, int, int], list[str]] = {}  # (entry, body length, width) -> lines
+        self._cache: dict[int, tuple[tuple[int, int], list[str]]] = {}  # entry -> ((length, width), lines)
 
     def add(self, kind: Kind, body: str) -> None:
         with self._lock:
@@ -65,15 +65,16 @@ class Transcript:
                 self.entries.append(Entry(kind, delta))
 
     def _render(self, index: int, entry: Entry, width: int) -> list[str]:
-        key = (index, len(entry.body), width)
-        if key not in self._cache:
+        key = (len(entry.body), width)  # one copy per entry: a streamed reply replaces its older renders
+        cached = self._cache.get(index)
+        if cached is None or cached[0] != key:
             console = Console(
                 width=width, force_terminal=True, color_system="truecolor", legacy_windows=False
             )
             with console.capture() as capture:
                 console.print(_renderable(entry))
-            self._cache[key] = capture.get().rstrip("\n").split("\n")
-        return self._cache[key]
+            cached = self._cache[index] = (key, capture.get().rstrip("\n").split("\n"))
+        return cached[1]
 
     def lines(self, width: int) -> list[str]:
         width = max(width, MIN_RENDER_WIDTH)

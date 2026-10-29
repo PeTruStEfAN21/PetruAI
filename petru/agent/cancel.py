@@ -36,6 +36,10 @@ class CancelToken:
     def reset(self) -> None:
         self._event.clear()
 
+    def wait(self, seconds: float) -> bool:
+        """Sleep up to `seconds`; True as soon as the token is cancelled."""
+        return self._event.wait(seconds)
+
     def check(self) -> None:
         if self._event.is_set():
             raise Cancelled

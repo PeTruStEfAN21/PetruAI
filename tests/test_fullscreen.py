@@ -175,3 +175,48 @@ def test_cli_picks_the_full_screen_only_on_a_wide_terminal_without_plain(tmp_pat
     assert cli.main(["--project", project, "--model", "fast"]) == 0
     assert cli.main(["--project", project, "--model", "fast", "--plain"]) == 0
     assert used == ["screen", "lines"]
+
+
+def test_a_stale_model_menu_cannot_start_a_second_worker(tmp_path):
+    with create_pipe_input() as pipe, create_app_session(input=pipe, output=DummyOutput()):
+        screen = make_screen(tmp_path, Hanging([]))
+        screen.state.menu = ["fast", "quality"]
+        screen.submit("/quick never answers")
+        assert screen.state.menu is None
+        first = screen.worker
+        screen._pick_model("quality")
+        assert screen.worker is first and screen.app.manager.started == []
+        screen.app.agent.cancel.cancel()
+        first.join(5)
+
+
+def test_esc_gives_back_what_was_typed_instead_of_running_it(tmp_path):
+    provider = Hanging([])
+    steps = [
+        (running, "/quick never answers" + ENTER),
+        (lambda s: bool(provider.calls), "also do y" + ENTER),
+        (lambda s: "(at the next step)" in text_of(s), ESC),
+        (lambda s: not s.app.busy and s.input.text == "also do y", "\x15" + CTRL_D),
+    ]
+    _, _, held = drive(tmp_path, provider, steps)
+    assert all(held) and len(provider.calls) == 1
+
+
+def test_enter_just_as_a_turn_ends_starts_the_next_turn(tmp_path):
+    with create_pipe_input() as pipe, create_app_session(input=pipe, output=DummyOutput()):
+        provider = FakeProvider([result(content="first"), result(content="second")])
+        screen = make_screen(tmp_path, provider)
+        take, late = screen.ui.take_messages, []
+
+        def take_then_enter():
+            typed = take()
+            if not typed and not late:  # Enter lands between the last look at the queue and the thread's end
+                late.append(threading.Thread(target=screen.submit, args=("late",), daemon=True))
+                late[0].start()
+                late[0].join(0.2)
+            return typed
+
+        screen.ui.take_messages = take_then_enter
+        screen.submit("/quick first")
+        assert wait_until(lambda: len(provider.calls) == 2 and not screen.app.busy, 5)
+        assert provider.calls[1]["messages"][-1] == {"role": "user", "content": "late"}

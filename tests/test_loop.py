@@ -509,3 +509,69 @@ def test_reasoning_goes_to_the_ui(tmp_path):
     ui = ScriptedUI()
     make_agent(_Thinking([result(content="ok")]), ui, tmp_path).run_turn("x", quick=True)
     assert ui.reasonings == ["thinking"]
+
+
+def test_esc_also_refuses_new_commands_until_the_next_prompt(tmp_path):
+    from petru.tools.shell import run_shell
+
+    agent = make_agent(FakeProvider([result(content="ok")]), ScriptedUI(), tmp_path)
+    agent.cancel.cancel()
+    assert "stopped by the user" in run_shell("echo hi", tmp_path).output
+    agent.run_turn("x", quick=True)
+    assert "hi" in run_shell("echo hi", tmp_path).output
+
+
+class _EscDuringCompaction(FakeProvider):
+    """Its first reply makes the context tiny, so the next request compacts; Esc lands during that summary."""
+
+    agent = None
+
+    def complete(self, messages, tools, on_text=None, temperature=0.2, max_tokens=4096, **kwargs):
+        if tools is None:  # the summary request of compaction
+            if kwargs.get("cancel") is None:
+                raise AssertionError("compaction must be cancellable")
+            from petru.agent.cancel import Cancelled
+
+            raise Cancelled
+        self.agent.ctx_tokens = 600
+        return super().complete(messages, tools, on_text, temperature, max_tokens, **kwargs)
+
+
+def test_esc_during_compaction_stops_the_turn(tmp_path):
+    (tmp_path / "a.txt").write_text("hi", encoding="utf-8")
+    provider = _EscDuringCompaction([result(tool_calls=[call("read_file", {"path": "a.txt"})])])
+    agent = provider.agent = make_agent(provider, ScriptedUI(), tmp_path)
+    agent.run_turn("x", quick=True)
+    assert agent.stop_reason == "cancelled"
+
+
+def test_a_failed_request_is_retried_after_a_pause(tmp_path):
+    import time
+
+    from petru.agent import loop
+
+    agent = make_agent(_FlakyProvider(1, result(content="ok")), ScriptedUI(), tmp_path)
+    started = time.monotonic()
+    assert agent.run_turn("x") == "ok"
+    assert time.monotonic() - started >= loop.RETRY_DELAY_S
+
+
+class _EscOnError(_FlakyProvider):
+    def __init__(self, failures, then, agent_box):
+        super().__init__(failures, then)
+        self.agent_box = agent_box
+
+    def complete(self, messages, tools, on_text=None, temperature=0.2, max_tokens=4096, **kwargs):
+        self.agent_box[0].cancel.cancel()
+        return super().complete(messages, tools, on_text, temperature, max_tokens, **kwargs)
+
+
+def test_esc_cuts_the_pause_before_a_retry(tmp_path):
+    import time
+
+    box: list = []
+    agent = make_agent(_EscOnError(1, result(content="ok"), box), ScriptedUI(), tmp_path)
+    box.append(agent)
+    started = time.monotonic()
+    agent.run_turn("x")
+    assert agent.stop_reason == "cancelled" and time.monotonic() - started < 0.3

@@ -86,6 +86,7 @@ def compact_if_needed(
     reserve_tokens: int = 4096,
     keep_recent_tokens: int = 6000,
     force: bool = False,
+    cancel=None,
 ) -> bool:
     """Summarize old messages when the transcript nears the context limit (or when forced after the server
     rejected the request as too long). Never splits a tool-call pair."""
@@ -103,7 +104,7 @@ def compact_if_needed(
     if not old:
         return False
     result = provider.complete(
-        [*old, {"role": "user", "content": SUMMARIZE_INSTRUCTION}], None, max_tokens=1024
+        [*old, {"role": "user", "content": SUMMARIZE_INSTRUCTION}], None, max_tokens=1024, cancel=cancel
     )
     summary = result.content.strip() or "(no summary produced)"
     session.messages = [*msgs[:start], {"role": "user", "content": f"{SUMMARY_PREFIX}\n{summary}"}, *msgs[k:]]

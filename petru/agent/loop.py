@@ -24,7 +24,7 @@ from petru.providers.base import ChatProvider, ToolCall
 from petru.tools.base import ToolContext, ToolResult
 from petru.tools.git import tree_fingerprint
 from petru.tools.registry import ToolRegistry
-from petru.tools.shell import truncate_output
+from petru.tools.shell import allow_commands, stop_commands, truncate_output
 from petru.tui.port import UIPort
 
 CANCELLED = "Cancelled by the user."
@@ -37,6 +37,7 @@ def _is_context_overflow(exc: Exception) -> bool:
 
 QUESTION_STRIKES = 2  # refused questions after which DESIGN stops offering ask_user
 MAX_TOOL_RESULT_CHARS = 24_000  # a backstop above read_file's 400 lines; tools keep their own, smaller limits
+RETRY_DELAY_S = 0.5  # pause before retrying a failed request, times the failures so far (Esc cuts it)
 REPEAT_LIMIT = 5  # calls repeated with the same result and no file changed, after which the turn stops
 REPEAT_NOTE = (
     "\n\nNote: you made this same call before and nothing changed since, so its result is the same. Do not "
@@ -108,6 +109,7 @@ class Agent:
         max_invalid_retries: int = 3,
         deadline: float | None = None,
         cancel: CancelToken | None = None,
+        nested: bool = False,
     ) -> None:
         self.provider = provider
         self.registry = registry
@@ -126,6 +128,9 @@ class Agent:
         self.repeats = 0  # useless repeats since the last file change
         self.usage = Usage()
         self.cancel = cancel or CancelToken()  # Esc in the full-screen UI
+        self.nested = nested  # a delegated assistant: it shares the lead's Esc and never clears it
+        if not nested:
+            self.cancel.on_cancel(stop_commands)  # Esc also stops the commands of the turn
 
     # -- transcript helpers -------------------------------------------------
 
@@ -200,7 +205,7 @@ class Agent:
             if answer == "always":
                 self.session.always_allow.add(call.name)
 
-        ctx = ToolContext(self.session.project_root, self.online, self.ui, self.session)
+        ctx = ToolContext(self.session.project_root, self.online, self.ui, self.session, self.cancel)
         before = tree_fingerprint(self.session.project_root) if tool.may_change_files else None
         self.ui.tool_started(call.name, args)
         try:
@@ -235,7 +240,9 @@ class Agent:
         """Run one user prompt to completion and return the model's final text."""
         session = self.session
         session.start_turn(text, quick=quick)
-        self.cancel.reset()  # an Esc from before this prompt must not stop it
+        if not self.nested:  # an Esc from before this prompt must not stop it
+            self.cancel.reset()
+            allow_commands()
         self.stop_reason = None
         self.repeats = 0  # a new prompt gives the model a fresh chance
         invalid_count = 0
@@ -249,11 +256,13 @@ class Agent:
                     "iteration limit", f"Iteration limit ({self.max_iterations}) reached.", last_text
                 )
             self._refresh_system_prompt()
-            compact_if_needed(session, self.provider, self.ctx_tokens, self.output_tokens)
             allowed = self._allowed_tool_names()
-            asked = time.monotonic()
             try:
                 self.cancel.check()
+                compact_if_needed(
+                    session, self.provider, self.ctx_tokens, self.output_tokens, cancel=self.cancel
+                )
+                asked = time.monotonic()
                 result = self.provider.complete(
                     session.messages,
                     self.registry.schemas(allowed),
@@ -273,6 +282,8 @@ class Agent:
                 self.ui.notice(
                     f"Model error: {exc}. Retrying ({provider_errors}/{self.max_invalid_retries - 1})..."
                 )
+                if self.cancel.wait(RETRY_DELAY_S * provider_errors):  # a server restarting needs a moment
+                    return self._stop("cancelled", "Turn cancelled.", last_text)
                 if _is_context_overflow(exc):
                     compact_if_needed(session, self.provider, self.ctx_tokens, self.output_tokens, force=True)
                 continue

@@ -205,6 +205,8 @@ class DelegateTool(Tool):
             self.worker.ctx_tokens,
             False,
             max_iterations=self.worker.max_iterations,
+            cancel=ctx.cancel,  # Esc stops the assistant too
+            nested=True,
         )
         before = _snapshot(ctx.project_root, files)
         final = agent.run_turn(worker_request(str(args["task"]), files, read), quick=True)

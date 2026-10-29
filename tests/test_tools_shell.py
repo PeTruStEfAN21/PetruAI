@@ -179,12 +179,12 @@ def test_a_hanging_python_test_shows_where_it_hung(tmp_path, monkeypatch):
     assert 'test_spin.py", line' in result.output
 
 
-def test_kill_running_stops_a_command_and_its_children(tmp_path):
+def test_stop_commands_kills_a_command_and_its_children(tmp_path):
     import subprocess
     import threading
     import time
 
-    from petru.tools.shell import kill_running
+    from petru.tools.shell import allow_commands, stop_commands
 
     command = (
         "$p = Start-Process powershell -ArgumentList '-NoProfile','-Command','Start-Sleep 60' -PassThru "
@@ -198,9 +198,39 @@ def test_kill_running_stops_a_command_and_its_children(tmp_path):
     while not (pid_file.is_file() and pid_file.read_text().strip()) and time.monotonic() < deadline:
         time.sleep(0.1)
     child = pid_file.read_text().strip()
-    assert kill_running() == 1
+    assert stop_commands() == 1
     thread.join(10)
+    allow_commands()
     assert not thread.is_alive()
     assert "stopped by the user" in out["r"].output and out["r"].is_error
     listing = subprocess.run(["tasklist", "/FI", f"PID eq {child}"], capture_output=True, text=True).stdout
     assert child not in listing
+
+
+def test_after_esc_no_command_starts_until_commands_are_allowed_again(tmp_path):
+    from petru.tools.shell import allow_commands, stop_commands
+
+    stop_commands()
+    result = run_shell("New-Item -ItemType File made.txt", tmp_path)
+    assert result.is_error and "stopped by the user" in result.output and not (tmp_path / "made.txt").exists()
+    allow_commands()
+    assert not run_shell("New-Item -ItemType File made.txt", tmp_path).is_error
+
+
+def test_stopping_does_not_wait_for_the_kill(tmp_path):
+    import threading
+    import time
+
+    from petru.tools.shell import _RUNNING, allow_commands, stop_commands
+
+    thread = threading.Thread(target=run_shell, args=("Start-Sleep 30", tmp_path), daemon=True)
+    thread.start()
+    deadline = time.monotonic() + 30
+    while not _RUNNING and time.monotonic() < deadline:
+        time.sleep(0.05)
+    started = time.monotonic()
+    assert stop_commands() == 1
+    assert time.monotonic() - started < 0.2  # Esc runs on the UI thread: taskkill happens in the background
+    thread.join(15)
+    allow_commands()
+    assert not thread.is_alive()
