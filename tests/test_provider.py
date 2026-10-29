@@ -83,3 +83,126 @@ def test_fake_provider_records_calls_and_streams_text():
     r = fake.complete(USER, tools=None, on_text=seen.append)
     assert r.content == "done" and seen == ["done"]
     assert fake.calls[0]["messages"] == USER and fake.calls[0]["tools"] is None
+
+
+def test_thinking_sends_enable_thinking_and_streams_reasoning_apart():
+    p, client = make([delta(reasoning="hmm"), delta(content="answer"), finish("stop")])
+    p.thinking = True
+    thoughts = []
+    r = p.complete(USER, tools=None, on_reasoning=thoughts.append)
+    assert client.last_kwargs["extra_body"] == {"chat_template_kwargs": {"enable_thinking": True}}
+    assert thoughts == ["hmm"] and r.content == "answer"
+
+
+class _SlowServer:
+    """A local OpenAI-compatible endpoint, slow on purpose: `delay` seconds before its headers, then one SSE
+    chunk every `every` seconds. It records when it noticed the client went away."""
+
+    def __init__(self, delay: float, every: float):
+        import http.server
+        import threading
+
+        outer = self
+        self.closed = threading.Event()
+
+        class Handler(http.server.BaseHTTPRequestHandler):
+            def log_message(self, *args):
+                pass
+
+            def _gone(self) -> bool:
+                import select
+                import socket
+
+                readable, _, _ = select.select([self.connection], [], [], 0)
+                if not readable:
+                    return False
+                try:
+                    return self.connection.recv(1, socket.MSG_PEEK) == b""
+                except OSError:
+                    return True
+
+            def do_POST(self):
+                import json
+                import time
+
+                self.rfile.read(int(self.headers["Content-Length"]))
+                end = time.monotonic() + delay
+                while time.monotonic() < end:
+                    if self._gone():
+                        outer.closed.set()
+                        return
+                    time.sleep(0.05)
+                try:
+                    self.send_response(200)
+                    self.send_header("Content-Type", "text/event-stream")
+                    self.end_headers()
+                    for i in range(40):
+                        chunk = {"choices": [{"index": 0, "delta": {"content": f"t{i} "}}]}
+                        self.wfile.write(f"data: {json.dumps(chunk)}\n\n".encode())
+                        self.wfile.flush()
+                        time.sleep(every)
+                        if self._gone():
+                            raise ConnectionAbortedError
+                except OSError:
+                    outer.closed.set()
+
+        self.server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        threading.Thread(target=self.server.serve_forever, daemon=True).start()
+        self.url = f"http://127.0.0.1:{self.server.server_address[1]}/v1"
+
+    def stop(self):
+        self.server.shutdown()
+
+
+def _cancel_after(server, wait_for, timeout=1.5):
+    """Run complete() in a thread, cancel once `wait_for(seen)` holds; returns (error, seconds to stop)."""
+    import threading
+    import time
+
+    from petru.agent.cancel import CancelToken
+
+    token, seen, outcome = CancelToken(), [], {}
+    provider = OpenAICompatProvider(server.url)
+
+    def run():
+        try:
+            provider.complete(USER, tools=None, on_text=seen.append, cancel=token)
+        except BaseException as exc:  # noqa: BLE001 - the test inspects what came out
+            outcome["error"] = exc
+
+    thread = threading.Thread(target=run, daemon=True)
+    thread.start()
+    deadline = time.monotonic() + 10
+    while not wait_for(seen) and time.monotonic() < deadline:
+        time.sleep(0.02)
+    started = time.monotonic()
+    token.cancel()
+    thread.join(timeout)
+    return outcome.get("error"), time.monotonic() - started, thread.is_alive()
+
+
+def test_cancel_before_the_first_byte_stops_within_a_second():
+    import time
+
+    from petru.agent.cancel import Cancelled
+
+    server = _SlowServer(delay=10, every=0.5)
+    try:
+        start = time.monotonic()
+        error, took, alive = _cancel_after(server, lambda seen: time.monotonic() - start > 0.3)
+        assert not alive and isinstance(error, Cancelled) and took < 1.5
+        assert server.closed.wait(3), "the server never saw the connection close"
+    finally:
+        server.stop()
+
+
+def test_cancel_mid_stream_stops_within_a_second():
+    from petru.agent.cancel import Cancelled
+
+    server = _SlowServer(delay=0, every=0.5)
+    try:
+        error, took, alive = _cancel_after(server, lambda seen: bool(seen))
+        assert not alive and isinstance(error, Cancelled) and took < 1.5
+        assert server.closed.wait(3), "the server never saw the connection close"
+    finally:
+        server.stop()

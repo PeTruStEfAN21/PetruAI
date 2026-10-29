@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import re
 import subprocess
+import threading
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Literal
@@ -95,6 +96,21 @@ def truncate_output(text: str, max_chars: int) -> str:
     return f"{text[:half]}\n... [truncated {len(text) - max_chars} chars] ...\n{text[-half:]}"
 
 
+_RUNNING: set[subprocess.Popen] = set()  # commands of run_shell still running, for Esc
+_STOPPED: set[int] = set()  # their pids that Esc killed, so the result says why it ended
+_LOCK = threading.Lock()
+
+
+def kill_running() -> int:
+    """Kill every command started by run_shell that is still running, with its process tree (Esc)."""
+    with _LOCK:
+        procs = [proc for proc in _RUNNING if proc.poll() is None]
+        _STOPPED.update(proc.pid for proc in procs)
+    for proc in procs:
+        _kill_tree(proc)
+    return len(procs)
+
+
 def _kill_tree(proc: subprocess.Popen) -> None:
     try:
         subprocess.run(["taskkill", "/T", "/F", "/PID", str(proc.pid)], capture_output=True, timeout=15)
@@ -171,6 +187,8 @@ def run_shell(cmd: str, cwd: Path, timeout_s: int = 120, max_chars: int = 20000)
         )
     except OSError as exc:
         return ToolResult(f"Cannot start PowerShell: {exc}", True)
+    with _LOCK:
+        _RUNNING.add(proc)
     try:
         raw, _ = proc.communicate(timeout=timeout_s)
     except subprocess.TimeoutExpired:
@@ -181,7 +199,14 @@ def run_shell(cmd: str, cwd: Path, timeout_s: int = 120, max_chars: int = 20000)
             raw = b""
         text = truncate_output(_decode(raw), max_chars)
         return ToolResult(f"{text}\n[timed out after {timeout_s:g}s; process tree killed]".strip(), True)
+    finally:
+        with _LOCK:
+            _RUNNING.discard(proc)
+            stopped = proc.pid in _STOPPED
+            _STOPPED.discard(proc.pid)
     text = truncate_output(_decode(raw), max_chars)
+    if stopped:
+        return ToolResult(f"{text}\n[stopped by the user]".strip(), True)
     return ToolResult(f"{text}\nexit code: {proc.returncode}".strip(), proc.returncode != 0)
 
 

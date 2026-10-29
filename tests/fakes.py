@@ -9,7 +9,7 @@ from types import SimpleNamespace
 from petru.providers.base import ChatResult, ToolCall
 
 
-def delta(content=None, tool_call=None, finish_reason=None):
+def delta(content=None, tool_call=None, finish_reason=None, reasoning=None):
     """One streaming chunk shaped like the OpenAI SDK's ChatCompletionChunk."""
     tool_calls = None
     if tool_call is not None:
@@ -21,7 +21,8 @@ def delta(content=None, tool_call=None, finish_reason=None):
             )
         ]
     choice = SimpleNamespace(
-        delta=SimpleNamespace(content=content, tool_calls=tool_calls), finish_reason=finish_reason
+        delta=SimpleNamespace(content=content, tool_calls=tool_calls, reasoning_content=reasoning),
+        finish_reason=finish_reason,
     )
     return SimpleNamespace(choices=[choice], usage=None)
 
@@ -52,7 +53,7 @@ class FakeProvider:
         self._scripted = list(scripted)
         self.calls: list[dict] = []
 
-    def complete(self, messages, tools, on_text=None, temperature=0.2, max_tokens=4096):
+    def complete(self, messages, tools, on_text=None, temperature=0.2, max_tokens=4096, **kwargs):
         self.calls.append({"messages": copy.deepcopy(messages), "tools": tools, "max_tokens": max_tokens})
         if not self._scripted:
             raise AssertionError("FakeProvider: no scripted result left")

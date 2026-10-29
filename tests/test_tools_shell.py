@@ -177,3 +177,30 @@ def test_a_hanging_python_test_shows_where_it_hung(tmp_path, monkeypatch):
     result = run_shell(f'& "{sys.executable}" -m pytest -q -p no:cacheprovider', tmp_path, timeout_s=8)
     assert "timed out" in result.output  # the model learns its code hung, and where
     assert 'test_spin.py", line' in result.output
+
+
+def test_kill_running_stops_a_command_and_its_children(tmp_path):
+    import subprocess
+    import threading
+    import time
+
+    from petru.tools.shell import kill_running
+
+    command = (
+        "$p = Start-Process powershell -ArgumentList '-NoProfile','-Command','Start-Sleep 60' -PassThru "
+        "-NoNewWindow; $p.Id | Out-File -Encoding ascii child.pid; $p.WaitForExit()"
+    )
+    out = {}
+    thread = threading.Thread(target=lambda: out.setdefault("r", run_shell(command, tmp_path)), daemon=True)
+    thread.start()
+    pid_file = tmp_path / "child.pid"
+    deadline = time.monotonic() + 30
+    while not (pid_file.is_file() and pid_file.read_text().strip()) and time.monotonic() < deadline:
+        time.sleep(0.1)
+    child = pid_file.read_text().strip()
+    assert kill_running() == 1
+    thread.join(10)
+    assert not thread.is_alive()
+    assert "stopped by the user" in out["r"].output and out["r"].is_error
+    listing = subprocess.run(["tasklist", "/FI", f"PID eq {child}"], capture_output=True, text=True).stdout
+    assert child not in listing
