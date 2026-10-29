@@ -22,6 +22,8 @@ Commands:
   /done            end the current task and go back to idle
   /yolo            toggle yolo mode (no confirmations, build immediately)
   /status          phase, tier, project, online/offline
+  /details         context used, replies and speed, tool calls, why the last turn stopped, team state
+  /team            switch team mode on or off between tasks (the 35B leads, the 4B takes simple pieces)
   /memory          what Petru remembers (global and project memory)
   /journal         recent commit summaries and pending ones
   /exit            quit (Ctrl+D also works)

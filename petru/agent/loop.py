@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import re
 import time
+from dataclasses import dataclass
 from pathlib import Path
 
 from petru.agent.context import build_system_prompt, compact_if_needed
@@ -41,6 +42,24 @@ REPEAT_NOTE = (
     "run it again: change the code it points at, delegate the missing piece, or say what blocks you."
 )
 DURATION = re.compile(r"\b\d+(?:\.\d+)?\s?(?:ms|s)\b|\(\d+:\d\d:\d\d\)")  # "in 0.39s", "(0:01:16)"
+
+
+@dataclass
+class Usage:
+    """What the model did in this session, as /details shows it."""
+
+    requests: int = 0
+    prompt_tokens: int = 0  # of the last request: how full the context is now
+    completion_tokens: int = 0  # every reply together
+    model_seconds: float = 0.0  # waiting for replies, prompt processing included
+    tool_calls: int = 0
+
+    def record(self, prompt_tokens: int | None, completion_tokens: int | None, seconds: float, calls: int):
+        self.requests += 1
+        self.prompt_tokens = prompt_tokens if prompt_tokens is not None else self.prompt_tokens
+        self.completion_tokens += completion_tokens or 0
+        self.model_seconds += seconds
+        self.tool_calls += calls
 
 
 def _same_result_key(output: str) -> int:
@@ -103,6 +122,7 @@ class Agent:
         self._changes = 0  # file changes so far: a repeated call is only useless while this stays put
         self._seen: dict[tuple[str, str], tuple[int, int]] = {}  # call -> (changes, result) when last made
         self.repeats = 0  # useless repeats since the last file change
+        self.usage = Usage()
 
     # -- transcript helpers -------------------------------------------------
 
@@ -227,6 +247,7 @@ class Agent:
             self._refresh_system_prompt()
             compact_if_needed(session, self.provider, self.ctx_tokens, self.output_tokens)
             allowed = self._allowed_tool_names()
+            asked = time.monotonic()
             try:
                 result = self.provider.complete(
                     session.messages,
@@ -247,6 +268,9 @@ class Agent:
                     compact_if_needed(session, self.provider, self.ctx_tokens, self.output_tokens, force=True)
                 continue
             calls = [canonical_call(c) for c in extract_tool_calls(result)]
+            self.usage.record(
+                result.prompt_tokens, result.completion_tokens, time.monotonic() - asked, len(calls)
+            )
             last_text = strip_text_tool_calls(result.content or "")
             if not calls:
                 session.messages.append({"role": "assistant", "content": result.content or ""})

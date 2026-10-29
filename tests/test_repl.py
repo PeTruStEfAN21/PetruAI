@@ -71,3 +71,34 @@ def test_repl_survives_a_crashing_turn_and_ctrl_d_quits(tmp_path, monkeypatch, c
     out = capsys.readouterr().out
     assert code == 0 and "Model request failed 3 times" in out
     assert "phase=build" in out.split("Model request failed")[1]  # the REPL went on to the next command
+
+
+def test_details_show_the_context_the_replies_and_the_last_stop(tmp_path, monkeypatch, capsys):
+    from petru.providers.base import ChatResult
+
+    reply = ChatResult("Fixed.", [], "stop", prompt_tokens=8192, completion_tokens=120)
+    code, _, _ = run_repl(monkeypatch, tmp_path, [reply], ["/details", "/quick fix it", "/details"])
+    out = capsys.readouterr().out
+    before, after = out.split("Fixed.")
+    assert code == 0 and "0 requests" in before and "none yet" in before
+    assert "8,192 of 32,768 tokens (25%)" in after and "1 request, 120 tokens" in after
+    assert "answered" in after and "team     off" in after
+
+
+def test_team_switches_on_and_off_between_tasks(tmp_path, monkeypatch, capsys):
+    lead = [
+        result(tool_calls=[call("choose_mode", {"mode": "solo", "reason": "one small file"})]),
+        result(content="Done alone."),
+    ]
+    lines = ["/team", "/details", "/quick add a flag", "/team", "/done", "/team", "/details"]
+    code, _, providers = run_repl(monkeypatch, tmp_path, lead, lines)
+    out = capsys.readouterr().out
+    assert code == 0 and "Team mode on: quality leads" in out
+    assert "team     on: not chosen yet" in out and "Finish the current task first" in out
+    assert "team     off" in out.split("Team mode off")[1]
+    first = providers[0].calls[0]
+    assert {"delegate", "choose_mode"} <= {t["function"]["name"] for t in first["tools"]}
+    from tests.test_cli import FakeManager
+
+    lead_manager, worker_manager = FakeManager.instances
+    assert lead_manager.started == ["fast", "quality"] and worker_manager.stopped
