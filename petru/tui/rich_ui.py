@@ -39,6 +39,33 @@ def summarize_args(args: dict) -> str:
     return " ".join(parts)
 
 
+def pick_option(answer: str, options: list[str] | None) -> str | None:
+    """The option a reply names, by its number or its exact text; None for anything else."""
+    options = options or []
+    if answer.isdigit() and 1 <= int(answer) <= len(options):
+        return options[int(answer) - 1]
+    return answer if answer in options else None
+
+
+def parse_confirm(answer: str, allow_always: bool) -> ConfirmAnswer:
+    answer = answer.strip().lower()
+    if answer in ("y", "yes"):
+        return "yes"
+    if allow_always and answer in ("a", "always"):
+        return "always"
+    return "no"
+
+
+def parse_plan_action(answer: str) -> PlanAction:
+    """Enter (or anything unknown) confirms, as the prompt says."""
+    answer = answer.strip().lower()
+    if answer in ("e", "edit"):
+        return "edit"
+    if answer in ("r", "reject"):
+        return "reject"
+    return "confirm"
+
+
 def summarize_result(result: ToolResult) -> str:
     lines = [line for line in result.output.splitlines() if line.strip()]
     if not lines:
@@ -113,21 +140,15 @@ class RichUI:
             self.console.print(f"  {i}. {option}", markup=False, highlight=False)
         while True:
             answer = self._read()
-            if options and answer.isdigit() and 1 <= int(answer) <= len(options):
-                return options[int(answer) - 1]
-            if answer:
-                return answer
+            picked = pick_option(answer, options)
+            if picked or answer:
+                return picked or answer
 
     def confirm(self, prompt: str, allow_always: bool = False) -> ConfirmAnswer:
         self.flush()
         choices = "[y]es / [n]o" + (" / [a]lways" if allow_always else "")
         self.console.print(f"[bold]{prompt}[/] {choices}", markup=True, highlight=False)
-        answer = self._read().lower()
-        if answer in ("y", "yes"):
-            return "yes"
-        if allow_always and answer in ("a", "always"):
-            return "always"
-        return "no"
+        return parse_confirm(self._read(), allow_always)
 
     def show_plan(self, plan: Plan) -> PlanAction:
         self.flush()
@@ -139,12 +160,7 @@ class RichUI:
             for decision in plan.decisions:
                 self.console.print(f"  - {decision}", markup=False, highlight=False)
         self.console.print("[c]onfirm / [e]dit / [r]eject (Enter = confirm)", markup=False)
-        answer = self._read().lower()
-        if answer in ("e", "edit"):
-            return "edit"
-        if answer in ("r", "reject"):
-            return "reject"
-        return "confirm"
+        return parse_plan_action(self._read())
 
     def edit_plan(self, plan: Plan) -> Plan:
         self.console.print(
