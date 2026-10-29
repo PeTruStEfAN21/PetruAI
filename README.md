@@ -160,7 +160,6 @@ petru/        the agent: cli, tui, agent loop, phases and permissions, tools, pr
 training/     dataset building, trajectories, QLoRA training, evaluation gate, GGUF export, nightly orchestrator
 infra/        llama.cpp (binaries and models not in git), benchmarks, offline package caches
 docs/         benchmarks, demo guide, training guide
-research_notes/  notes with sources on local models, agent harnesses, memory and fine-tuning
 tests/        unit tests and live end-to-end demos
 ```
 

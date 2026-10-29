@@ -17,8 +17,8 @@ Pipeline-ul este în `training/` (mediu separat, Python 3.12, `uv`).
    (pytest / npm test / tsc / dart analyze / flutter test) trec; un proiect fără niciun test pică. Transcriptele
    se normalizează la protocolul agentului: o întrebare de design scrisă ca text devine apel `ask_user`, iar
    opririle din BUILD urmate de „continue” din partea utilizatorului scriptat dispar. Încercările respinse se
-   păstrează, cu motivul, în `training/data/rejected/` pentru diagnostic. Niciun output al unui model comercial din cloud nu
-   intră în date (anti-goal A2).
+   păstrează, cu motivul, în `training/data/rejected/` pentru diagnostic. Niciun output al unui model
+   comercial din cloud nu intră în date (anti-goal A2).
 
 Apoi: deduplicare MinHash (5-grame, Jaccard 0,7), echilibrare pe limbaj (niciun limbaj peste 40 %), împărțire
 train/eval stratificată (5 % eval). Rezultatul: `training/data/train.jsonl`, `eval.jsonl`, `stats.json`.
